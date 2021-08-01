@@ -4,7 +4,7 @@
 ![Visual representation of snippet usage][snippetGif]
 
 ## Description
-A Visual Studio Code extension for adding color highlighting to INTERLIS 2.4 files. The colors are customizable but by default the current color theme's colors are used. In addition this Extension provides Snippets for commonly used blocks in INTERLIS 2.
+A Visual Studio Code extension for adding color highlighting to INTERLIS 2.4 files. The colors are customizable but by default the current color theme's colors are used. In addition, this extension provides snippets for commonly used blocks in INTERLIS 2.
 
 **Note**
 
@@ -28,7 +28,7 @@ The extension associates with `.ILI` files and applies coloring to the different
     * `{...}`
 
 ### Snippets
-The extension provides interactive Snippets for commonly used INTERLIS 2 Blocks. To use the Snippets start by typing the name of the Block until VSC provides the correct option as Suggestion. Select the snippet with the arrow keys and hit `ENTER` to insert. Navigate through the snippet and its options with `TAB`.
+The extension provides interactive snippets for commonly used INTERLIS 2 blocks. To use the snippets start by typing the name of the block until VSC provides the correct option as suggestion. Select the snippet with the arrow keys and hit `ENTER` to insert. Navigate through the snippet and its options with `TAB`.
 
 Supported snippets include: `MODEL`, `TOPIC`, `CLASS`, `STRUCTURE`, `ASSOCIATION` and `Role`
 
