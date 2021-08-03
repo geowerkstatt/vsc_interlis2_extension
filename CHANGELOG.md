@@ -1,4 +1,8 @@
 # Change Log
+### 0.1.3 - 15.07.2021
+
+* Include snippets
+* Higher resolution logo
 
 ### 0.1.2 - 21.05.2021
 

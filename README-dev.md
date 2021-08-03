@@ -5,6 +5,7 @@
 * This folder contains all of the files necessary for your extension.
 * `package.json` - this is the manifest file in which you declare your language support and define the location of the grammar file that has been copied into your extension.
 * `syntaxes/ili.tmLanguage.json` - this is the Text mate grammar file that is used for tokenization.
+* `snippets/interlis2.json` - this is the file providing snippets for IntelliSense.
 * `language-configuration.json` - this is the language configuration, defining the tokens that are used for comments and brackets.
 
 ## Get up and running straight away
@@ -30,21 +31,8 @@
 
 
 # Instructions for developers
-
-## Build locally
-
-```
-npm install
-npm run compile
-```
-
 ## Build vsix package locally
-
-Prerequisite:
-- Installed node.js
-- Installed vsce (`npm install -g vsce`)
- 
-Build package:
-1. Update version in `package.json`
-2. Document included changes in `CHANGELOG.md`
-3. Run `vsce package`
+1. Install packages with `npm install`
+2. Update version in `package.json`
+3. Document included changes in `CHANGELOG.md`
+4. Run `npx vsce package`
