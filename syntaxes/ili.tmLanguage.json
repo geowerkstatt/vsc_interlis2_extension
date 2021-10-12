@@ -60,6 +60,11 @@
           "name": "comment.line.double-dash.ili",
           "begin": "!!",
           "end": "\n"
+        },
+        {
+          "name": "comment.line.block-comment.ili",
+          "begin": "/\\*",
+          "end": "\\*/"
         }
       ]
     },
