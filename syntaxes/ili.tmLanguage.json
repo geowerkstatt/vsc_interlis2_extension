@@ -62,7 +62,7 @@
           "end": "\n"
         },
         {
-          "name": "comment.line.block-comment.ili",
+          "name": "comment.block.ili",
           "begin": "/\\*",
           "end": "\\*/"
         }
