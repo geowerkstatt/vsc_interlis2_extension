@@ -1,25 +1,31 @@
 INTERLIS 2.3;
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! Basismodell zum Testdatensatz INTERLIS 2.3. Das Basismodell wurde aus
-!! dem INTERLIS 1 Datenmodell DM01AVCH23D abgeleitet.
-!! Das Datenmodell Test23 ist jedoch *keine* offizielle Uebersetzung
-!! von DM01AVCH23D nach INTERLIS 2.3. Das Datenmodell Test23 soll
-!! lediglich die Konzepte von INTERLIS 2.3 an einem allgemein bekannten
-!! Beispiel aufzeigen.
-!!
-!! Version: 1.0
-!! Sprache: Deutsch
-!! Dateiname: Test23.ili
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/*
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+Basismodell zum Testdatensatz INTERLIS 2.3. Das Basismodell wurde aus
+dem INTERLIS 1 Datenmodell DM01AVCH23D abgeleitet.
+Das Datenmodell Test23 ist jedoch *keine* offizielle Uebersetzung
+von DM01AVCH23D nach INTERLIS 2.3. Das Datenmodell Test23 soll
+lediglich die Konzepte von INTERLIS 2.3 an einem allgemein bekannten
+Beispiel aufzeigen.
+
+Version: 1.0
+Sprache: Deutsch
+Dateiname: Test23.ili
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*/
+
+
+!! Line comment
 MODEL Test23 (de) AT "http://www.interlis.ch/" VERSION "2015-03-06" =
 
 
   IMPORTS Units;
   IMPORTS Time;
+  (BOOLEAN)
+  (TEXT)
 
   DOMAIN
     Datum = FORMAT INTERLIS.XMLDate "1582-10-15" .. "2999-12-31";
@@ -311,7 +317,7 @@ MODEL Test23 (de) AT "http://www.interlis.ch/" VERSION "2015-03-06" =
 
     ASSOCIATION ProjGebaeudenummerAssoc =
       Objekt -- {1} ProjBoFlaeche;
-      ProjGebaeudenummer -- {*} ProjGebaeudenummer;
+      ProjGebaeudenummer -- {*} AREAProjGebaeudenummer;
       MANDATORY CONSTRAINT
         Objekt->Art == #Gebaeude;
     END ProjGebaeudenummerAssoc;

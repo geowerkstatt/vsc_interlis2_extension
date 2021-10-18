@@ -1,4 +1,8 @@
 # Change Log
+### vNext
+
+* Include syntax highlighting for block comments
+
 ### 0.1.3 - 15.07.2021
 
 * Include snippets
