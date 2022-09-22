@@ -45,8 +45,12 @@
           "match": "(\\b(STRUCTURE))|(\\b(END))"
         },
         {
-          "name": "keyword.constraint.ili",
-          "match": "(\\b(CONSTRAINT))|(\\b(END))"
+          "name": "keyword.constraints.ili",
+          "match": "(\\b(CONSTRAINTS OF))|(\\b(END))"
+        },
+        {
+          "name": "keyword.constraints.ili",
+          "match": "(\\b(CONSTRAINTS\\sOF))|(\\b(END))"
         },
         {
           "name": "keyword.view.ili",
