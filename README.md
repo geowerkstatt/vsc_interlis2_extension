@@ -18,7 +18,6 @@ The extension associates with `.ILI` files and applies coloring to the different
     * `CLASS`
 * Data types like
     * `BOOLEAN`
-    * `INT`
     * `TEXT`
 * Keywords like
     * `ASSOCIATION`
