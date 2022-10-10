@@ -20,6 +20,7 @@
         "onLanguage:INTERLIS2"
     ],
     "main": "./out/setup.js",
+    "browser": "./out/browser.js",
     "keywords": [
         "INTERLIS",
         "ili"

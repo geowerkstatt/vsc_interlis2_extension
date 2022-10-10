@@ -6,12 +6,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Extension",
+      "name": "Extension for VS Code Desktop",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+      "outFiles": ["${fileDirname}/*.js"],
+      "preLaunchTask": "npm: watch"
+    },
+    {
+      "name": "Run Web Extension in VS Code Web",
+      "type": "extensionHost",
+      "debugWebWorkerHost": true,
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--extensionDevelopmentKind=web"
       ],
       "outFiles": ["${fileDirname}/*.js"],
       "preLaunchTask": "npm: watch"
