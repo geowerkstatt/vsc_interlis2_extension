@@ -1,21 +1,17 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
+import { ModelImplementationProvider } from "./ModelImplementationProvider";
+import * as fs from "fs";
+import path = require("path");
+import os = require("os");
+
+const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
 
 export function activate(context: vscode.ExtensionContext) {
-  const disposable = vscode.languages.registerImplementationProvider('INTERLIS2', {
-      provideImplementation(document, position, token) {
-        return [
-          {
-            uri: vscode.Uri.parse("https://models.interlis.ch/refhb24/Units.ili"),
-            range: new vscode.Range(4, 11, 4, 15)
-          },
-          {
-            uri: vscode.Uri.parse("https://models.interlis.ch/refhb24/Time.ili"),
-            range: new vscode.Range(7, 16, 7, 20)
-          }
-        ]}
-      });
-
-      context.subscriptions.push(disposable);
+  if (fs.existsSync(tempdir)) {
+    fs.rmdirSync(tempdir, { recursive: true });
+  }
+  const disposable = vscode.languages.registerImplementationProvider("INTERLIS2", new ModelImplementationProvider());
+  context.subscriptions.push(disposable);
 }
 
 export function deactivate() {

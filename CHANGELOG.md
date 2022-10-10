@@ -1,4 +1,8 @@
 # Change Log
+### vNext
+
+* Add _Go to Implementation_ functionality for VSCode desktop
+
 ### 0.1.4 - 18.10.2021
 
 * Include syntax highlighting for block comments
