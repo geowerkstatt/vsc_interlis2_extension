@@ -47,14 +47,16 @@
     }
   },
   "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)",
-    "indentationRules": {
-      "increaseIndentPattern": "^\\s*=\\s*?$",
-      "decreaseIndentPattern": "^(END)\\s*$"
-    },
-    "onEnterRules": [
-      {
-        "beforeText": "^\\s*(?:MODEL|TOPIC|CLASS|STRUCTURE|ASSOCIATION|VIEW|GRAPHIC).*?=\\s*$",
-        "action": { "indent": "indentOutdent"}
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*=\\s*?$",
+    "decreaseIndentPattern": "^(END)\\s*$"
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "^\\s*(?:MODEL|TOPIC|CLASS|STRUCTURE|ASSOCIATION|VIEW|GRAPHIC).*?=\\s*$",
+      "action": {
+        "indent": "indentOutdent"
       }
-    ]
-  }
+    }
+  ]
+}
