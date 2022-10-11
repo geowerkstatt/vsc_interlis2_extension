@@ -1,4 +1,8 @@
 # Change Log
+### vNext
+
+* Rework TextMate grammar to separate included types from keywords
+
 ### 0.1.4 - 18.10.2021
 
 * Include syntax highlighting for block comments
