@@ -118,10 +118,6 @@
         {
           "name": "variable.geom.ili",
           "match": "(OVERLAPS)"
-        },
-        {
-          "name": "variable.int.ili",
-          "match": "(\\?<![\\w\\d])INT(?![\\w\\d])"
         }
       ]
     }

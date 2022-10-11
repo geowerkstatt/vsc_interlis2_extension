@@ -1,7 +1,8 @@
 # ILI File Highlighter
 
 
-![Visual representation of snippet usage][snippetGif]
+![image](https://user-images.githubusercontent.com/3465512/194811328-616104ab-5855-44e6-a5ec-0997d6403f59.png)
+
 
 ## Description
 A Visual Studio Code extension for adding color highlighting to INTERLIS 2.4 files. The colors are customizable but by default the current color theme's colors are used. In addition, this extension provides snippets for commonly used blocks in INTERLIS 2.
@@ -18,7 +19,6 @@ The extension associates with `.ILI` files and applies coloring to the different
     * `CLASS`
 * Data types like
     * `BOOLEAN`
-    * `INT`
     * `TEXT`
 * Keywords like
     * `ASSOCIATION`
@@ -42,6 +42,3 @@ To make VS Code treat other file extensions than the default `.ili` as INTERLIS2
 },
 ```
 The example above associates extensions such as `.ili` with the INTERLIS2 File highlighter extension.
-
-
-[snippetGif]: https://github.com/GeoWerkstatt/vsc_interlis2_extension/blob/master/images/snippet.gif?raw=true
