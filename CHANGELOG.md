@@ -1,5 +1,5 @@
 # Change Log
-### vNext
+### 0.1.5 - 12.10.2022
 
 * Rework TextMate grammar to separate included types from keywords
 * Add _Go to Implementation_ functionality for VSCode desktop
