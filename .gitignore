@@ -45,5 +45,8 @@ temp/
 .history
 .ionide
 
+### Typescript build output
+out/
+
 ### vsce Output ###
 **/*.vsix
