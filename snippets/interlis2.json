@@ -28,7 +28,7 @@
       "topic"
     ],
     "body": [
-      "TOPIC ${1:Topic-Name}${2| ABSTRACT , FINAL , |}= ",
+      "TOPIC ${1:Topic-Name}${2| , (ABSTRACT) , (FINAL)|}= ",
       "\t${0}",
       "END ${1};"
     ],
@@ -41,7 +41,7 @@
       "class"
     ],
     "body": [
-      "CLASS ${1:Class-Name}${2| ABSTRACT , EXTENDED , FINAL , |}= ",
+      "CLASS ${1:Class-Name}${2| , (ABSTRACT) , (EXTENDED) , (FINAL) , |}= ",
       "\t${0}",
       "END ${1};"
     ],
@@ -54,7 +54,7 @@
       "structure"
     ],
     "body": [
-      "STRUCTURE ${1:Structure-Name}${2| ABSTRACT , EXTENDED , FINAL , |}= ",
+      "STRUCTURE ${1:Structure-Name}${2| , (ABSTRACT) , (EXTENDED) , (FINAL) , |}= ",
       "\t${0}",
       "END ${1};"
     ],
@@ -67,7 +67,7 @@
       "association"
     ],
     "body": [
-      "ASSOCIATION ${1:Association-Name}${2| ABSTRACT , EXTENDED , FINAL , OID , |}= ",
+      "ASSOCIATION ${1:Association-Name}${2| , (ABSTRACT) , (EXTENDED) , (FINAL) , (OID) |}= ",
       "\t${0}",
       "END ${1};"
     ],
@@ -79,7 +79,7 @@
       "role"
     ],
     "body": [
-      "${1:Role-Name}${2| (ABSTRACT) , (EXTENDED) , (FINAL) , (HIDING) , (ORDERED) , (EXTERNAL) , |}${3|--,-<>,-<#>|} (${4|*,1,1..2,1..*|}) ${0};"
+      "${1:Role-Name}${2| , (ABSTRACT) , (EXTENDED) , (FINAL) , (HIDING) , (ORDERED) , (EXTERNAL)|}${3|--,-<>,-<#>|} (${4|*,1,1..2,1..*|}) ${0};"
     ],
     "description": "Roles inside ASSOCIATION blocks"
   }
