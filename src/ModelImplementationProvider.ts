@@ -109,7 +109,7 @@ export class ModelImplementationProvider implements ImplementationProvider {
 
     rootRepository.subsidiarySites.forEach((subRepo: any) => {
       const subModels = this.getModelsFromRepository(subRepo);
-      models.concat(subModels);
+      models.push(...subModels);
     });
 
     return models;

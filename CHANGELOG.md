@@ -1,4 +1,8 @@
 # Change Log
+### 0.1.6 - 14.10.2022
+
+* Fix _Go to Implementation_ not retrieving Models in subrepositories.
+
 ### 0.1.5 - 12.10.2022
 
 * Rework TextMate grammar to separate included types from keywords
