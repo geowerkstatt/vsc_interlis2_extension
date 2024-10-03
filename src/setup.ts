@@ -1,5 +1,11 @@
 import * as vscode from "vscode";
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient/node";
+import {
+  ExecuteCommandRequest,
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind,
+} from "vscode-languageclient/node";
 import { ModelImplementationProvider } from "./ModelImplementationProvider";
 import * as fs from "fs";
 import path = require("path");
@@ -21,7 +27,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const serverOptions: ServerOptions = {
     command: serverExecutable,
-    transport: TransportKind.ipc,
+    transport: TransportKind.stdio,
   };
 
   const clientOptions: LanguageClientOptions = {
@@ -33,6 +39,26 @@ export async function activate(context: vscode.ExtensionContext) {
 
   client = new LanguageClient("INTERLIS2LanguageServer", "INTERLIS2 Language Server", serverOptions, clientOptions);
   await client.start();
+
+  const command = vscode.commands.registerTextEditorCommand("interlis.generateMarkdown", async (textEditor) => {
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+      },
+      async (progress) => {
+        progress.report({ message: "Generating markdown..." });
+
+        const markdown: string | null = await client?.sendRequest(ExecuteCommandRequest.type, {
+          command: "generateMarkdown",
+          arguments: [{ uri: textEditor.document.uri.toString() }],
+        });
+
+        const document = await vscode.workspace.openTextDocument({ content: markdown || "", language: "markdown" });
+        await vscode.window.showTextDocument(document);
+      }
+    );
+  });
+  context.subscriptions.push(command);
 }
 
 export async function deactivate() {

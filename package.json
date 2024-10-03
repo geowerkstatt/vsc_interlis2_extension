@@ -51,7 +51,23 @@
                 "language": "INTERLIS2",
                 "path": "./snippets/interlis2.json"
             }
-        ]
+        ],
+        "commands": [
+            {
+                "command": "interlis.generateMarkdown",
+                "title": "Generate markdown documentation",
+                "category": "INTERLIS 2"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "when": "editorLangId == INTERLIS2",
+                    "command": "interlis.generateMarkdown",
+                    "group": "navigation"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
