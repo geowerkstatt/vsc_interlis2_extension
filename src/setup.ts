@@ -13,7 +13,7 @@ import os = require("os");
 
 const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
 const debugServerPath =
-  "language-server/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net8.0/Geowerkstatt.Interlis.LanguageServer.exe";
+  "language-server/src/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net8.0/Geowerkstatt.Interlis.LanguageServer.exe";
 let client: LanguageClient | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
