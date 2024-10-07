@@ -1,3 +1,4 @@
+using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Geowerkstatt.Interlis.Tools;
 using Geowerkstatt.Interlis.Tools.AST;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             return Task.FromResult<string?>(null);
         }
 
-        _logger.LogWarning("Generate markdown for {0}", uri);
+        _logger.LogInformation("Generate markdown for {0}", uri);
 
         using var stringReader = new StringReader(fileContent);
         var interlisFile = _interlisReader.ReadFile(stringReader);
@@ -41,6 +42,8 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
 
     private static string GenerateMarkdown(InterlisFile interlisFile)
     {
-        return string.Join(", ", interlisFile.Content.Keys);
+        var visitor = new MarkdownDocumentationVisitor();
+        visitor.VisitInterlisFile(interlisFile);
+        return visitor.GetDocumentation();
     }
 }

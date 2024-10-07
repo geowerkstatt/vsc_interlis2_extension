@@ -53,8 +53,10 @@ export async function activate(context: vscode.ExtensionContext) {
           arguments: [{ uri: textEditor.document.uri.toString() }],
         });
 
-        const document = await vscode.workspace.openTextDocument({ content: markdown || "", language: "markdown" });
-        await vscode.window.showTextDocument(document);
+        if (markdown) {
+          const document = await vscode.workspace.openTextDocument({ content: markdown, language: "markdown" });
+          await vscode.window.showTextDocument(document);
+        }
       }
     );
   });
