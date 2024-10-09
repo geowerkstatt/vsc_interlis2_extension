@@ -36,13 +36,19 @@ jobs:
       id: check_tag
       run: echo PERFORM_PUBLISH=$(git rev-parse --verify -q "refs/tags/${{ env.VERSION_TAG }}" >> /dev/null && echo false || echo true) >> $GITHUB_ENV
 
-    - name: Authenticate to GitHub NuGet Registry
+    - name: Add GitHub NuGet Registry
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet nuget add source --username "GeoWerkstatt-Build" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+      run: dotnet nuget add source --username "GeoWerkstatt-Build" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+
+    - name: Restore packages
+      if: ${{ env.PERFORM_PUBLISH == 'true' }}
+      run: dotnet restore ./language-server/src
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build language-server
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet build "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
+      run: dotnet build --no-restore "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
 
     - name: Run language-server tests
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
