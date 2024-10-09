@@ -7,6 +7,9 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
+/// <summary>
+/// Handler to synchronize the text document contents between the client and this server.
+/// </summary>
 internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 {
     private const string LanguageName = "INTERLIS2";
@@ -21,26 +24,31 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
         this.fileContentCache = fileContentCache;
     }
 
+    /// <inheritdoc />
     public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri) => new TextDocumentAttributes(uri, LanguageName);
 
+    /// <inheritdoc />
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
         return Unit.Task;
     }
 
+    /// <inheritdoc />
     public override Task<Unit> Handle(DidChangeTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
         return Unit.Task;
     }
 
+    /// <inheritdoc />
     public override Task<Unit> Handle(DidCloseTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.ClearBuffer(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
+    /// <inheritdoc />
     public override Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
         fileContentCache.UpdateBuffer(request.TextDocument.Uri, request.Text ?? string.Empty);

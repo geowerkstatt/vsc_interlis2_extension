@@ -5,22 +5,38 @@ using System.Text;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
+/// <summary>
+/// INTERLIS AST visitor to generate markdown documentation.
+/// </summary>
 public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 {
     private readonly StringBuilder documentation = new StringBuilder();
 
+    /// <summary>
+    /// Generates markdown documentation for the given model.
+    /// </summary>
+    /// <param name="modelDef">The INTERLIS model.</param>
     public override object? VisitModelDef([NotNull] ModelDef modelDef)
     {
         documentation.AppendLine($"# {modelDef.Name}");
         return base.VisitModelDef(modelDef);
     }
 
+    /// <summary>
+    /// Generates markdown documentation for the given topic.
+    /// </summary>
+    /// <param name="modelDef">The INTERLIS topic.</param>
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
         documentation.AppendLine($"## {topicDef.Name}");
         return base.VisitTopicDef(topicDef);
     }
 
+    /// <summary>
+    /// Generates markdown documentation for the given class.
+    /// Lists all attributes and associations of the class as a table.
+    /// </summary>
+    /// <param name="modelDef">The INTERLIS class.</param>
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
         documentation.AppendLine($"### {classDef.Name}");
@@ -60,6 +76,10 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         }
     }
 
+    /// <summary>
+    /// Generates a markdown table row for the given attribute.
+    /// </summary>
+    /// <param name="attributeDef">The attribute.</param>
     public override object? VisitAttributeDef([NotNull] AttributeDef attributeDef)
     {
         var cardinality = CalculateCardinality(attributeDef.TypeDef.Cardinality);
@@ -108,6 +128,10 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         };
     }
 
+    /// <summary>
+    /// Returns the generated markdown documentation of the visited elements.
+    /// </summary>
+    /// <returns>The generated documentation.</returns>
     public string GetDocumentation()
     {
         return documentation.ToString();

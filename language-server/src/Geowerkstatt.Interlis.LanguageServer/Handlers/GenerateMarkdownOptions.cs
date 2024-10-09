@@ -1,6 +1,7 @@
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
-public class GenerateMarkdownOptions
-{
-    public string? Uri { get; set; }
-}
+/// <summary>
+/// Options for generating markdown documentation.
+/// </summary>
+/// <param name="Uri">The uri to identify the text document.</param>
+public record GenerateMarkdownOptions(string? Uri);

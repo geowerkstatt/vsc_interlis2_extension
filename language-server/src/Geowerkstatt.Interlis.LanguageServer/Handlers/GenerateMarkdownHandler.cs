@@ -7,6 +7,10 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
+/// <summary>
+/// Command handler to generate markdown documentation for an INTERLIS file.
+/// Responds to workspace.executeCommand requests using the executeCommandProvider capability of the language server protocol.
+/// </summary>
 public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<GenerateMarkdownOptions, string?>
 {
     public const string Command = "generateMarkdown";
@@ -22,6 +26,12 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         this.fileContentCache = fileContentCache;
     }
 
+    /// <summary>
+    /// Handles the generateMarkdown requests.
+    /// </summary>
+    /// <param name="options">The requested options.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
+    /// <returns>The generated markdown documentation, or <c>null</c> if the INTERLIS file was not found.</returns>
     public override Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
     {
         var uri = options.Uri;
