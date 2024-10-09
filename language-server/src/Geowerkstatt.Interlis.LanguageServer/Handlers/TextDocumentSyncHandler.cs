@@ -11,45 +11,45 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 {
     private const string LanguageName = "INTERLIS2";
 
-    private readonly FileContentCache _fileContentCache;
-    private readonly TextDocumentSelector _documentSelector = TextDocumentSelector.ForLanguage(LanguageName);
+    private readonly FileContentCache fileContentCache;
+    private readonly TextDocumentSelector documentSelector = TextDocumentSelector.ForLanguage(LanguageName);
 
     public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
 
     public TextDocumentSyncHandler(FileContentCache fileContentCache)
     {
-        _fileContentCache = fileContentCache;
+        this.fileContentCache = fileContentCache;
     }
 
     public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri) => new TextDocumentAttributes(uri, LanguageName);
 
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
     {
-        _fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
+        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
         return Unit.Task;
     }
 
     public override Task<Unit> Handle(DidChangeTextDocumentParams notification, CancellationToken token)
     {
-        _fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
+        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
         return Unit.Task;
     }
 
     public override Task<Unit> Handle(DidCloseTextDocumentParams notification, CancellationToken token)
     {
-        _fileContentCache.ClearBuffer(notification.TextDocument.Uri);
+        fileContentCache.ClearBuffer(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
     public override Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
-        _fileContentCache.UpdateBuffer(request.TextDocument.Uri, request.Text ?? string.Empty);
+        fileContentCache.UpdateBuffer(request.TextDocument.Uri, request.Text ?? string.Empty);
         return Unit.Task;
     }
 
     protected override TextDocumentSyncRegistrationOptions CreateRegistrationOptions(TextSynchronizationCapability capability, ClientCapabilities clientCapabilities) => new TextDocumentSyncRegistrationOptions()
     {
-        DocumentSelector = _documentSelector,
+        DocumentSelector = documentSelector,
         Change = Change,
         Save = new SaveOptions() { IncludeText = true }
     };

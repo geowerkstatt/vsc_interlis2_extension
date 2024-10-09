@@ -11,30 +11,30 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
 {
     public const string Command = "generateMarkdown";
 
-    private readonly ILogger<GenerateMarkdownHandler> _logger;
-    private readonly InterlisReader _interlisReader;
-    private readonly FileContentCache _fileContentCache;
+    private readonly ILogger<GenerateMarkdownHandler> logger;
+    private readonly InterlisReader interlisReader;
+    private readonly FileContentCache fileContentCache;
 
     public GenerateMarkdownHandler(ILogger<GenerateMarkdownHandler> logger, InterlisReader interlisReader, FileContentCache fileContentCache, ISerializer serializer) : base(Command, serializer)
     {
-        _logger = logger;
-        _interlisReader = interlisReader;
-        _fileContentCache = fileContentCache;
+        this.logger = logger;
+        this.interlisReader = interlisReader;
+        this.fileContentCache = fileContentCache;
     }
 
     public override Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
     {
         var uri = options.Uri;
-        var fileContent = uri == null ? null : _fileContentCache.GetBuffer(uri);
+        var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
             return Task.FromResult<string?>(null);
         }
 
-        _logger.LogInformation("Generate markdown for {0}", uri);
+        logger.LogInformation("Generate markdown for {0}", uri);
 
         using var stringReader = new StringReader(fileContent);
-        var interlisFile = _interlisReader.ReadFile(stringReader);
+        var interlisFile = interlisReader.ReadFile(stringReader);
         var markdown = GenerateMarkdown(interlisFile);
 
         return Task.FromResult<string?>(markdown);

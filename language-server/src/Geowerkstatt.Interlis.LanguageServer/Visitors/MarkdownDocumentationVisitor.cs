@@ -38,8 +38,8 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         var associations = classDef.Parent?.Content.Values.OfType<AssociationDef>() ?? [];
         foreach (var association in associations)
         {
-            var left = association.Content.FirstOrDefault().Value;
-            var right = association.Content.LastOrDefault().Value;
+            var left = association.Content.Values.FirstOrDefault();
+            var right = association.Content.Values.LastOrDefault();
             if (left is AttributeDef leftAttribute && right is AttributeDef rightAttribute)
             {
                 VisitRelatedAssociation(classDef, leftAttribute, rightAttribute);
