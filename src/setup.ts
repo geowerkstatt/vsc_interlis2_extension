@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import {
+  Executable,
   ExecuteCommandRequest,
   LanguageClient,
   LanguageClientOptions,
@@ -12,9 +13,39 @@ import path = require("path");
 import os = require("os");
 
 const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
-const debugServerPath =
-  "language-server/src/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net8.0/Geowerkstatt.Interlis.LanguageServer.exe";
 let client: LanguageClient | undefined;
+
+function getRuntimeId(): string {
+  switch (process.platform) {
+    case "win32":
+      return "win-x64";
+    case "darwin":
+      return "osx-x64";
+    case "linux":
+      return "linux-x64";
+    default:
+      throw new Error(`Unsupported platform: ${process.platform}`);
+  }
+}
+
+function getServerOptions(context: vscode.ExtensionContext, debug: boolean): Executable {
+  const executableExtension = process.platform === "win32" ? ".exe" : "";
+  const bundledServerPath = `language-server/bin/${getRuntimeId()}/Geowerkstatt.Interlis.LanguageServer${executableExtension}`;
+  const debugServerPath = `language-server/src/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net8.0/Geowerkstatt.Interlis.LanguageServer${executableExtension}`;
+
+  const absoluteDebugServerPath = context.asAbsolutePath(debugServerPath);
+  if (debug && fs.existsSync(absoluteDebugServerPath)) {
+    return {
+      command: absoluteDebugServerPath,
+      transport: TransportKind.stdio,
+    };
+  } else {
+    return {
+      command: context.asAbsolutePath(bundledServerPath),
+      transport: TransportKind.stdio,
+    };
+  }
+}
 
 export async function activate(context: vscode.ExtensionContext) {
   if (fs.existsSync(tempdir)) {
@@ -23,11 +54,9 @@ export async function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.languages.registerImplementationProvider("INTERLIS2", new ModelImplementationProvider());
   context.subscriptions.push(disposable);
 
-  const serverExecutable = context.asAbsolutePath(debugServerPath);
-
   const serverOptions: ServerOptions = {
-    command: serverExecutable,
-    transport: TransportKind.stdio,
+    run: getServerOptions(context, false),
+    debug: getServerOptions(context, true),
   };
 
   const clientOptions: LanguageClientOptions = {

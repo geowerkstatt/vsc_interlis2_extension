@@ -21,31 +21,57 @@ jobs:
       with:
         node-version: 14.x
 
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: "8.0"
+
     - name: Get current version
       run: |
           VERSION=$(node -p "require('./package.json').version")
+          echo VERSION=$VERSION >> $GITHUB_ENV
           echo VERSION_TAG=v$VERSION >> $GITHUB_ENV
 
     - name: Check if tag exists
       id: check_tag
       run: echo PERFORM_PUBLISH=$(git rev-parse --verify -q "refs/tags/${{ env.VERSION_TAG }}" >> /dev/null && echo false || echo true) >> $GITHUB_ENV
-      
+
+    - name: Authenticate to GitHub NuGet Registry
+      if: ${{ env.PERFORM_PUBLISH == 'true' }}
+      run: dotnet nuget add source --username "GeoWerkstatt-Build" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+
+    - name: Build language-server
+      if: ${{ env.PERFORM_PUBLISH == 'true' }}
+      run: dotnet build "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
+
+    - name: Run language-server tests
+      if: ${{ env.PERFORM_PUBLISH == 'true' }}
+      run: dotnet test --no-build ./language-server/src
+
+    - name: Publish language-server
+      if: ${{ env.PERFORM_PUBLISH == 'true' }}
+      run: |
+          for rid in win-x64 linux-x64 osx-x64
+          do
+            dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r $rid "-p:VersionPrefix=${{ env.VERSION }}" -o ./language-server/bin/$rid
+          done
+
     - name: Install packages
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
       run: npm ci
-      
+
     - name: Publish extension
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
       run: npx vsce publish
-      env: 
+      env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
     - name: Tag current version
       if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: | 
+      run: |
           git config --local user.email "office@geowerkstatt.ch"
           git config --local user.name "GeoWerkstatt-Build"
-          git tag ${{ env.VERSION_TAG }}         
+          git tag ${{ env.VERSION_TAG }}
 
     - name: Push version tag
       if: ${{ env.PERFORM_PUBLISH == 'true' }}

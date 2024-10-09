@@ -50,3 +50,9 @@ out/
 
 ### vsce Output ###
 **/*.vsix
+
+# .Net publish output
+bin/
+
+# NuGet config file
+[Nn]u[Gg]et.[Cc]onfig
