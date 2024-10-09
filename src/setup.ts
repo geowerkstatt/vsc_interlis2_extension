@@ -69,7 +69,7 @@ export async function activate(context: vscode.ExtensionContext) {
   client = new LanguageClient("INTERLIS2LanguageServer", "INTERLIS2 Language Server", serverOptions, clientOptions);
   await client.start();
 
-  const command = vscode.commands.registerTextEditorCommand("interlis.generateMarkdown", async (textEditor) => {
+  const command = vscode.commands.registerTextEditorCommand("interlis.generateMarkdown", (textEditor) => {
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -77,14 +77,26 @@ export async function activate(context: vscode.ExtensionContext) {
       async (progress) => {
         progress.report({ message: "Generating markdown..." });
 
-        const markdown: string | null = await client?.sendRequest(ExecuteCommandRequest.type, {
-          command: "generateMarkdown",
-          arguments: [{ uri: textEditor.document.uri.toString() }],
-        });
+        try {
+          const markdown: string | null = await client?.sendRequest(ExecuteCommandRequest.type, {
+            command: "generateMarkdown",
+            arguments: [{ uri: textEditor.document.uri.toString() }],
+          });
 
-        if (markdown) {
-          const document = await vscode.workspace.openTextDocument({ content: markdown, language: "markdown" });
-          await vscode.window.showTextDocument(document);
+          if (markdown) {
+            const document = await vscode.workspace.openTextDocument({ content: markdown, language: "markdown" });
+            await vscode.window.showTextDocument(document);
+          } else {
+            // markdown is null if the file is not yet synchronized to the language server
+            await vscode.window.showErrorMessage(
+              "Failed to generate documentation, please re-open the file and try again."
+            );
+          }
+        } catch (error) {
+          const openOutput = "Open Output";
+          if ((await vscode.window.showErrorMessage("Failed to generate documentation.", openOutput)) === openOutput) {
+            client?.outputChannel.show();
+          }
         }
       }
     );
