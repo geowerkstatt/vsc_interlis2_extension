@@ -1,0 +1,5 @@
+.github/
+.vscode/
+src/
+language-server/src/
+[Nn]u[Gg]et.[Cc]onfig
