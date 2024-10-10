@@ -22,7 +22,7 @@ jobs:
           dotnet-version: "8.0"
 
       - name: Add GitHub NuGet Registry
-        run: dotnet nuget add source --username "GeoWerkstatt-Build" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+        run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
 
       - name: Restore packages
         run: dotnet restore ./language-server/src
