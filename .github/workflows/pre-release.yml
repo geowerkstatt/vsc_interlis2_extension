@@ -1,0 +1,95 @@
+name: Pre-release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  pre-release:
+    runs-on: ubuntu-latest
+    name: Build vsix and upload to GitHub pre-release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0"
+
+      - name: Get current version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo VERSION=$VERSION >> $GITHUB_ENV
+          echo VERSION_TAG=v$VERSION >> $GITHUB_ENV
+
+      - name: Check for existing GitHub release
+        run: |
+          set +e
+          IS_PRERELEASE=$(gh release view ${{ env.VERSION_TAG }} --json isPrerelease --jq '.isPrerelease')
+          HAS_RELEASE=$([ $? -eq 0 ] && echo "true" || echo "false")
+          echo HAS_RELEASE=$HAS_RELEASE >> $GITHUB_ENV
+          set -e
+          if [[ $HAS_RELEASE == true && $IS_PRERELEASE != true ]]; then
+            echo "A final release already exists for this version"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add GitHub NuGet Registry
+        run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+
+      - name: Restore packages
+        run: dotnet restore ./language-server/src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build language-server
+        run: dotnet build --no-restore "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
+
+      - name: Run language-server tests
+        run: dotnet test --no-build ./language-server/src
+
+      - name: Publish language-server
+        run: |
+          for rid in win-x64 linux-x64 osx-x64
+          do
+            dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r $rid "-p:VersionPrefix=${{ env.VERSION }}" -o ./language-server/bin/$rid
+          done
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Pack extension
+        run: npx vsce pack
+
+      - name: Create GitHub pre-release
+        if: ${{ env.HAS_RELEASE != 'true' }}
+        run: gh release create ${{ env.VERSION_TAG }} --title "${{ env.VERSION_TAG }}" --notes "$(./get-changelog.sh)" --prerelease --target ${{ github.ref }} *.vsix
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Update GitHub pre-release
+        if: ${{ env.HAS_RELEASE == 'true' }}
+        run: |
+          # Update git tag
+          git config --local user.email "office@geowerkstatt.ch"
+          git config --local user.name "GeoWerkstatt-Build"
+          git tag -m "${{ env.VERSION_TAG }}" -f -a ${{ env.VERSION_TAG }} ${{ github.ref }}
+          git push -f origin refs/tags/${{ env.VERSION_TAG }}
+          # Update release notes and assets
+          gh release edit ${{ env.VERSION_TAG }} --notes "$(./get-changelog.sh)" --prerelease
+          gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
