@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0"
+
+      - name: Add GitHub NuGet Registry
+        run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+
+      - name: Restore packages
+        run: dotnet restore ./language-server/src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build language-server
+        run: dotnet build --no-restore /warnaserror ./language-server/src
+
+      - name: Run language-server tests
+        run: dotnet test --no-build ./language-server/src
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Build extension
+        run: npm run compile
+
+      - name: Lint extension
+        run: npm run lint
