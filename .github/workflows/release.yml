@@ -68,7 +68,10 @@ jobs:
       - name: Pack extension
         run: npx vsce pack
 
-      # todo: publish to marketplace
+      - name: Publish extension to marketplace
+        run: npx vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Update GitHub release assets
         run: gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
@@ -81,16 +84,13 @@ jobs:
       - name: Patch package.json version
         run: npm version patch --git-tag-version false
 
-      - name: Print changes
-        run: git diff
-
-      # - name: Commit, push and create pull request
-      #   run: |
-      #     git config --local user.email "office@geowerkstatt.ch"
-      #     git config --local user.name "GeoWerkstatt-Build"
-      #     git checkout -b $GIT_BRANCH_NAME
-      #     git commit -am "$GIT_COMMIT_MESSAGE"
-      #     git push --set-upstream origin $GIT_BRANCH_NAME
-      #     gh pr create --title "$GIT_COMMIT_MESSAGE" --body ""
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit, push and create pull request
+        run: |
+          git config --local user.email "office@geowerkstatt.ch"
+          git config --local user.name "GeoWerkstatt-Build"
+          git checkout -b $GIT_BRANCH_NAME
+          git commit -am "$GIT_COMMIT_MESSAGE"
+          git push --set-upstream origin $GIT_BRANCH_NAME
+          gh pr create --title "$GIT_COMMIT_MESSAGE" --body ""
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
