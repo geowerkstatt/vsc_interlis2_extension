@@ -56,7 +56,7 @@ jobs:
         run: npm ci
 
       - name: Pack extension
-        run: npx vsce pack
+        run: npx vsce pack --pre-release
 
       - name: Create GitHub pre-release
         run: gh release create ${{ env.VERSION_TAG }} --title "${{ env.VERSION_TAG }}" --notes "$(./get-changelog.sh)" --prerelease --target ${{ github.ref }} *.vsix
