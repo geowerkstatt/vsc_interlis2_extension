@@ -1,88 +1,97 @@
 name: Release
 
 on:
-  pull_request:
-    branches:
-      - master
-    types: [closed]
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      TAG_NAME:
+        description: "Tag name"
+        required: true
+
+env:
+  VERSION_TAG: ${{ github.event.inputs.TAG_NAME || github.event.release.tag_name }}
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    name: Publish vsix
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: 14.x
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
 
-    - name: Install .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: "8.0"
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0"
 
-    - name: Get current version
-      run: |
-          VERSION=$(node -p "require('./package.json').version")
+      - name: Set environment variables
+        run: |
+          VERSION_TMP=${VERSION_TAG#v} # Remove the 'v' prefix
+          VERSION=${VERSION_TMP%-*} # Remove the '-' build number suffix
           echo VERSION=$VERSION >> $GITHUB_ENV
-          echo VERSION_TAG=v$VERSION >> $GITHUB_ENV
+          echo GIT_BRANCH_NAME=mark-version-$VERSION-as-released >> $GITHUB_ENV
+          echo GIT_COMMIT_MESSAGE=Mark version $VERSION as released >> $GITHUB_ENV
 
-    - name: Check if tag exists
-      id: check_tag
-      run: echo PERFORM_PUBLISH=$(git rev-parse --verify -q "refs/tags/${{ env.VERSION_TAG }}" >> /dev/null && echo false || echo true) >> $GITHUB_ENV
+      - name: Add GitHub NuGet Registry
+        run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
 
-    - name: Add GitHub NuGet Registry
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet nuget add source --username "GeoWerkstatt-Build" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
+      - name: Restore packages
+        run: dotnet restore ./language-server/src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Restore packages
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet restore ./language-server/src
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build language-server
+        run: dotnet build --no-restore "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
 
-    - name: Build language-server
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet build --no-restore "-p:VersionPrefix=${{ env.VERSION }}" ./language-server/src
+      - name: Run language-server tests
+        run: dotnet test --no-build ./language-server/src
 
-    - name: Run language-server tests
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: dotnet test --no-build ./language-server/src
-
-    - name: Publish language-server
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: |
+      - name: Publish language-server
+        run: |
           for rid in win-x64 linux-x64 osx-x64
           do
             dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r $rid "-p:VersionPrefix=${{ env.VERSION }}" -o ./language-server/bin/$rid
           done
 
-    - name: Install packages
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: npm ci
+      - name: Install packages
+        run: npm ci
 
-    - name: Publish extension
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: npx vsce publish
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Patch changelog
+        run: sed -i "s/vNext/$VERSION - $(date '+%Y-%m-%d')/" CHANGELOG.md
 
-    - name: Tag current version
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      run: |
+      - name: Pack extension
+        run: npx vsce pack --no-git-tag-version ${{ env.VERSION }}
+
+      - name: Publish extension to marketplace
+        run: npx vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Update GitHub release assets
+        run: gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add vNext to changelog
+        run: sed -i "/^\#\#\# $VERSION/i \#\#\# vNext\n\n" CHANGELOG.md
+
+      - name: Patch package.json version
+        run: npm version patch --git-tag-version false
+
+      - name: Commit, push and create pull request
+        run: |
           git config --local user.email "office@geowerkstatt.ch"
           git config --local user.name "GeoWerkstatt-Build"
-          git tag ${{ env.VERSION_TAG }}
-
-    - name: Push version tag
-      if: ${{ env.PERFORM_PUBLISH == 'true' }}
-      uses: ad-m/github-push-action@057a6ba835d986bfe495dd476a6c4db1d5f9503c
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
-        tags: true
+          git checkout -b $GIT_BRANCH_NAME
+          git commit -am "$GIT_COMMIT_MESSAGE"
+          git push --set-upstream origin $GIT_BRANCH_NAME
+          gh pr create --title "$GIT_COMMIT_MESSAGE" --body ""
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
