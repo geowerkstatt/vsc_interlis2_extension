@@ -33,7 +33,8 @@ jobs:
 
       - name: Set environment variables
         run: |
-          VERSION=${VERSION_TAG#v}
+          VERSION_TMP=${VERSION_TAG#v} # Remove the 'v' prefix
+          VERSION=${VERSION_TMP%-*} # Remove the '-' build number suffix
           echo VERSION=$VERSION >> $GITHUB_ENV
           echo GIT_BRANCH_NAME=mark-version-$VERSION-as-released >> $GITHUB_ENV
           echo GIT_COMMIT_MESSAGE=Mark version $VERSION as released >> $GITHUB_ENV
@@ -66,7 +67,7 @@ jobs:
         run: sed -i "s/vNext/$VERSION - $(date '+%Y-%m-%d')/" CHANGELOG.md
 
       - name: Pack extension
-        run: npx vsce pack
+        run: npx vsce pack --no-git-tag-version ${{ env.VERSION }}
 
       - name: Publish extension to marketplace
         run: npx vsce publish

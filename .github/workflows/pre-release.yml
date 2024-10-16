@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-tags: true
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -31,21 +29,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo VERSION=$VERSION >> $GITHUB_ENV
-          echo VERSION_TAG=v$VERSION >> $GITHUB_ENV
-
-      - name: Check for existing GitHub release
-        run: |
-          set +e
-          IS_PRERELEASE=$(gh release view ${{ env.VERSION_TAG }} --json isPrerelease --jq '.isPrerelease')
-          HAS_RELEASE=$([ $? -eq 0 ] && echo "true" || echo "false")
-          echo HAS_RELEASE=$HAS_RELEASE >> $GITHUB_ENV
-          set -e
-          if [[ $HAS_RELEASE == true && $IS_PRERELEASE != true ]]; then
-            echo "A final release already exists for this version"
-            exit 1
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo VERSION_TAG=v$VERSION-${{ github.run_number }} >> $GITHUB_ENV
 
       - name: Add GitHub NuGet Registry
         run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
@@ -75,21 +59,6 @@ jobs:
         run: npx vsce pack
 
       - name: Create GitHub pre-release
-        if: ${{ env.HAS_RELEASE != 'true' }}
         run: gh release create ${{ env.VERSION_TAG }} --title "${{ env.VERSION_TAG }}" --notes "$(./get-changelog.sh)" --prerelease --target ${{ github.ref }} *.vsix
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Update GitHub pre-release
-        if: ${{ env.HAS_RELEASE == 'true' }}
-        run: |
-          # Update git tag
-          git config --local user.email "office@geowerkstatt.ch"
-          git config --local user.name "GeoWerkstatt-Build"
-          git tag -m "${{ env.VERSION_TAG }}" -f -a ${{ env.VERSION_TAG }} ${{ github.ref }}
-          git push -f origin refs/tags/${{ env.VERSION_TAG }}
-          # Update release notes and assets
-          gh release edit ${{ env.VERSION_TAG }} --notes "$(./get-changelog.sh)" --prerelease
-          gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
