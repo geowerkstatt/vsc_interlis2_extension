@@ -120,12 +120,27 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
                 BlackboxType.BlackboxTypeKind.Xml => "Blackbox (XML)",
                 _ => "Blackbox",
             },
-            EnumerationType enumerationType => $"({string.Join(", ", enumerationType.Values.Select(v => v.Name))})",
+            EnumerationType enumerationType => FormatEnumerationValues(enumerationType.Values),
             ReferenceType referenceType => referenceType.Target.Value?.Path.Last(),
             TypeRef typeRef => typeRef.Extends?.Path.Last(),
             RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value?.Path.Last()).Where(target => target is not null)),
             _ => type?.ToString(),
         };
+    }
+
+    private static string FormatEnumerationValues(EnumerationValuesList enumerationValues, int depth = 0)
+    {
+        const string bold = "**";
+        const string italic = "*";
+
+        var formatting = depth switch
+        {
+            0 => bold,
+            1 => "",
+            _ => italic,
+        };
+        var formattedValues = enumerationValues.Select(v => $"{formatting}{v.Name}{formatting}{(v.SubValues.Count == 0 ? "" : " " + FormatEnumerationValues(v.SubValues, depth + 1))}");
+        return $"({string.Join(", ", formattedValues)})";
     }
 
     /// <summary>
