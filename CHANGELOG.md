@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 0.2.0 - 2024-11-11
+
 * Add _Generate markdown documentation_ command using language server.
 
 ### 0.1.6 - 14.10.2022
