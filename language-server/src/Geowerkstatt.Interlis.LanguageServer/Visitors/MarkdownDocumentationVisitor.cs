@@ -11,6 +11,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 {
     private readonly StringBuilder documentation = new StringBuilder();
+    private bool useHtml;
 
     /// <summary>
     /// Generates markdown documentation for the given model.
@@ -39,14 +40,30 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     /// <param name="modelDef">The INTERLIS class.</param>
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
-        documentation.AppendLine($"### {classDef.Name}");
-        documentation.AppendLine("| Attributname | Kardinalität | Typ |");
-        documentation.AppendLine("| --- | --- | --- |");
-        var result = base.VisitClassDef(classDef);
-        VisitRelatedAssociations(classDef);
-        documentation.AppendLine();
+        void VisitTableBody()
+        {
+            base.VisitClassDef(classDef);
+            VisitRelatedAssociations(classDef);
+        }
 
-        return result;
+        if (useHtml)
+        {
+            documentation.Append("<table>");
+            documentation.Append("<thead><tr><th>Attributname</th><th>Kardinalität</th><th>Typ</th></tr></thead>");
+            documentation.Append("<tbody>");
+            VisitTableBody();
+            documentation.Append("</tbody></table>");
+        }
+        else
+        {
+            documentation.AppendLine($"### {classDef.Name}");
+            documentation.AppendLine("| Attributname | Kardinalität | Typ |");
+            documentation.AppendLine("| --- | --- | --- |");
+            VisitTableBody();
+            documentation.AppendLine();
+        }
+
+        return null;
     }
 
     private void VisitRelatedAssociations(ClassDef classDef)
@@ -83,9 +100,20 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     public override object? VisitAttributeDef([NotNull] AttributeDef attributeDef)
     {
         var cardinality = CalculateCardinality(attributeDef.TypeDef.Cardinality);
-        var type = GetTypeName(attributeDef.TypeDef);
 
-        documentation.AppendLine($"| {attributeDef.Name} | {cardinality} | {type} |");
+        if (useHtml)
+        {
+            documentation.Append($"<tr><td>{attributeDef.Name}</td><td>{cardinality}</td><td>");
+            VisitTypeName(attributeDef.TypeDef);
+            documentation.Append("</td></tr>");
+        }
+        else
+        {
+            documentation.Append($"| {attributeDef.Name} | {cardinality} | ");
+            VisitTypeName(attributeDef.TypeDef);
+            documentation.AppendLine(" |");
+        }
+
         return base.VisitAttributeDef(attributeDef);
     }
 
@@ -107,9 +135,15 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         return "";
     }
 
-    private static string? GetTypeName(TypeDef? type)
+    private void VisitTypeName(TypeDef? type)
     {
-        return type switch
+        if (type is ReferenceType referenceType)
+        {
+            VisitReferenceType(referenceType);
+            return;
+        }
+
+        var typeName = type switch
         {
             TextType textType => textType.Length == null ? "Text" : $"Text [{textType.Length}]",
             NumericType numericType => numericType.Min != null && numericType.Max != null ? $"{numericType.Min}..{numericType.Max}" : "Numerisch",
@@ -121,26 +155,45 @@ public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
                 _ => "Blackbox",
             },
             EnumerationType enumerationType => FormatEnumerationValues(enumerationType.Values),
-            ReferenceType referenceType => referenceType.Target.Value?.Path.Last(),
             TypeRef typeRef => typeRef.Extends?.Path.Last(),
             RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value?.Path.Last()).Where(target => target is not null)),
             _ => type?.ToString(),
         };
+        documentation.Append(typeName);
     }
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues, int depth = 0)
     {
-        const string bold = "**";
-        const string italic = "*";
-
-        var formatting = depth switch
+        var (formatStart, formatEnd) = depth switch
         {
-            0 => bold,
-            1 => "",
-            _ => italic,
+            0 => ("<b>", "</b>"),
+            1 => ("", ""),
+            _ => ("<i>", "</i>"),
         };
-        var formattedValues = enumerationValues.Select(v => $"{formatting}{v.Name}{formatting}{(v.SubValues.Count == 0 ? "" : " " + FormatEnumerationValues(v.SubValues, depth + 1))}");
+        var formattedValues = enumerationValues.Select(v => $"{formatStart}{v.Name}{formatEnd}{(v.SubValues.Count == 0 ? "" : " " + FormatEnumerationValues(v.SubValues, depth + 1))}");
         return $"({string.Join(", ", formattedValues)})";
+    }
+
+    /// <summary>
+    /// Appends the name of the referenced type to the documentation.
+    /// If the referenced type is a structure, its attributes and associations are also documented using an HTML table.
+    /// </summary>
+    /// <param name="referenceType">The referenced type.</param>
+    private void VisitReferenceType(ReferenceType referenceType)
+    {
+        var reference = referenceType.Target.Value;
+        var typeName = reference?.Path.Last();
+        documentation.Append(typeName);
+
+        if (reference?.Target is ClassDef classDef && classDef.IsStructure)
+        {
+            documentation.Append("<br/>");
+
+            var didUseHtml = useHtml;
+            useHtml = true;
+            VisitClassDef(classDef);
+            useHtml = didUseHtml;
+        }
     }
 
     /// <summary>
