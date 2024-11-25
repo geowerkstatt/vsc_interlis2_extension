@@ -15,7 +15,7 @@ public class MarkdownDocumentationVisitorTest
                     attr2: MANDATORY BOOLEAN;
                 END TestClass;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     private const string TestModelAssociation = """
@@ -36,7 +36,7 @@ public class MarkdownDocumentationVisitorTest
                     AssocB -<> {1} ClassB;
                 END Assoc1;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     private const string TestModelEnumeration = """
@@ -52,7 +52,7 @@ public class MarkdownDocumentationVisitorTest
                     );
                 END TestClass;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     private const string TestModelNestedStruct = """
@@ -70,7 +70,7 @@ public class MarkdownDocumentationVisitorTest
                     attr2: MANDATORY (value1, value2);
                 END TestStruct;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     [TestMethod]
