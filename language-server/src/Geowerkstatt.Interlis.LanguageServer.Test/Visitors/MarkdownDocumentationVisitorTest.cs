@@ -15,7 +15,7 @@ public class MarkdownDocumentationVisitorTest
                     attr2: MANDATORY BOOLEAN;
                 END TestClass;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     private const string TestModelAssociation = """
@@ -36,7 +36,7 @@ public class MarkdownDocumentationVisitorTest
                     AssocB -<> {1} ClassB;
                 END Assoc1;
             END TestTopic;
-        END TestModel;
+        END TestModel.
         """;
 
     private const string TestModelEnumeration = """
@@ -52,7 +52,48 @@ public class MarkdownDocumentationVisitorTest
                     );
                 END TestClass;
             END TestTopic;
-        END TestModel;
+        END TestModel.
+        """;
+
+    private const string TestModelNestedStruct = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS TestClass =
+                    attr1: MANDATORY TestStruct;
+                    attr2: 10..20;
+                END TestClass;
+
+                STRUCTURE TestStruct =
+                    attr1: TEXT*10;
+                    attr2: MANDATORY (value1, value2);
+                END TestStruct;
+            END TestTopic;
+        END TestModel.
+        """;
+
+    private const string TestModelDoubleNestedStruct = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                STRUCTURE TestStructLevel1 =
+                    attr1: TestStructLevel2;
+                    attr2: MANDATORY (value1, value2);
+                END TestStructLevel1;
+
+                STRUCTURE TestStructLevel2 =
+                    attr1: MANDATORY TEXT*50;
+                    attr2: 0..30;
+                END TestStructLevel2;
+
+                CLASS TestClass =
+                    attr1: MANDATORY TestStructLevel1;
+                    attr2: 10..20;
+                END TestClass;
+            END TestTopic;
+        END TestModel.
         """;
 
     [TestMethod]
@@ -127,7 +168,108 @@ public class MarkdownDocumentationVisitorTest
             ### TestClass
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
-            | attr1 | 0..1 | (**topValue1**, **topValue2** (subValue1, subValue2, subValue3 (*subSubValue1*, *subSubValue2*)), **topValue3**) |
+            | attr1 | 0..1 | (<b>topValue1</b>, <b>topValue2</b> (subValue1, subValue2, subValue3 (<i>subSubValue1</i>, <i>subSubValue2</i>)), <b>topValue3</b>) |
+
+
+            """;
+
+        Assert.AreEqual(expected.ReplaceLineEndings(), documentation.ReplaceLineEndings());
+    }
+
+    [TestMethod]
+    public void TestInterlisFileNestedStruct()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelNestedStruct));
+
+        var visitor = new MarkdownDocumentationVisitor();
+        visitor.VisitInterlisFile(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        const string structInlineTable =
+            "<table>" +
+            "<thead>" +
+            "<tr><th>Attributname</th><th>Kardinalität</th><th>Typ</th></tr>" +
+            "</thead>" +
+            "<tbody>" +
+            "<tr><td>attr1</td><td>0..1</td><td>Text [10]</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "</tbody>" +
+            "</table>";
+
+        var expected = $"""
+            # TestModel
+            ## TestTopic
+            ### TestClass
+            | Attributname | Kardinalität | Typ |
+            | --- | --- | --- |
+            | attr1 | 1 | TestStruct<br/>{structInlineTable} |
+            | attr2 | 0..1 | 10..20 |
+
+            ### TestStruct
+            | Attributname | Kardinalität | Typ |
+            | --- | --- | --- |
+            | attr1 | 0..1 | Text [10] |
+            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+
+
+            """;
+
+        Assert.AreEqual(expected.ReplaceLineEndings(), documentation.ReplaceLineEndings());
+    }
+
+    [TestMethod]
+    public void TestInterlisFileDoubleNestedStruct()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelDoubleNestedStruct));
+
+        var visitor = new MarkdownDocumentationVisitor();
+        visitor.VisitInterlisFile(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        const string structLevel2InlineTable =
+            "<table>" +
+            "<thead>" +
+            "<tr><th>Attributname</th><th>Kardinalität</th><th>Typ</th></tr>" +
+            "</thead>" +
+            "<tbody>" +
+            "<tr><td>attr1</td><td>1</td><td>Text [50]</td></tr>" +
+            "<tr><td>attr2</td><td>0..1</td><td>0..30</td></tr>" +
+            "</tbody>" +
+            "</table>";
+
+        const string structLevel1InlineTable =
+            "<table>" +
+            "<thead>" +
+            "<tr><th>Attributname</th><th>Kardinalität</th><th>Typ</th></tr>" +
+            "</thead>" +
+            "<tbody>" +
+            "<tr><td>attr1</td><td>0..1</td><td>TestStructLevel2<br/>" + structLevel2InlineTable + "</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "</tbody>" +
+            "</table>";
+
+        var expected = $"""
+            # TestModel
+            ## TestTopic
+            ### TestStructLevel1
+            | Attributname | Kardinalität | Typ |
+            | --- | --- | --- |
+            | attr1 | 0..1 | TestStructLevel2<br/>{structLevel2InlineTable} |
+            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+
+            ### TestStructLevel2
+            | Attributname | Kardinalität | Typ |
+            | --- | --- | --- |
+            | attr1 | 1 | Text [50] |
+            | attr2 | 0..1 | 0..30 |
+
+            ### TestClass
+            | Attributname | Kardinalität | Typ |
+            | --- | --- | --- |
+            | attr1 | 1 | TestStructLevel1<br/>{structLevel1InlineTable} |
+            | attr2 | 0..1 | 10..20 |
 
 
             """;
