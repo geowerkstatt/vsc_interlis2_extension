@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 0.2.1 - 2024-11-26
+
 * Display struct attributes as nested tables in markdown documentation.
 
 ### 0.2.0 - 2024-11-11
