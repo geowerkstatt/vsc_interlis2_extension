@@ -50,3 +50,13 @@ export function handleInterlisInActiveTextEditor(context: vscode.ExtensionContex
   }
   showDiagramPanel(context);
 }
+
+export function initializeDiagramPanel(context: vscode.ExtensionContext) {
+  handleInterlisInActiveTextEditor(context);
+  const listener = vscode.window.onDidChangeActiveTextEditor(() => {
+    handleInterlisInActiveTextEditor(context);
+  });
+  context.subscriptions.push(listener);
+  resetPanelState();
+}
+
