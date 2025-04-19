@@ -87,7 +87,7 @@
     "compile": "tsc -p ./ && npm run copy-assets",
     "copy-assets": "copyfiles -u 1 \"src/assets/.html\" \"src/assets/**/.js\" out",
     "lint": "eslint . --ext .ts,.tsx",
-    "watch": "tsc -watch -p ./ && npm run copy-assets",
+    "watch": "npm run copy-assets && tsc -watch -p ./",
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
   },
   "devDependencies": {
