@@ -72,6 +72,13 @@
           "command": "interlis.generateMarkdown",
           "group": "navigation"
         }
+      ],
+      "editor/title": [
+        {
+          "when": "editorLangId == INTERLIS2",
+          "command": "interlis.showDiagramView",
+          "group": "navigation@1"
+        }
       ]
     }
   },
