@@ -11,6 +11,9 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
 
   const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js";
 
+  const scriptPathOnDisk = vscode.Uri.joinPath(extensionURI, "out", "webview", "/assets/webview.js");
+  const webviewScriptUri = webview.asWebviewUri(scriptPathOnDisk);
+
   const cspSource = webview.cspSource;
   const contentSecurityPolicy = `
     default-src 'none';
@@ -32,7 +35,9 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
   }
 
   htmlContent = htmlContent.replace(/${csp}/g, contentSecurityPolicy);
+  htmlContent = htmlContent.replace(/${nonce}/g, nonce);
   htmlContent = htmlContent.replace(/${mermaidUri}/g, mermaidLibUriStr);
+  htmlContent = htmlContent.replace(/${webviewScriptUri}/g, webviewScriptUri.toString());
 
   return htmlContent;
 }
