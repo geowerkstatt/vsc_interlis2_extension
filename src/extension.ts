@@ -49,9 +49,47 @@ function getServerOptions(context: vscode.ExtensionContext, debug: boolean): Exe
   }
 }
 
+function createAndShowDiagramPanel(context: vscode.ExtensionContext) {
+  const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One;
+
+  if (diagramPanel) {
+    diagramPanel.reveal(column);
+    return;
+  }
+
+  userHasClosedPanelThisSession = false;
+
+  diagramPanel = vscode.window.createWebviewPanel("interlisDiagramView", "INTERLIS Diagram", column, {
+    enableScripts: true,
+    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "out")],
+  });
+
+  diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
+
+  diagramPanel.onDidDispose(
+    () => {
+      diagramPanel = undefined;
+      userHasClosedPanelThisSession = true; // Set flag when closed
+    },
+    null,
+    context.subscriptions // Manage disposal
+  );
+}
+
+function checkAndHandleInitialEditor(context: vscode.ExtensionContext) {
+  const activeEditor = vscode.window.activeTextEditor;
+  if (activeEditor && activeEditor.document.languageId === "INTERLIS2") {
+    if (!diagramPanel && !userHasClosedPanelThisSession) {
+      createAndShowDiagramPanel(context);
+    }
+  }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
+  userHasClosedPanelThisSession = false;
+
   if (fs.existsSync(tempdir)) {
-    fs.rmdirSync(tempdir, { recursive: true });
+    fs.rmSync(tempdir, { recursive: true, force: true });
   }
   const disposable = vscode.languages.registerImplementationProvider("INTERLIS2", new ModelImplementationProvider());
   context.subscriptions.push(disposable);
@@ -71,7 +109,7 @@ export async function activate(context: vscode.ExtensionContext) {
   client = new LanguageClient("INTERLIS2LanguageServer", "INTERLIS2 Language Server", serverOptions, clientOptions);
   await client.start();
 
-  const command = vscode.commands.registerTextEditorCommand("interlis.generateMarkdown", (textEditor) => {
+  const markdownCommand = vscode.commands.registerTextEditorCommand("interlis.generateMarkdown", (textEditor) => {
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -103,7 +141,23 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     );
   });
-  context.subscriptions.push(command);
+
+  const showDiagramCommand = vscode.commands.registerCommand("interlis.showDiagramView", () => {
+    createAndShowDiagramPanel(context);
+  });
+
+  const iliFileFocusChangeListener = vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor && editor.document.languageId === "INTERLIS2") {
+      if (!diagramPanel && !userHasClosedPanelThisSession) {
+        createAndShowDiagramPanel(context);
+      }
+    }
+  });
+
+  context.subscriptions.push(markdownCommand);
+  context.subscriptions.push(showDiagramCommand);
+  context.subscriptions.push(iliFileFocusChangeListener);
+  checkAndHandleInitialEditor(context);
 }
 
 export async function deactivate() {
