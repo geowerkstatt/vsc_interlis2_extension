@@ -23,7 +23,8 @@ var server = await LanguageServer.From(options =>
             services.AddTransient<InterlisReader>();
         })
         .WithHandler<TextDocumentSyncHandler>()
-        .WithHandler<GenerateMarkdownHandler>();
+        .WithHandler<GenerateMarkdownHandler>()
+        .WithHandler<GenerateDiagramHandler>();
 }).ConfigureAwait(false);
 
 server.LogInfo("Starting INTERLIS language server...");
