@@ -15,3 +15,16 @@ export function ensureDirExists(dirPath: string) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
 }
+
+export function getRuntimeId(): string {
+  switch (process.platform) {
+    case "win32":
+      return "win-x64";
+    case "darwin":
+      return "osx-x64";
+    case "linux":
+      return "linux-x64";
+    default:
+      throw new Error(`Unsupported platform: ${process.platform}`);
+  }
+}
