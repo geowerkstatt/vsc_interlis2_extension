@@ -84,7 +84,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && npm run copy-assets",
+    "copy-assets": "copyfiles -u 1 \"src/webview/.html\" \"src/webview/**/.js\" out",
     "lint": "eslint . --ext .ts,.tsx",
     "watch": "tsc -watch -p ./",
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
@@ -96,6 +97,7 @@
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
     "@vscode/vsce": "^2.21.1",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
