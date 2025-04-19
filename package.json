@@ -1,96 +1,96 @@
 {
-    "name": "InterlisLanguageSupport",
-    "displayName": "INTERLIS 2",
-    "description": "Language support for INTERLIS 2.4",
-    "icon": "images/iliIcon.PNG",
-    "publisher": "geowerkstatt",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/GeoWerkstatt/vsc_interlis2_extension.git"
-    },
-    "version": "0.2.2",
-    "engines": {
-        "vscode": "^1.63.0"
-    },
-    "categories": [
-        "Programming Languages"
+  "name": "InterlisLanguageSupport",
+  "displayName": "INTERLIS 2",
+  "description": "Language support for INTERLIS 2.4",
+  "icon": "images/iliIcon.PNG",
+  "publisher": "geowerkstatt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeoWerkstatt/vsc_interlis2_extension.git"
+  },
+  "version": "0.2.2",
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:INTERLIS2"
+  ],
+  "main": "./out/setup.js",
+  "browser": "./out/browser.js",
+  "keywords": [
+    "INTERLIS",
+    "ili"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "INTERLIS2",
+        "aliases": [
+          "INTERLIS2",
+          "ili"
+        ],
+        "extensions": [
+          ".ili"
+        ],
+        "configuration": "./language-configuration.json"
+      }
     ],
-    "activationEvents": [
-        "onLanguage:INTERLIS2"
+    "grammars": [
+      {
+        "language": "INTERLIS2",
+        "scopeName": "source.ili",
+        "path": "./syntaxes/ili.tmLanguage.json"
+      }
     ],
-    "main": "./out/setup.js",
-    "browser": "./out/browser.js",
-    "keywords": [
-        "INTERLIS",
-        "ili"
+    "snippets": [
+      {
+        "language": "INTERLIS2",
+        "path": "./snippets/interlis2.json"
+      }
     ],
-    "contributes": {
-        "languages": [
-            {
-                "id": "INTERLIS2",
-                "aliases": [
-                    "INTERLIS2",
-                    "ili"
-                ],
-                "extensions": [
-                    ".ili"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "INTERLIS2",
-                "scopeName": "source.ili",
-                "path": "./syntaxes/ili.tmLanguage.json"
-            }
-        ],
-        "snippets": [
-            {
-                "language": "INTERLIS2",
-                "path": "./snippets/interlis2.json"
-            }
-        ],
-        "commands": [
-            {
-                "command": "interlis.generateMarkdown",
-                "title": "Generate markdown documentation",
-                "category": "INTERLIS 2"
-            }
-        ],
-        "menus": {
-            "editor/context": [
-                {
-                    "when": "editorLangId == INTERLIS2",
-                    "command": "interlis.generateMarkdown",
-                    "group": "navigation"
-                }
-            ]
+    "commands": [
+      {
+        "command": "interlis.generateMarkdown",
+        "title": "Generate markdown documentation",
+        "category": "INTERLIS 2"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == INTERLIS2",
+          "command": "interlis.generateMarkdown",
+          "group": "navigation"
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "lint": "eslint . --ext .ts,.tsx",
-        "watch": "tsc -watch -p ./",
-        "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
-    },
-    "devDependencies": {
-        "@types/node": "^16.11.7",
-        "@types/node-fetch": "^2.6.2",
-        "@types/vscode": "^1.34.0",
-        "@typescript-eslint/eslint-plugin": "^5.30.0",
-        "@typescript-eslint/parser": "^5.30.0",
-        "@vscode/vsce": "^2.21.1",
-        "eslint": "^8.13.0",
-        "eslint-config-prettier": "^8.5.0",
-        "eslint-plugin-prettier": "^4.2.1",
-        "prettier": "^2.7.1",
-        "typescript": "^4.8.4"
-    },
-    "dependencies": {
-        "node-fetch": "^2.6.7",
-        "vscode-languageclient": "^9.0.1"
+      ]
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint . --ext .ts,.tsx",
+    "watch": "tsc -watch -p ./",
+    "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "@types/node-fetch": "^2.6.2",
+    "@types/vscode": "^1.34.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.0",
+    "@vscode/vsce": "^2.21.1",
+    "eslint": "^8.13.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "vscode-languageclient": "^9.0.1"
+  }
 }
