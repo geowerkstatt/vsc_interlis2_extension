@@ -14,8 +14,7 @@ import fetch from "node-fetch";
 import * as fs from "fs";
 import path = require("path");
 import os = require("os");
-
-const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
+import { tempDir } from "./utils";
 
 export class ModelImplementationProvider implements ImplementationProvider {
   readonly ModelReferenceRegex = new RegExp("(?:MODEL|IMPORTS|TRANSLATION OF)\\s+(\\w*)", "gi");
@@ -53,7 +52,7 @@ export class ModelImplementationProvider implements ImplementationProvider {
   }
 
   async getImplementationFile(model: Model): Promise<Location> {
-    const filePath = path.join(tempdir, model.uri.authority, model.file);
+    const filePath = path.join(tempDir, model.uri.authority, model.file);
 
     if (!fs.existsSync(path.parse(filePath).dir)) {
       fs.mkdirSync(path.parse(filePath).dir, { recursive: true });
