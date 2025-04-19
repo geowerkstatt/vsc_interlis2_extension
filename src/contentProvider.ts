@@ -9,7 +9,7 @@ function getNonce(): string {
 export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri): string {
   const nonce = getNonce();
 
-  const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js";
+  const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js";
 
   const scriptPathOnDisk = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.js");
   const webviewScriptUri = webview.asWebviewUri(scriptPathOnDisk);
@@ -19,9 +19,7 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     default-src 'none';
     style-src ${cspSource} 'unsafe-inline';
     img-src ${cspSource} data;
-    script-src  'nonce-${nonce}'
-    ${webview.cspSource}
-    ${mermaidLibUriStr.startsWith("https://cdn.jsdelivr.net") ? "https://cdn.jsdelivr.net" : ""};
+    script-src 'nonce-${nonce}' ${webview.cspSource};
     connect-src 'none';
   `;
 
@@ -33,10 +31,11 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     console.log(err);
   }
 
-  htmlContent = htmlContent.replace(/${csp}/g, contentSecurityPolicy);
-  htmlContent = htmlContent.replace(/${nonce}/g, nonce);
-  htmlContent = htmlContent.replace(/${mermaidUri}/g, mermaidLibUriStr);
-  htmlContent = htmlContent.replace(/${webviewScriptUri}/g, webviewScriptUri.toString());
+  htmlContent = htmlContent
+    .replace(/__CSP__/g, contentSecurityPolicy)
+    .replace(/__NONCE__/g, nonce)
+    .replace(/__MERMAID_URI__/g, mermaidLibUriStr)
+    .replace(/__WEBVIEW_SCRIPT_URI__/g, webviewScriptUri.toString());
 
   return htmlContent;
 }
