@@ -1,11 +1,18 @@
 import * as vscode from "vscode";
 import { TextEditor } from "vscode";
 import { getLanguageClient, startLanguageServer, stopLanguageServer } from "./languageServer";
-import { handleInterlisInActiveTextEditor, showDiagramPanel } from "./diagramPanel";
+import { handleInterlisInActiveTextEditor, initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
 import { generateMarkdown } from "./markdown";
+import { ModelImplementationProvider } from "./ModelImplementationProvider";
 
 export async function activate(context: vscode.ExtensionContext) {
   await startLanguageServer(context);
+  initializeDiagramPanel(context);
+
+  const implementationProvider = vscode.languages.registerImplementationProvider(
+    "INTERLIS2",
+    new ModelImplementationProvider()
+  );
 
   const markdownCommand = vscode.commands.registerTextEditorCommand(
     "interlis.generateMarkdown",
@@ -16,18 +23,13 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const showDiagramCommand = vscode.commands.registerCommand(
-    'interlis.showDiagramView',
-    () => showDiagramPanel(context)
+  const showDiagramCommand = vscode.commands.registerCommand("interlis.showDiagramView", () =>
+    showDiagramPanel(context)
   );
-
-  const iliFileFocusChangeListener = vscode.window.onDidChangeActiveTextEditor(() => {
-    handleInterlisInActiveTextEditor(context);
-  });
 
   context.subscriptions.push(markdownCommand);
   context.subscriptions.push(showDiagramCommand);
-  context.subscriptions.push(iliFileFocusChangeListener);
+  context.subscriptions.push(implementationProvider);
 }
 
 export async function deactivate() {
