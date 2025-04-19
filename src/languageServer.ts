@@ -23,3 +23,9 @@ export async function startLanguageServer(context: vscode.ExtensionContext) {
 
   await client.start();
 }
+
+export async function stopLanguageServer() {
+  if (client) {
+    await client.stop();
+  }
+}
