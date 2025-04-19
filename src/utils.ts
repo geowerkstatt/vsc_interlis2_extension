@@ -12,12 +12,6 @@ export function cleanupTempDir() {
   }
 }
 
-export function ensureDirExists(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
-
 export function getRuntimeId(): string {
   switch (process.platform) {
     case "win32":
