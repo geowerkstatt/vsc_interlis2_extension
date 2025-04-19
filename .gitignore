@@ -56,3 +56,6 @@ bin/
 
 # NuGet config file
 [Nn]u[Gg]et.[Cc]onfig
+
+# Jetbrains IDE config files
+.idea/
