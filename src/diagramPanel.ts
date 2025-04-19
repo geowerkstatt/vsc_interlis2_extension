@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import { getWebviewHTML } from "./contentProvider";
+import { getLanguageClient } from "./languageServer";
+import { ExecuteCommandRequest } from "vscode-languageclient/node";
 
 let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
@@ -7,6 +9,19 @@ let updateTimer: NodeJS.Timeout | undefined;
 
 export function resetPanelState() {
   hasUserClosedPanel = false;
+}
+
+async function requestDiagram(uri: string): Promise<string> {
+  try {
+    const result = await getLanguageClient().sendRequest(ExecuteCommandRequest.type, {
+      command: "generateDiagram",
+      arguments: [{ uri }],
+    });
+    return result ?? "";
+  } catch (err) {
+    console.error("Failed to generate diagram:", err);
+    return "";
+  }
 }
 
 export function showDiagramPanel(context: vscode.ExtensionContext) {
@@ -25,6 +40,15 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
   });
 
   diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
+
+  const editor = vscode.window.activeTextEditor;
+  if (editor && editor.document.languageId === "INTERLIS2") {
+    const uri = editor.document.uri.toString();
+    requestDiagram(uri).then((mermaidDsl) => {
+      postMessage("update", mermaidDsl);
+    });
+  }
+
   diagramPanel.onDidDispose(
     () => {
       diagramPanel = undefined;
@@ -54,7 +78,10 @@ function handleTextChange(e: vscode.TextDocumentChangeEvent) {
   // debounce: wait 300ms after the last change before sending
   clearTimeout(updateTimer);
   updateTimer = setTimeout(() => {
-    postMessage("update", e.document.getText());
+    const uri = e.document.uri.toString();
+    requestDiagram(uri).then((mermaidDsl) => {
+      postMessage("update", mermaidDsl);
+    });
   }, 300);
 }
 
