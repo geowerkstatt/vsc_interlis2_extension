@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
+import * as crypto from "node:crypto";
+
+function getNonce(): string {
+  return crypto.randomBytes(16).toString("base64");
+}
 
 export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri): string {
   const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js";
