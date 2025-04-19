@@ -14,6 +14,7 @@ import os = require("os");
 
 const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
 let client: LanguageClient | undefined;
+let diagramPanel: vscode.WebviewPanel | undefined;
 
 function getRuntimeId(): string {
   switch (process.platform) {
