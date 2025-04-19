@@ -1,11 +1,22 @@
 const vscode = acquireVsCodeApi();
 
-console.log("Webview main.js script loaded.");
+mermaid.initialize({ startOnLoad: false });
 
-setTimeout(() => {
-  if (typeof mermaid !== "undefined") {
-    console.log("Webview: Mermaid library seems to be loaded (via main.js).");
-  } else {
-    console.error("Webview: Mermaid library WAS NOT loaded (checked via main.js).");
+let renderTimer;
+
+window.addEventListener("message", (event) => {
+  if (event.data.type === "update") {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(() => renderDiagram(event.data.text), 300);
   }
-}, 500);
+});
+
+async function renderDiagram(mermaidCode) {
+  const container = document.getElementById("mermaid-graph");
+  try {
+    const { svg } = await mermaid.render(`diagram-${Date.now()}`, mermaidCode);
+    container.innerHTML = svg;
+  } catch (err) {
+    container.innerHTML = `<pre style="color:red">Error: ${err.message}</pre>`;
+  }
+}
