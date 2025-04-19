@@ -45,6 +45,7 @@ export function updateDiagramVisibility(context: vscode.ExtensionContext) {
 
   if (!hasAnyIliOpen) {
     closeDiagramPanel();
+    hasUserClosedPanel = false;
   } else if (!diagramPanel && !hasUserClosedPanel) {
     showDiagramPanel(context);
   }
