@@ -59,4 +59,3 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
   context.subscriptions.push(listener);
   resetPanelState();
 }
-

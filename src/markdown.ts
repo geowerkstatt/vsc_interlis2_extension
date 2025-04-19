@@ -1,21 +1,18 @@
 import { ExecuteCommandRequest, LanguageClient } from "vscode-languageclient/node";
 import * as vscode from "vscode";
-import { TextEditor } from "vscode";
+import { Progress, TextEditor } from "vscode";
 
 export async function generateMarkdown(
-  progress: vscode.Progress<{
-    message?: string | undefined;
-    increment?: number | undefined;
-  }>,
-  textEditor: TextEditor,
+  progress: Progress<{ message?: string; increment?: number }>,
+  editor: TextEditor,
   client: LanguageClient
-) {
+): Promise<void> {
   progress.report({ message: "Generating markdown..." });
 
   try {
     const markdown: string | null = await client?.sendRequest(ExecuteCommandRequest.type, {
       command: "generateMarkdown",
-      arguments: [{ uri: textEditor.document.uri.toString() }],
+      arguments: [{ uri: editor.document.uri.toString() }],
     });
 
     if (markdown) {
