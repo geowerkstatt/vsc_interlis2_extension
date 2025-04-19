@@ -11,6 +11,7 @@ import { ModelImplementationProvider } from "./ModelImplementationProvider";
 import * as fs from "fs";
 import path = require("path");
 import os = require("os");
+import { getWebviewHTML } from "./webviewContent";
 
 const tempdir = path.join(os.tmpdir(), "InterlisLanguageSupport");
 let client: LanguageClient | undefined;
