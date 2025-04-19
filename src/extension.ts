@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { TextEditor } from "vscode";
 import { getLanguageClient, startLanguageServer, stopLanguageServer } from "./languageServer";
-import { handleInterlisInActiveTextEditor, initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
+import { initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
 import { generateMarkdown } from "./markdown";
 import { ModelImplementationProvider } from "./ModelImplementationProvider";
 

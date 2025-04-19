@@ -34,28 +34,29 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
   );
 }
 
-export function handleInterlisInActiveTextEditor(context: vscode.ExtensionContext) {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-    return;
-  }
-  if (editor.document.languageId !== "INTERLIS2") {
-    return;
-  }
+function closeDiagramPanel() {
   if (diagramPanel) {
-    return;
+    diagramPanel.dispose();
   }
-  if (hasUserClosedPanel) {
-    return;
+}
+
+export function updateDiagramVisibility(context: vscode.ExtensionContext) {
+  const hasAnyIliOpen = vscode.window.visibleTextEditors.some((e) => e.document.languageId === "INTERLIS2");
+
+  if (!hasAnyIliOpen) {
+    closeDiagramPanel();
+  } else if (!diagramPanel && !hasUserClosedPanel) {
+    showDiagramPanel(context);
   }
-  showDiagramPanel(context);
 }
 
 export function initializeDiagramPanel(context: vscode.ExtensionContext) {
-  handleInterlisInActiveTextEditor(context);
-  const listener = vscode.window.onDidChangeActiveTextEditor(() => {
-    handleInterlisInActiveTextEditor(context);
-  });
-  context.subscriptions.push(listener);
   resetPanelState();
+
+  updateDiagramVisibility(context);
+
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(() => updateDiagramVisibility(context)),
+    vscode.workspace.onDidCloseTextDocument(() => updateDiagramVisibility(context))
+  );
 }
