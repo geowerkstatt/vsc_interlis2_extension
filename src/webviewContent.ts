@@ -7,6 +7,8 @@ function getNonce(): string {
 }
 
 export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri): string {
+  const nonce = getNonce();
+
   const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js";
 
   const cspSource = webview.cspSource;
@@ -14,7 +16,8 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     default-src 'none';
     style-src ${cspSource} 'unsafe-inline';
     img-src ${cspSource} data;
-    script-src ${webview.cspSource}
+    script-src  'nonce-${nonce}'
+    ${webview.cspSource}
     ${mermaidLibUriStr.startsWith("https://cdn.jsdelivr.net") ? "https://cdn.jsdelivr.net" : ""};
     connect-src 'none';
   `;
