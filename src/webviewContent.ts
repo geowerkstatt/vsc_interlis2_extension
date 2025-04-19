@@ -11,7 +11,7 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
 
   const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js";
 
-  const scriptPathOnDisk = vscode.Uri.joinPath(extensionURI, "out", "webview", "/assets/webview.js");
+  const scriptPathOnDisk = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.js");
   const webviewScriptUri = webview.asWebviewUri(scriptPathOnDisk);
 
   const cspSource = webview.cspSource;
@@ -25,8 +25,7 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     connect-src 'none';
   `;
 
-  // --- Load HTML Template ---
-  const htmlFilePath = vscode.Uri.joinPath(extensionURI, "out", "webview", "/assets/webview.html");
+  const htmlFilePath = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.html");
   let htmlContent = "";
   try {
     htmlContent = fs.readFileSync(htmlFilePath.fsPath, "utf8");
