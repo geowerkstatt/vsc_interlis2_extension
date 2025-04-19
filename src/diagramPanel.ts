@@ -33,3 +33,20 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
     context.subscriptions
   );
 }
+
+export function handleInterlisInActiveTextEditor(context: vscode.ExtensionContext) {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  if (editor.document.languageId !== "INTERLIS2") {
+    return;
+  }
+  if (panel) {
+    return;
+  }
+  if (closedThisSession) {
+    return;
+  }
+  showDiagramPanel(context);
+}
