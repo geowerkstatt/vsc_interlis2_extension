@@ -1,33 +1,33 @@
 import * as vscode from "vscode";
-import { getWebviewHTML } from "./webviewContent";
+import { getWebviewHTML } from "./contentProvider";
 
-let panel: vscode.WebviewPanel | undefined;
-let closedThisSession = false;
+let diagramPanel: vscode.WebviewPanel | undefined;
+let hasUserClosedPanel = false;
 
 export function resetPanelState() {
-  closedThisSession = false;
+  hasUserClosedPanel = false;
 }
 
 export function showDiagramPanel(context: vscode.ExtensionContext) {
   const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One;
 
-  if (panel) {
-    panel.reveal(column);
+  if (diagramPanel) {
+    diagramPanel.reveal(column);
     return;
   }
 
-  closedThisSession = false;
+  hasUserClosedPanel = false;
 
-  panel = vscode.window.createWebviewPanel("INTERLISDiagramPanel", "INTERLIS Diagram Panel", column, {
+  diagramPanel = vscode.window.createWebviewPanel("INTERLISDiagramPanel", "INTERLIS Diagram Panel", column, {
     enableScripts: true,
     localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "out")],
   });
 
-  panel.webview.html = getWebviewHTML(panel.webview, context.extensionUri);
-  panel.onDidDispose(
+  diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
+  diagramPanel.onDidDispose(
     () => {
-      panel = undefined;
-      closedThisSession = true;
+      diagramPanel = undefined;
+      hasUserClosedPanel = true;
     },
     null,
     context.subscriptions
@@ -42,10 +42,10 @@ export function handleInterlisInActiveTextEditor(context: vscode.ExtensionContex
   if (editor.document.languageId !== "INTERLIS2") {
     return;
   }
-  if (panel) {
+  if (diagramPanel) {
     return;
   }
-  if (closedThisSession) {
+  if (hasUserClosedPanel) {
     return;
   }
   showDiagramPanel(context);
