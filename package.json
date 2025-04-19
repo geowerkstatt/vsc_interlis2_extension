@@ -19,7 +19,7 @@
   "activationEvents": [
     "onLanguage:INTERLIS2"
   ],
-  "main": "./out/setup.js",
+  "main": "./out/extension.js",
   "browser": "./out/browser.js",
   "keywords": [
     "INTERLIS",
