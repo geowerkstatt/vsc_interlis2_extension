@@ -29,3 +29,7 @@ export async function stopLanguageServer() {
     await client.stop();
   }
 }
+
+export function getLanguageClient(): LanguageClient {
+  return client;
+}
