@@ -57,6 +57,12 @@
         "command": "interlis.generateMarkdown",
         "title": "Generate markdown documentation",
         "category": "INTERLIS 2"
+      },
+      {
+        "command": "interlis.showDiagramView",
+        "title": "Show INTERLIS Diagram View",
+        "category": "INTERLIS 2",
+        "icon": "$(symbol-misc)"
       }
     ],
     "menus": {
