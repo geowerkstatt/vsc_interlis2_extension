@@ -28,16 +28,24 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
   const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One;
 
   if (diagramPanel) {
-    diagramPanel.reveal(column);
+    diagramPanel.reveal(column, true);
     return;
   }
 
   hasUserClosedPanel = false;
 
-  diagramPanel = vscode.window.createWebviewPanel("INTERLISDiagramPanel", "INTERLIS Diagram Panel", column, {
-    enableScripts: true,
-    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "out")],
-  });
+  diagramPanel = vscode.window.createWebviewPanel(
+    "INTERLISDiagramPanel",
+    "INTERLIS Diagram Panel",
+    {
+      viewColumn: column,
+      preserveFocus: true,
+    },
+    {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "out")],
+    }
+  );
 
   diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
 
@@ -53,6 +61,16 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
     () => {
       diagramPanel = undefined;
       hasUserClosedPanel = true;
+    },
+    null,
+    context.subscriptions
+  );
+
+  diagramPanel.onDidChangeViewState(
+    (e) => {
+      if (e.webviewPanel.active) {
+        vscode.commands.executeCommand("workbench.action.focusActiveEditorGroup");
+      }
     },
     null,
     context.subscriptions
