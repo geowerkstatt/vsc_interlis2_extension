@@ -1,56 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="__CSP__">
-  <title>INTERLIS Diagram</title>
-  <style>
-      /* Full-height flex layout */
-      body {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          font-family: sans-serif;
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          background-color: var(--vscode-editor-background);
-          color: var(--vscode-editor-foreground);
-      }
-      h1 {
-          margin: 16px;
-          font-size: 1.2em;
-      }
-      #info-message {
-          margin: 0 16px 8px;
-          font-size: 0.9em;
-          color: var(--vscode-editorHint-foreground);
-      }
-      /* Graph container must flex and allow children to size correctly */
-      #mermaid-graph {
-          flex: 1;
-          min-height: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          overflow: auto;
-          padding: 16px;
-          background-color: var(--vscode-editorGroupHeader-tabsBackground);
-      }
-      #mermaid-graph svg {
-          width: 100%;
-          height: auto;
-          display: block;
-      }
-  </style>
-</head>
-<body>
-<h1>INTERLIS Diagram</h1>
-<p id="info-message">This is the static webview content. Mermaid and main.js should load.</p>
-<div id="mermaid-graph">(Diagram will appear here later)</div>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="__CSP__">
+    <title>INTERLIS Diagram</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
 
-<script nonce="__NONCE__" src="__MERMAID_URI__"></script>
-<script nonce="__NONCE__" src="__WEBVIEW_SCRIPT_URI__"></script>
-</body>
+        h1 {
+            margin: 16px;
+            font-size: 1.2em;
+        }
+
+        #mermaid-graph {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+            padding: 16px;
+            background-color: var(--vscode-editor-background);
+            user-select: none; /* Standard syntax */
+            -webkit-user-select: none; /* Safari/Chrome */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+        }
+
+        #mermaid-graph:active {
+            cursor: grabbing;
+        }
+
+        #mermaid-graph svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: white;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="mermaid" id="mermaid-graph">
+      Loading...
+    </div>
+    <div class="actions">
+      <h2>Actions</h2>
+    </div>
+    <footer>
+      <button>?</button>
+    </footer>
+
+    <script nonce="__NONCE__" src="__MERMAID_URI__"></script>
+    <script nonce="__NONCE__" src="__WEBVIEW_SCRIPT_URI__"></script>
+  </body>
 </html>
