@@ -37,6 +37,9 @@ body {
     box-sizing: border-box;
     background: white;
     position: relative;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    overflow: hidden;
 }
 
 .help-overlay {
