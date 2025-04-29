@@ -90,7 +90,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./ && npm run copy-assets",
-    "copy-assets": "cpy \"src/assets/**/*.{html,js}\" out/assets --flat",
+    "copy-assets": "cpy \"src/assets/**/*.{html,js,css}\" out/assets --flat",
     "lint": "eslint . --ext .ts,.tsx",
     "watch": "npm run copy-assets && tsc -watch -p ./",
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
