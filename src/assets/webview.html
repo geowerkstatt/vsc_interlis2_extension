@@ -1,70 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="__CSP__">
-    <title>INTERLIS Diagram</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: var(--vscode-editor-background);
-            color: var(--vscode-editor-foreground);
-        }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="__CSP__">
+  <style>__STYLE__</style>
+  <title>INTERLIS Diagram</title>
+</head>
+<body>
 
-        h1 {
-            margin: 16px;
-            font-size: 1.2em;
-        }
+<div class="actions">
+  <button class="button" id="download-svg">Download SVG</button>
+  <button class="button" id="copy-code">Copy Mermaid Code</button>
+</div>
 
-        #mermaid-graph {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            touch-action: none;
-            cursor: grab;
-            padding: 16px;
-            background-color: var(--vscode-editor-background);
-            user-select: none; /* Standard syntax */
-            -webkit-user-select: none; /* Safari/Chrome */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* Internet Explorer/Edge */
-        }
+<div class="diagram-container">
+  <div id="mermaid-graph">
+    Loading...
+  </div>
+  <button class="help-button" id="help-button">?</button>
+</div>
 
-        #mermaid-graph:active {
-            cursor: grabbing;
-        }
-
-        #mermaid-graph svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-            background: white;
-        }
-    </style>
-  </head>
-  <body>
-    <div class="mermaid" id="mermaid-graph">
-      Loading...
+<div class="help-overlay" >
+  <div class="help-content">
+    <span class="help-content-title">Controls</span>
+    <div class="help-content-controls">
+      <span><strong>Pan:</strong> Click and drag </span>
+      <span><strong>Zoom:</strong> Mouse wheel</span>
+      <span><strong>Reset:</strong> Double‑click </span>
     </div>
-    <div class="actions">
-      <h2>Actions</h2>
-    </div>
-    <footer>
-      <button>?</button>
-    </footer>
+    <button class="button" id="close-help">Close</button>
+  </div>
+</div>
 
-    <script nonce="__NONCE__" src="__MERMAID_URI__"></script>
-    <script nonce="__NONCE__" src="__WEBVIEW_SCRIPT_URI__"></script>
-  </body>
+<script nonce="__NONCE__" src="__MERMAID_URI__"></script>
+<script nonce="__NONCE__" src="__WEBVIEW_SCRIPT_URI__"></script>
+</body>
 </html>
