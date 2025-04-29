@@ -23,6 +23,9 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     connect-src 'none';
   `;
 
+  const cssPath = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.css");
+  const css = fs.readFileSync(cssPath.fsPath, "utf8");
+
   const htmlFilePath = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.html");
   let htmlContent = "";
   try {
@@ -35,6 +38,7 @@ export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri
     .replace(/__CSP__/g, contentSecurityPolicy)
     .replace(/__NONCE__/g, nonce)
     .replace(/__MERMAID_URI__/g, mermaidLibUriStr)
+    .replace(/__STYLE__/g, css)
     .replace(/__WEBVIEW_SCRIPT_URI__/g, webviewScriptUri.toString());
 
   return htmlContent;
