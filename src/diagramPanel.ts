@@ -7,6 +7,7 @@ let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
 let isAutoClosing = false;
 let updateTimer: NodeJS.Timeout | undefined;
+let closeTimer: NodeJS.Timeout | undefined;
 
 function autoClosePanel() {
   if (diagramPanel) {
@@ -114,7 +115,7 @@ function handleTextChange(e: vscode.TextDocumentChangeEvent) {
     return;
   }
 
-  // debounce: wait 300ms after the last change before sending
+  // debounce: wait 300ms after the last change before requesting new diagram
   clearTimeout(updateTimer);
   updateTimer = setTimeout(() => {
     const uri = e.document.uri.toString();
@@ -128,9 +129,17 @@ export function updateDiagramVisibility(context: vscode.ExtensionContext) {
   const hasAnyIliOpen = vscode.window.visibleTextEditors.some((e) => e.document.languageId === "INTERLIS2");
 
   if (!hasAnyIliOpen) {
-    autoClosePanel();
-  } else if (!diagramPanel && !hasUserClosedPanel) {
-    revealDiagramPanelInternal(context);
+    // quick debounce to handle switching tabs more smoothly (think this needs rework tbh
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      autoClosePanel();
+    }, 100);
+  } else {
+    clearTimeout(closeTimer);
+
+    if (!diagramPanel && !hasUserClosedPanel) {
+      revealDiagramPanelInternal(context);
+    }
   }
 }
 
@@ -138,7 +147,18 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
   updateDiagramVisibility(context);
 
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(() => updateDiagramVisibility(context)),
+    vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+      updateDiagramVisibility(context);
+
+      if (editor?.document.languageId !== "INTERLIS2" || !diagramPanel) {
+        return;
+      }
+
+      diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
+      const uri = editor.document.uri.toString();
+      const mermaidDsl = await requestDiagram(uri);
+      postMessage("update", mermaidDsl);
+    }),
     vscode.workspace.onDidCloseTextDocument(() => updateDiagramVisibility(context)),
     vscode.workspace.onDidChangeTextDocument((e) => handleTextChange(e))
   );
