@@ -35,7 +35,7 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
 }
 
 function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
-  const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One;
+  const column = vscode.ViewColumn.Beside;
 
   if (diagramPanel) {
     diagramPanel.reveal(column, true);
@@ -57,13 +57,24 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
 
   diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
 
-  const editor = vscode.window.activeTextEditor;
-  if (editor && editor.document.languageId === "INTERLIS2") {
-    const uri = editor.document.uri.toString();
-    requestDiagram(uri).then((mermaidDsl) => {
-      postMessage("update", mermaidDsl);
-    });
-  }
+  diagramPanel.webview.onDidReceiveMessage(
+    (message) => {
+      if (message.type === "webviewLoaded") {
+        const editor = vscode.window.activeTextEditor;
+        if (editor?.document.languageId === "INTERLIS2") {
+          const uri = editor.document.uri.toString();
+          requestDiagram(uri).then((mermaidDsl) => {
+            diagramPanel?.webview.postMessage({
+              type: "update",
+              text: mermaidDsl,
+            });
+          });
+        }
+      }
+    },
+    null,
+    context.subscriptions
+  );
 
   diagramPanel.onDidDispose(
     () => {
