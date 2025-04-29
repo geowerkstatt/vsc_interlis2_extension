@@ -1,8 +1,12 @@
+/* eslint-env browser */
+/* global mermaid, acquireVsCodeApi */
+
 const vscode = acquireVsCodeApi();
 
 const container = document.getElementById("mermaid-graph");
 let mermaidInitialized = false;
 let renderTimer;
+let lastMermaidCode = "";
 
 function initializeMermaid() {
   if (mermaidInitialized) {
@@ -29,7 +33,8 @@ function initializeMermaid() {
       curve: "basis",
       nodeSpacing: 50,
       rankSpacing: 50,
-      useMaxWidth: false,
+      useMaxWidth: true,
+      wrappingWidth: 140,
     },
     securityLevel: "strict", // Or 'loose', 'antiscript'
   });
@@ -43,6 +48,7 @@ window.addEventListener("message", (event) => {
   if (message.type === "update") {
     console.log("Received update message");
     clearTimeout(renderTimer);
+    lastMermaidCode = message.text;
     initializeMermaid();
     renderTimer = setTimeout(() => renderDiagram(message.text), 150); // Debounce
   }
@@ -248,14 +254,51 @@ container.addEventListener("dblclick", () => {
   }
 });
 
-// Initial request for content when the webview loads
-// Check if vscode API is available before posting message
 if (typeof vscode !== "undefined") {
   vscode.postMessage({ type: "webviewLoaded" });
   console.log("Webview loaded, requesting initial content.");
 } else {
   console.warn("vscode API not available. Running outside VS Code webview?");
-  // You might want to load some default content here for testing
-  // initializeMermaid();
-  // renderDiagram(`graph TD\nA-->B;`);
 }
+
+// DOWNLOAD SVG BUTTON
+document.getElementById("download-svg").addEventListener("click", () => {
+  const svgEl = document.querySelector("#mermaid-graph svg");
+  if (!svgEl) return;
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const blob = new Blob([svgStr], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "diagram.svg";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+// COPY MERMAID CODE BUTTON
+const copyButton = document.getElementById("copy-code");
+copyButton.addEventListener("click", () => {
+  navigator.clipboard
+    .writeText(lastMermaidCode)
+    .then(() => {
+      // give immediate user feedback
+      const originalText = copyButton.textContent;
+      copyButton.textContent = "Copied!";
+      setTimeout(() => {
+        copyButton.textContent = originalText;
+      }, 2000);
+    })
+    .catch(() => {
+      console.error("Copy to clipboard failed");
+    });
+});
+
+// HELP OVERLAY
+const helpOverlay = document.getElementById("help-overlay");
+document.getElementById("help-button").addEventListener("click", () => {
+  helpOverlay.style.visibility = "visible";
+});
+document.getElementById("close-help").addEventListener("click", () => {
+  helpOverlay.style.visibility = "hidden";
+});
