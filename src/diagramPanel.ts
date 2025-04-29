@@ -5,10 +5,15 @@ import { ExecuteCommandRequest } from "vscode-languageclient/node";
 
 let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
+let isAutoClosing = false;
 let updateTimer: NodeJS.Timeout | undefined;
 
-export function resetPanelState() {
-  hasUserClosedPanel = false;
+function autoClosePanel() {
+  if (diagramPanel) {
+    isAutoClosing = true;
+    diagramPanel.dispose();
+    isAutoClosing = false;
+  }
 }
 
 async function requestDiagram(uri: string): Promise<string> {
@@ -25,14 +30,17 @@ async function requestDiagram(uri: string): Promise<string> {
 }
 
 export function showDiagramPanel(context: vscode.ExtensionContext) {
+  hasUserClosedPanel = false;
+  revealDiagramPanelInternal(context);
+}
+
+function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
   const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One;
 
   if (diagramPanel) {
     diagramPanel.reveal(column, true);
     return;
   }
-
-  hasUserClosedPanel = false;
 
   diagramPanel = vscode.window.createWebviewPanel(
     "INTERLISDiagramPanel",
@@ -60,7 +68,9 @@ export function showDiagramPanel(context: vscode.ExtensionContext) {
   diagramPanel.onDidDispose(
     () => {
       diagramPanel = undefined;
-      hasUserClosedPanel = true;
+      if (!isAutoClosing) {
+        hasUserClosedPanel = true;
+      }
     },
     null,
     context.subscriptions
@@ -103,30 +113,17 @@ function handleTextChange(e: vscode.TextDocumentChangeEvent) {
   }, 300);
 }
 
-function closeDiagramPanel() {
-  if (diagramPanel) {
-    diagramPanel.dispose();
-  }
-}
-
 export function updateDiagramVisibility(context: vscode.ExtensionContext) {
   const hasAnyIliOpen = vscode.window.visibleTextEditors.some((e) => e.document.languageId === "INTERLIS2");
 
   if (!hasAnyIliOpen) {
-    closeDiagramPanel();
-    hasUserClosedPanel = false;
+    autoClosePanel();
   } else if (!diagramPanel && !hasUserClosedPanel) {
-    showDiagramPanel(context);
-
-    const editor = vscode.window.activeTextEditor;
-    if (editor && editor.document.languageId === "INTERLIS2") {
-      postMessage("update", editor.document.getText());
-    }
+    revealDiagramPanelInternal(context);
   }
 }
 
 export function initializeDiagramPanel(context: vscode.ExtensionContext) {
-  resetPanelState();
   updateDiagramVisibility(context);
 
   context.subscriptions.push(
