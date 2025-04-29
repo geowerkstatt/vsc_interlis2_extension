@@ -1,304 +1,275 @@
 /* eslint-env browser */
 /* global mermaid, acquireVsCodeApi */
 
-const vscode = acquireVsCodeApi();
+(() => {
+  "use strict";
 
-const container = document.getElementById("mermaid-graph");
-let mermaidInitialized = false;
-let renderTimer;
-let lastMermaidCode = "";
+  // ---- State ----
+  let mermaidInitialized = false;
+  let lastMermaidCode = "";
+  let originalViewBox = null;
+  let currentViewBox = null;
+  let zoomLevel = 1;
+  let isPanning = false;
+  let panStart = { x: 0, y: 0 };
 
-function initializeMermaid() {
-  if (mermaidInitialized) {
-    return;
-  }
+  // ---- DOM Elements ----
+  const container = document.getElementById("mermaid-graph");
+  const downloadButton = document.getElementById("download-svg");
+  const copyButton = document.getElementById("copy-code");
+  const helpOverlay = document.getElementById("help-overlay");
+  const helpButton = document.getElementById("help-button");
+  const closeHelpButton = document.getElementById("close-help");
 
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: "forest", // Or 'dark', 'neutral', 'default'
-    themeCSS: `
-      .node rect {
-        rx: 8;
-        ry: 8;
-      }
-      .edgeLabel text {
-        font-size: 12px;
-      }
-      svg {
-        max-width: 100%;
-        height: auto;
-      }
-    `,
-    flowchart: {
-      curve: "basis",
-      nodeSpacing: 50,
-      rankSpacing: 50,
-      useMaxWidth: true,
-      wrappingWidth: 140,
-    },
-    securityLevel: "strict", // Or 'loose', 'antiscript'
-  });
-  mermaidInitialized = true;
+  // ----- Helpers -----
+  const debounce = (fn, delay) => {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  };
 
-  console.log("Mermaid Initialized");
-}
+  const getSvgElement = () => container.querySelector("svg");
 
-window.addEventListener("message", (event) => {
-  const message = event.data;
-  if (message.type === "update") {
-    console.log("Received update message");
-    clearTimeout(renderTimer);
-    lastMermaidCode = message.text;
-    initializeMermaid();
-    renderTimer = setTimeout(() => renderDiagram(message.text), 150); // Debounce
-  }
-});
-
-//zoom state
-let originalViewBox = null; // Stores { w, h } from the initial render
-let currentViewBox = null; // Stores current { x, y, w, h }
-let zoomLevel = 2;
-
-//pan state
-let isPanning = false;
-let panStartX = 0;
-let panStartY = 0;
-
-async function renderDiagram(code) {
-  if (!code) {
-    console.log("No diagram code present in message.");
-    container.innerHTML = "<div>Could not load diagram.</div>";
-    resetPanZoomState();
-    return;
-  }
-  initializeMermaid();
-
-  console.log("Rendering diagram...");
-  container.innerHTML = "Rendering...";
-
-  try {
-    // Unique ID prevents collisions if multiple renders happen quickly
-    const diagramId = `mermaid-diagram-${Date.now()}`;
-    const { svg } = await mermaid.render(diagramId, code);
-    container.innerHTML = svg;
-    const svgEl = container.querySelector("svg");
-
-    if (!svgEl) {
-      throw new Error("Mermaid rendering failed to produce an SVG element.");
+  const updateViewBox = ({ x, y, w, h }) => {
+    const svg = getSvgElement();
+    if (!svg) {
+      return;
     }
+    svg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+  };
 
-    // --- ViewBox Handling ---
-    let viewBox = svgEl.getAttribute("viewBox");
-    let width, height;
-    if (viewBox) {
-      // Use viewBox if present
-      [, , width, height] = viewBox.split(" ").map(Number); // Extract width/height only
-    } else {
-      throw new Error("No viewBox found for mermaid diagram found.");
-    }
-
-    // --- State Reset on Render ---
-    originalViewBox = { w: width, h: height };
-    currentViewBox = { x: 0, y: 0, w: width, h: height }; // Start view at 0,0 with original size
+  const resetPanZoom = () => {
+    originalViewBox = null;
+    currentViewBox = null;
     zoomLevel = 1;
-    svgEl.setAttribute("viewBox", `0 0 ${width} ${height}`); // Ensure it's set initially
-    container.style.cursor = "grab"; // Reset cursor
+    isPanning = false;
+    container.style.cursor = "default";
+  };
 
-    console.log("Rendering complete. Initial viewBox:", `0 0 ${width} ${height}`);
-  } catch (err) {
-    console.error("Mermaid rendering error:", err);
-    container.innerHTML = `Error rendering Mermaid diagram:\n${err.message}`;
-    resetPanZoomState(); // Reset state on error
+  // ----- Mermaid Initialization -----
+  function initMermaid() {
+    if (mermaidInitialized) return;
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "forest",
+      themeCSS: `
+        .node rect { rx: 8; ry: 8; }
+        .edgeLabel text { font-size: 12px; }
+        svg { max-width: 100%; height: auto; }
+      `,
+      flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
+      securityLevel: "strict",
+    });
+    mermaidInitialized = true;
+    console.log("Mermaid initialized");
   }
-}
 
-function resetPanZoomState() {
-  originalViewBox = null;
-  currentViewBox = null;
-  zoomLevel = 1;
-  isPanning = false;
-  container.style.cursor = "default";
-}
-
-container.addEventListener(
-  "wheel",
-  (e) => {
-    const svgEl = container.querySelector("svg");
-    // Need original AND current viewBox state to zoom correctly
-    if (!svgEl || !currentViewBox || !originalViewBox) {
-      console.log("Zoom skipped: Missing SVG or viewBox state");
+  // ----- Diagram Rendering -----
+  async function renderDiagram(code) {
+    if (!code) {
+      container.innerHTML = "<div>Could not load diagram.</div>";
+      resetPanZoom();
       return;
     }
 
+    initMermaid();
+    container.textContent = "Rendering...";
+    lastMermaidCode = code;
+
+    try {
+      const id = `mermaid-${Date.now()}`;
+      const { svg } = await mermaid.render(id, code);
+      container.innerHTML = svg;
+
+      const svgEl = getSvgElement();
+      const vb = svgEl.getAttribute("viewBox");
+      if (!vb) {
+        throw new Error("No viewBox on SVG");
+      }
+
+      const [, , w, h] = vb.split(" ").map(Number);
+      originalViewBox = { w, h };
+      currentViewBox = { x: 0, y: 0, w, h };
+      zoomLevel = 1;
+      updateViewBox(currentViewBox);
+      container.style.cursor = "grab";
+      console.log("Render complete");
+    } catch (err) {
+      console.error("Render error:", err);
+      container.textContent = `Error rendering diagram: ${err.message}`;
+      resetPanZoom();
+    }
+  }
+
+  const debouncedRender = debounce(renderDiagram, 150);
+
+  // ----- Event Handlers -----
+  function handleMessage({ data }) {
+    if (data.type === "update") {
+      debouncedRender(data.text);
+    }
+  }
+
+  function handleWheel(e) {
+    const svgEl = getSvgElement();
+    if (!svgEl || !currentViewBox || !originalViewBox) {
+      return;
+    }
     e.preventDefault();
 
     const rect = svgEl.getBoundingClientRect();
-
-    // Avoid division by zero
-    if (rect.width === 0 || rect.height === 0) {
+    if (!rect.width || !rect.height) {
       return;
     }
 
-    // Mouse position relative to SVG container
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-
-    // Convert mouse position to SVG coordinates using the current viewBox
     const svgX = currentViewBox.x + (mouseX / rect.width) * currentViewBox.w;
     const svgY = currentViewBox.y + (mouseY / rect.height) * currentViewBox.h;
 
-    // Zoom in or out
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-
-    // Calculate new target zoom level and clamp it
-    const newZoomLevel = Math.min(5, Math.max(0.2, zoomLevel * zoomFactor));
-
-    // Prevent tiny zooms if already at boundary
-    if (newZoomLevel === zoomLevel) {
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const newZoom = Math.min(5, Math.max(0.2, zoomLevel * factor));
+    if (newZoom === zoomLevel) {
       return;
     }
 
-    // Calculate new viewBox dimensions based on original dimensions and new zoom level
-    const newW = originalViewBox.w / newZoomLevel;
-    const newH = originalViewBox.h / newZoomLevel;
-
-    // Calculate new viewBox origin (x, y) to keep the point under the mouse stationary
+    const newW = originalViewBox.w / newZoom;
+    const newH = originalViewBox.h / newZoom;
     const newX = svgX - (mouseX / rect.width) * newW;
     const newY = svgY - (mouseY / rect.height) * newH;
 
-    // Update state
-    zoomLevel = newZoomLevel;
-    currentViewBox.x = newX;
-    currentViewBox.y = newY;
-    currentViewBox.w = newW;
-    currentViewBox.h = newH;
-
-    // Apply the new viewBox
-    svgEl.setAttribute("viewBox", `${newX} ${newY} ${newW} ${newH}`);
-  },
-  { passive: false } // Needed to prevent default scroll
-);
-
-container.addEventListener("mousedown", (e) => {
-  const svgEl = container.querySelector("svg");
-  // Only pan on left-click
-  if (!svgEl || !currentViewBox || e.button !== 0) {
-    return;
+    zoomLevel = newZoom;
+    Object.assign(currentViewBox, { x: newX, y: newY, w: newW, h: newH });
+    updateViewBox(currentViewBox);
   }
 
-  isPanning = true;
-  panStartX = e.clientX;
-  panStartY = e.clientY;
-});
+  function handleMouseDown(e) {
+    if (e.button !== 0 || !currentViewBox) {
+      return;
+    }
+    const svgEl = getSvgElement();
 
-window.addEventListener("mousemove", (e) => {
-  if (!isPanning || !currentViewBox) {
-    return;
-  }
-  e.preventDefault();
-
-  const svgEl = container.querySelector("svg");
-
-  if (!svgEl) {
-    isPanning = false; // Stop panning if SVG disappears
-    return;
+    if (!svgEl) {
+      return;
+    }
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY };
   }
 
-  const rect = svgEl.getBoundingClientRect();
+  function handleMouseMove(e) {
+    if (!isPanning || !currentViewBox) {
+      return;
+    }
+    e.preventDefault();
+    const svgEl = getSvgElement();
+    if (!svgEl) {
+      isPanning = false;
+      return;
+    }
 
-  // Avoid division by zero
-  if (rect.width === 0 || rect.height === 0) {
-    return;
+    const rect = svgEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+    const scale = Math.max(currentViewBox.w / rect.width, currentViewBox.h / rect.height);
+
+    currentViewBox.x -= dx * scale;
+    currentViewBox.y -= dy * scale;
+    updateViewBox(currentViewBox);
+
+    panStart = { x: e.clientX, y: e.clientY };
   }
 
-  // Calculate delta in screen coordinates
-  const dx = e.clientX - panStartX;
-  const dy = e.clientY - panStartY;
-
-  // compute the pixel→SVG scale in X and Y…
-  const scale = Math.max(currentViewBox.w / rect.width, currentViewBox.h / rect.height);
-  const svgDx = dx * scale;
-  const svgDy = dy * scale;
-
-  // Update current viewBox position (subtract delta because moving mouse right pans view left)
-  const newX = currentViewBox.x - svgDx;
-  const newY = currentViewBox.y - svgDy;
-
-  // Update state
-  currentViewBox.x = newX;
-  currentViewBox.y = newY;
-
-  // Apply the new viewBox
-  svgEl.setAttribute("viewBox", `${newX} ${newY} ${currentViewBox.w} ${currentViewBox.h}`);
-
-  // Update start position for the next mousemove event
-  panStartX = e.clientX;
-  panStartY = e.clientY;
-});
-
-window.addEventListener("mouseup", (e) => {
-  if (isPanning && e.button === 0) {
-    isPanning = false;
+  function handleMouseUp(e) {
+    if (e.button === 0) {
+      isPanning = false;
+    }
   }
-});
 
-// Reset view button
-container.addEventListener("dblclick", () => {
-  const svgEl = container.querySelector("svg");
-
-  if (svgEl && originalViewBox && currentViewBox) {
-    console.log("Resetting view on double-click");
+  function handleDoubleClick() {
+    if (!originalViewBox || !currentViewBox) {
+      return;
+    }
     currentViewBox = { x: 0, y: 0, w: originalViewBox.w, h: originalViewBox.h };
     zoomLevel = 1;
-    svgEl.setAttribute("viewBox", `0 0 ${originalViewBox.w} ${originalViewBox.h}`);
+    updateViewBox(currentViewBox);
   }
-});
 
-if (typeof vscode !== "undefined") {
-  vscode.postMessage({ type: "webviewLoaded" });
-  console.log("Webview loaded, requesting initial content.");
-} else {
-  console.warn("vscode API not available. Running outside VS Code webview?");
-}
+  function handleDownload() {
+    const svgEl = getSvgElement();
+    if (!svgEl || !originalViewBox) {
+      return;
+    }
 
-// DOWNLOAD SVG BUTTON
-document.getElementById("download-svg").addEventListener("click", () => {
-  const svgEl = document.querySelector("#mermaid-graph svg");
-  if (!svgEl) return;
-  const serializer = new XMLSerializer();
-  const svgStr = serializer.serializeToString(svgEl);
-  const blob = new Blob([svgStr], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "diagram.svg";
-  link.click();
-  URL.revokeObjectURL(url);
-});
+    const clone = svgEl.cloneNode(true);
 
-// COPY MERMAID CODE BUTTON
-const copyButton = document.getElementById("copy-code");
-copyButton.addEventListener("click", () => {
-  navigator.clipboard
-    .writeText(lastMermaidCode)
-    .then(() => {
-      // give immediate user feedback
-      const originalText = copyButton.textContent;
+    const { w, h } = originalViewBox;
+    clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+    clone.removeAttribute("width");
+    clone.removeAttribute("height");
+
+    const svgStr = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([svgStr], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "diagram.svg";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(lastMermaidCode).then(() => {
+      const text = copyButton.textContent;
       copyButton.textContent = "Copied!";
       setTimeout(() => {
-        copyButton.textContent = originalText;
+        copyButton.textContent = text;
       }, 2000);
-    })
-    .catch(() => {
-      console.error("Copy to clipboard failed");
     });
-});
+  }
 
-// HELP OVERLAY
-const helpOverlay = document.getElementById("help-overlay");
-document.getElementById("help-button").addEventListener("click", () => {
-  helpOverlay.style.visibility = "visible";
-});
-document.getElementById("close-help").addEventListener("click", () => {
-  helpOverlay.style.visibility = "hidden";
-});
+  function handleHelpOpen() {
+    helpOverlay.style.visibility = "visible";
+  }
+
+  function handleHelpClose() {
+    helpOverlay.style.visibility = "hidden";
+  }
+
+  function postWebviewLoaded() {
+    if (typeof acquireVsCodeApi !== "undefined") {
+      acquireVsCodeApi().postMessage({ type: "webviewLoaded" });
+    }
+  }
+
+  // ----- Attach Listeners -----
+  function attachEvents() {
+    window.addEventListener("message", handleMessage);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("mousedown", handleMouseDown);
+    container.addEventListener("dblclick", handleDoubleClick);
+    copyButton.addEventListener("click", handleCopy);
+    helpButton.addEventListener("click", handleHelpOpen);
+    downloadButton.addEventListener("click", handleDownload);
+    closeHelpButton.addEventListener("click", handleHelpClose);
+  }
+
+  // ----- Init -----
+  function init() {
+    attachEvents();
+    initMermaid();
+    postWebviewLoaded();
+  }
+
+  init();
+})();
