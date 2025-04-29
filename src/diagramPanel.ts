@@ -60,17 +60,23 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
 
   diagramPanel.webview.onDidReceiveMessage(
     (message) => {
+      // Guard Clause: Validate basic message structure and type
+      if (!message || typeof message !== "object" || typeof message.type !== "string") {
+        console.warn("Ignoring invalid message from webview:", message);
+        return;
+      }
+
       if (message.type === "webviewLoaded") {
         const editor = vscode.window.activeTextEditor;
+
         if (editor?.document.languageId === "INTERLIS2") {
           const uri = editor.document.uri.toString();
           requestDiagram(uri).then((mermaidDsl) => {
-            diagramPanel?.webview.postMessage({
-              type: "update",
-              text: mermaidDsl,
-            });
+            diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl });
           });
         }
+      } else {
+        console.warn(`Ignoring unknown message type from webview: ${message.type}`);
       }
     },
     null,
