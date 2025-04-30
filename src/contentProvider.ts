@@ -2,44 +2,47 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as crypto from "node:crypto";
 
+const MERMAID_VERSION = "11.6.0";
+
 function getNonce(): string {
   return crypto.randomBytes(16).toString("base64");
 }
 
-export function getWebviewHTML(webview: vscode.Webview, extensionURI: vscode.Uri): string {
+function buildCSP(nonce: string, cspSource: string): string {
+  return [
+    "default-src 'none';",
+    `style-src ${cspSource} 'unsafe-inline';`,
+    `img-src ${cspSource} data:;`,
+    `script-src 'nonce-${nonce}' ${cspSource};`,
+    "connect-src 'none';",
+  ].join("\n");
+}
+
+function readAsset(extensionUri: vscode.Uri, ...pathSegments: string[]): string {
+  const fileUri = vscode.Uri.joinPath(extensionUri, ...pathSegments);
+  return fs.readFileSync(fileUri.fsPath, "utf8");
+}
+
+export function getWebviewHTML(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const nonce = getNonce();
+  const csp = buildCSP(nonce, webview.cspSource);
 
-  const mermaidLibUriStr = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js";
+  const mermaidUri = `https://cdn.jsdelivr.net/npm/mermaid@${MERMAID_VERSION}/dist/mermaid.min.js`;
+  const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "out", "assets", "webview.js")).toString();
+  const style = readAsset(extensionUri, "out", "assets", "webview.css");
+  let html = readAsset(extensionUri, "out", "assets", "webview.html");
 
-  const scriptPathOnDisk = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.js");
-  const webviewScriptUri = webview.asWebviewUri(scriptPathOnDisk);
+  const replacements: Record<string, string> = {
+    __CSP__: csp,
+    __NONCE__: nonce,
+    __MERMAID_URI__: mermaidUri,
+    __STYLE__: style,
+    __WEBVIEW_SCRIPT_URI__: scriptUri,
+  };
 
-  const cspSource = webview.cspSource;
-  const contentSecurityPolicy = `
-    default-src 'none';
-    style-src ${cspSource} 'unsafe-inline';
-    img-src ${cspSource} data;
-    script-src 'nonce-${nonce}' ${webview.cspSource};
-    connect-src 'none';
-  `;
-
-  const cssPath = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.css");
-  const css = fs.readFileSync(cssPath.fsPath, "utf8");
-
-  const htmlFilePath = vscode.Uri.joinPath(extensionURI, "out", "assets", "webview.html");
-  let htmlContent = "";
-  try {
-    htmlContent = fs.readFileSync(htmlFilePath.fsPath, "utf8");
-  } catch (err) {
-    console.log(err);
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    html = html.replace(new RegExp(placeholder, "g"), value);
   }
 
-  htmlContent = htmlContent
-    .replace(/__CSP__/g, contentSecurityPolicy)
-    .replace(/__NONCE__/g, nonce)
-    .replace(/__MERMAID_URI__/g, mermaidLibUriStr)
-    .replace(/__STYLE__/g, css)
-    .replace(/__WEBVIEW_SCRIPT_URI__/g, webviewScriptUri.toString());
-
-  return htmlContent;
+  return html;
 }
