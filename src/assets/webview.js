@@ -67,8 +67,8 @@
   }
 
   // ----- Diagram Rendering -----
-  async function renderDiagram(code) {
-    if (!code) {
+  async function renderDiagram(diagramCode) {
+    if (!diagramCode) {
       container.innerHTML = "<div>Could not load diagram.</div>";
       resetPanZoom();
       return;
@@ -76,22 +76,22 @@
 
     initMermaid();
     container.textContent = "Rendering...";
-    lastMermaidCode = code;
+    lastMermaidCode = diagramCode;
 
     try {
-      const id = `mermaid-${Date.now()}`;
-      const { svg } = await mermaid.render(id, code);
+      const id = `mermaid-${Date.now()}`; //Unique Render ID to avoid conflicts (defensive programming)
+      const { svg } = await mermaid.render(id, diagramCode);
       container.innerHTML = svg;
 
-      const svgEl = getSvgElement();
-      const vb = svgEl.getAttribute("viewBox");
-      if (!vb) {
+      const svgElement = getSvgElement();
+      const viewBox = svgElement.getAttribute("viewBox");
+      if (!viewBox) {
         throw new Error("No viewBox on SVG");
       }
 
-      const [, , w, h] = vb.split(" ").map(Number);
-      originalViewBox = { w, h };
-      currentViewBox = { x: 0, y: 0, w, h };
+      const [, , width, height] = viewBox.split(" ").map(Number);
+      originalViewBox = { w: width, h: height };
+      currentViewBox = { x: 0, y: 0, w: width, h: height };
       zoomLevel = 1;
       updateViewBox(currentViewBox);
       container.style.cursor = "grab";
@@ -113,13 +113,13 @@
   }
 
   function handleWheel(e) {
-    const svgEl = getSvgElement();
-    if (!svgEl || !currentViewBox || !originalViewBox) {
+    const svgElement = getSvgElement();
+    if (!svgElement || !currentViewBox || !originalViewBox) {
       return;
     }
     e.preventDefault();
 
-    const rect = svgEl.getBoundingClientRect();
+    const rect = svgElement.getBoundingClientRect();
     if (!rect.width || !rect.height) {
       return;
     }
@@ -154,6 +154,7 @@
     if (!svgEl) {
       return;
     }
+    container.style.cursor = "grabbing";
     isPanning = true;
     panStart = { x: e.clientX, y: e.clientY };
   }
@@ -163,23 +164,23 @@
       return;
     }
     e.preventDefault();
-    const svgEl = getSvgElement();
-    if (!svgEl) {
+    const svgElement = getSvgElement();
+    if (!svgElement) {
       isPanning = false;
       return;
     }
 
-    const rect = svgEl.getBoundingClientRect();
+    const rect = svgElement.getBoundingClientRect();
     if (!rect.width || !rect.height) {
       return;
     }
 
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
+    const diagramX = e.clientX - panStart.x;
+    const diagramY = e.clientY - panStart.y;
     const scale = Math.max(currentViewBox.w / rect.width, currentViewBox.h / rect.height);
 
-    currentViewBox.x -= dx * scale;
-    currentViewBox.y -= dy * scale;
+    currentViewBox.x -= diagramX * scale;
+    currentViewBox.y -= diagramY * scale;
     updateViewBox(currentViewBox);
 
     panStart = { x: e.clientX, y: e.clientY };
@@ -188,6 +189,7 @@
   function handleMouseUp(e) {
     if (e.button === 0) {
       isPanning = false;
+      container.style.cursor = "grab";
     }
   }
 
@@ -208,14 +210,14 @@
 
     const clone = svgEl.cloneNode(true);
 
-    const { w, h } = originalViewBox;
-    clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const { width, height } = originalViewBox;
+    clone.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
     clone.removeAttribute("width");
     clone.removeAttribute("height");
 
-    const svgStr = new XMLSerializer().serializeToString(clone);
-    const blob = new Blob([svgStr], { type: "image/svg+xml" });
+    const svgString = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
