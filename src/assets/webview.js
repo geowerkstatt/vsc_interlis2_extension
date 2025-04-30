@@ -54,11 +54,6 @@
     mermaid.initialize({
       startOnLoad: false,
       theme: "forest",
-      themeCSS: `
-        .node rect { rx: 8; ry: 8; }
-        .edgeLabel text { font-size: 12px; }
-        svg { max-width: 100%; height: auto; }
-      `,
       flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
       securityLevel: "strict",
     });
