@@ -37,8 +37,8 @@ body {
     box-sizing: border-box;
     background: white;
     position: relative;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
     overflow: hidden;
 }
 
