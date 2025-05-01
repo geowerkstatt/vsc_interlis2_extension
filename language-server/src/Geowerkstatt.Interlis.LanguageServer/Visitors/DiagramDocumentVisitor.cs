@@ -2,6 +2,7 @@ using Geowerkstatt.Interlis.Tools.AST;
 using Geowerkstatt.Interlis.Tools.AST.Types;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
