@@ -54,7 +54,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
     private string GenerateDiagram(InterlisFile interlisFile)
     {
-        var visitor = new DiagramDocumentVisitor();
+        DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>());
         visitor.VisitInterlisFile(interlisFile);
         return visitor.GetDiagramDocument();
     }
