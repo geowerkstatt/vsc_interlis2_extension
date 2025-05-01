@@ -33,7 +33,10 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
-        mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        _mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        base.VisitTopicDef(topicDef);
+        _mermaidScript.AppendLine("}");
+        _mermaidScript.AppendLine();
 
         var classesInTopic = new List<ClassDef>();
         var associationsInTopic = new List<AssociationDef>();
