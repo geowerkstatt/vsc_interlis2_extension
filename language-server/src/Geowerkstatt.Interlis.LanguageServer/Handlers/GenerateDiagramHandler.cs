@@ -52,7 +52,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         return Task.FromResult<string?>(diagram);
     }
 
-    private static string GenerateDiagram(InterlisFile interlisFile)
+    private string GenerateDiagram(InterlisFile interlisFile)
     {
         var visitor = new DiagramDocumentVisitor();
         visitor.VisitInterlisFile(interlisFile);
