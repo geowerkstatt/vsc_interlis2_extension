@@ -9,7 +9,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 /// INTERLIS AST visitor to generate a Mermaid class diagram script.
 /// Follows a two-pass approach within topics to handle Mermaid namespace limitations.
 /// </summary>
-internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
+public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 {
     private readonly StringBuilder mermaidScript = new StringBuilder();
 
