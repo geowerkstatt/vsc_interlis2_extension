@@ -165,7 +165,6 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
         return;
       }
 
-      diagramPanel.webview.html = getWebviewHTML(diagramPanel.webview, context.extensionUri);
       const uri = editor.document.uri.toString();
       const mermaidDsl = await requestDiagram(uri);
       postMessage("update", mermaidDsl);
