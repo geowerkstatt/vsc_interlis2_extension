@@ -144,11 +144,7 @@ export function updateDiagramVisibility(context: vscode.ExtensionContext) {
   const hasAnyIliOpen = vscode.window.visibleTextEditors.some((e) => e.document.languageId === "INTERLIS2");
 
   if (!hasAnyIliOpen) {
-    // quick debounce to handle switching tabs more smoothly (think this needs rework tbh, let's see how it behaves)
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(() => {
-      autoClosePanel();
-    }, 100);
+    debouncedAutoClosePanel();
   } else {
     clearTimeout(closeTimer);
 
