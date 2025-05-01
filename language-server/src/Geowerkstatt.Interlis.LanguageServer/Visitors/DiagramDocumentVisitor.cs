@@ -24,28 +24,11 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         { (1, null), "\"1..*\" " }
     };
 
-    public DiagramDocumentVisitor()
+    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger)
     {
-        mermaidScript.AppendLine("classDiagram");
-        mermaidScript.AppendLine("direction LR");
-    }
-
-    public override object? VisitInterlisFile([NotNull] InterlisFile interlisFile)
-    {
-        foreach (var model in interlisFile.Content.Values)
-        {
-            ((IAstElement)model).Accept(this);
-        }
-        return null;
-    }
-
-    public override object? VisitModelDef([NotNull] ModelDef modelDef)
-    {
-        foreach (var content in modelDef.Content.Values)
-        {
-            ((IAstElement)content).Accept(this);
-        }
-        return null;
+        _logger = logger;
+        _mermaidScript.AppendLine("classDiagram");
+        _mermaidScript.AppendLine("direction LR");
     }
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
