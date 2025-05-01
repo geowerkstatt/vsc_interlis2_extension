@@ -16,14 +16,16 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
     public const string Command = "generateDiagram";
 
     private readonly ILogger<GenerateDiagramHandler> logger;
+    private readonly ILoggerFactory loggerFactory;
     private readonly InterlisReader interlisReader;
     private readonly FileContentCache fileContentCache;
 
-    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, InterlisReader interlisReader, FileContentCache fileContentCache, ISerializer serializer) : base(Command, serializer)
+    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, InterlisReader interlisReader, FileContentCache fileContentCache, ISerializer serializer) : base(Command, serializer)
     {
         this.logger = logger;
         this.interlisReader = interlisReader;
         this.fileContentCache = fileContentCache;
+        this.loggerFactory = loggerFactory;
     }
 
     /// <summary>
