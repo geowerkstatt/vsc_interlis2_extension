@@ -38,10 +38,7 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         _mermaidScript.AppendLine("}");
         _mermaidScript.AppendLine();
 
-        var classesInTopic = new List<ClassDef>();
-        var associationsInTopic = new List<AssociationDef>();
-
-        foreach (var content in topicDef.Content.Values)
+        foreach (var classDefs in _classes)
         {
             if (content is ClassDef classDef)
             {
