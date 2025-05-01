@@ -40,49 +40,44 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
         foreach (var classDefs in _classes)
         {
-            if (content is ClassDef classDef)
+            if (classDefs.Extends?.Target?.Name is not null and var parent)
+                _mermaidScript.AppendLine($"{classDefs.Name} --|> {parent}");
+
+            if (classDefs.MetaAttributes.TryGetValue("geow.uml.color", out var color) &&
+                !string.IsNullOrWhiteSpace(color))
             {
-                mermaidScript.AppendLine($"  class {classDef.Name}");
-                classesInTopic.Add(classDef);
+                _mermaidScript.AppendLine($"style {classDefs.Name} fill:{color},color:black,stroke:black");
             }
-            else if (content is AssociationDef associationDef)
-            {
-                associationsInTopic.Add(associationDef);
-            }
+
+            foreach (var attr in classDefs.Content.Values.OfType<AttributeDef>())
+                AppendAttributeDetails(attr);
+
+            _mermaidScript.AppendLine();
         }
 
-        mermaidScript.AppendLine("}");
-        mermaidScript.AppendLine();
-
-        foreach (var classDef in classesInTopic)
-        {
-            if (classDef.Extends?.Target?.Name is string extendedClassName)
-            {
-                 mermaidScript.AppendLine($"{classDef.Name} --|> {extendedClassName}");
-            }
-
-            if (classDef.MetaAttributes.TryGetValue("geow.uml.color", out var classColor) && !string.IsNullOrWhiteSpace(classColor))
-            {
-                mermaidScript.AppendLine($"style {classDef.Name} fill:{classColor},color:black,stroke:black");
-            }
-
-            foreach (var content in classDef.Content.Values)
-            {
-                 if (content is AttributeDef attrDef)
-                 {
-                     AppendAttributeDetails(attrDef);
-                 }
-            }
-             mermaidScript.AppendLine();
-        }
-
-        foreach (var associationDef in associationsInTopic)
-        {
+        foreach (var associationDef in _associations)
             AppendAssociationDetails(associationDef);
-        }
-        mermaidScript.AppendLine();
+
+        _mermaidScript.AppendLine();
+
+        _classes.Clear();
+        _associations.Clear();
 
         return null;
+    }
+
+    public override object? VisitClassDef([NotNull] ClassDef classDef)
+    {
+        _mermaidScript.AppendLine($"  class {classDef.Name}");
+        _classes.Add(classDef);
+
+        return base.VisitClassDef(classDef);
+    }
+
+    public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
+    {
+        _associations.Add(associationDef);
+        return base.VisitAssociationDef(associationDef);
     }
 
     private void AppendAttributeDetails(AttributeDef attributeDef)
