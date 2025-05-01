@@ -6,7 +6,6 @@ import { ExecuteCommandRequest } from "vscode-languageclient/node";
 let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
 let isAutoClosing = false;
-let updateTimer: NodeJS.Timeout | undefined;
 let closeTimer: NodeJS.Timeout | undefined;
 
 function autoClosePanel() {
@@ -120,15 +119,25 @@ function handleTextChange(e: vscode.TextDocumentChangeEvent) {
   if (!diagramPanel || !diagramPanel.visible) {
     return;
   }
+  debouncedRequestDiagram(e.document.uri.toString());
+}
 
-  // debounce: wait 300ms after the last change before requesting new diagram
-  clearTimeout(updateTimer);
-  updateTimer = setTimeout(() => {
-    const uri = e.document.uri.toString();
-    requestDiagram(uri).then((mermaidDsl) => {
-      postMessage("update", mermaidDsl);
-    });
-  }, 300);
+const debouncedAutoClosePanel = debounce(autoClosePanel, 100);
+
+const debouncedRequestDiagram = debounce((uri: string) => {
+  requestDiagram(uri).then((mermaidDsl) => {
+    diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl });
+  });
+}, 300);
+
+function debounce<T extends any[]>(fn: (...args: T) => void, delay: number) {
+  let timer: number | undefined;
+  return (...args: T) => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+    timer = window.setTimeout(() => fn(...args), delay);
+  };
 }
 
 export function updateDiagramVisibility(context: vscode.ExtensionContext) {
