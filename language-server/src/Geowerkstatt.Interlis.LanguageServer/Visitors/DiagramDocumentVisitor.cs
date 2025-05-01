@@ -134,23 +134,24 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         {
             ReferenceType rt => rt.Target.Value?.Path.Last() ?? "?",
             TextType tt => tt.Length == null ? "Text" : $"Text [{tt.Length}]",
-            NumericType nt => nt.Min != null && nt.Max != null ? $"{nt.Min}..{nt.Max}" : "Numeric",
+            NumericType nt => nt is { Min: not null, Max: not null } ? $"{nt.Min}..{nt.Max}" : "Numeric",
             BooleanType => "Boolean",
-            BlackboxType bt => bt.Kind switch {
+            BlackboxType bt => bt.Kind switch
+            {
                 BlackboxType.BlackboxTypeKind.Binary => "Blackbox (Binary)",
                 BlackboxType.BlackboxTypeKind.Xml => "Blackbox (XML)",
-                _ => "Blackbox",
+                _ => "Blackbox"
             },
             EnumerationType et => $"({FormatEnumerationValues(et.Values)})",
             TypeRef tr => tr.Extends?.Path.Last() ?? "?",
             RoleType => "Role",
-            _ => type.GetType().Name,
+            _ => type.GetType().Name
         };
     }
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues)
     {
-       return string.Join(", ", enumerationValues.Select(v => v.Name));
+        return string.Join(", ", enumerationValues.Select(v => v.Name));
     }
 
     private static (ClassDef? classDef, string? Cardinality) GetClassAndCardinality(AttributeDef? attribute)
@@ -165,6 +166,6 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public string GetDiagramDocument()
     {
-        return mermaidScript.ToString();
+        return _mermaidScript.ToString();
     }
 }
