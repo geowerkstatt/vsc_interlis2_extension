@@ -1,6 +1,6 @@
 # Change Log
 ### vNext
-
+* Added visual Preview for INTERLIS Models.
 
 ### 0.2.1 - 2024-11-26
 
