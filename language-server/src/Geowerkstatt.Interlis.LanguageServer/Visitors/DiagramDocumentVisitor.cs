@@ -85,8 +85,8 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     {
         if (attributeDef.Parent is ClassDef parentClass)
         {
-            var typeString = VisitTypeDefInternal(attributeDef.TypeDef as TypeDef);
-            mermaidScript.AppendLine($"{parentClass.Name}: +{typeString} {attributeDef.Name}");
+            var typeString = VisitTypeDefInternal(attributeDef.TypeDef);
+            _mermaidScript.AppendLine($"{parentClass.Name}: +{typeString} {attributeDef.Name}");
         }
     }
 
