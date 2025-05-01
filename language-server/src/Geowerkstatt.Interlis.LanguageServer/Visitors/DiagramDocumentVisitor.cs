@@ -11,7 +11,10 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 /// </summary>
 public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 {
-    private readonly StringBuilder mermaidScript = new StringBuilder();
+    private readonly StringBuilder _mermaidScript = new();
+    private readonly List<ClassDef> _classes = new();
+    private readonly List<AssociationDef> _associations = new();
+    private readonly ILogger<DiagramDocumentVisitor> _logger;
 
     private static readonly Dictionary<(long? Min, long? Max), string> MermaidCardinalityMap = new()
     {
