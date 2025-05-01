@@ -1,3 +1,5 @@
+import DOMPurify = require("dompurify");
+
 interface ViewBox {
   x: number;
   y: number;
@@ -111,7 +113,7 @@ declare const mermaid: {
     try {
       const id = `mermaid-${Date.now()}`;
       const { svg } = await mermaid.render(id, diagramCode);
-      container.innerHTML = svg;
+      container.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } });
 
       const svgElement = getSvgElement();
       const viewBoxAttr = svgElement?.getAttribute("viewBox");
