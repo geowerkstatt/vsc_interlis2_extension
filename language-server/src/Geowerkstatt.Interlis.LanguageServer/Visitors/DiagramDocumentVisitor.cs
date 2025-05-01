@@ -19,9 +19,9 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private static readonly Dictionary<(long? Min, long? Max), string> MermaidCardinalityMap = new()
     {
-        { (0, 1),   "\"0..1\" " },
-        { (1, 1),   "\"1\" "    },
-        { (0, null), "\"*\""    },
+        { (0, 1), "\"0..1\" " },
+        { (1, 1), "\"1\" " },
+        { (0, null), "\"*\"" },
         { (1, null), "\"1..*\" " }
     };
 
