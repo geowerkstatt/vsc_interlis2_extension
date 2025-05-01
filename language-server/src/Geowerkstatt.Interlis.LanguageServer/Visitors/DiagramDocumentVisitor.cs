@@ -90,26 +90,42 @@ public class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
     }
 
-     private void AppendAssociationDetails(AssociationDef associationDef)
+
+    private void AppendAssociationDetails(AssociationDef assoc)
     {
-        var roles = associationDef.Content.Values.OfType<AttributeDef>().ToList();
-
-        if (roles.Count == 2)
+        var roles = assoc.Content.Values.OfType<AttributeDef>().ToList();
+        if (roles.Count != 2)
         {
-            var (firstClass, firstCardinality) = GetClassAndCardinality(roles[0]);
-            var (secondClass, secondCardinality) = GetClassAndCardinality(roles[1]);
-
-            if (firstClass != null && secondClass != null && firstCardinality != null && secondCardinality != null)
-            {
-                string secondCard = secondCardinality.EndsWith(" ") ? secondCardinality : secondCardinality + " ";
-                // Append association outside namespace block
-                mermaidScript.AppendLine($"{firstClass.Name} {firstCardinality}--o {secondCard}{secondClass.Name} : {associationDef.Name}");
-            }
-            else { /* Log warning? */ }
+            _logger.LogWarning(
+                "Skipping association '{Name}' because it has {Count} roles (only binary supported)",
+                assoc.Name, roles.Count
+            );
+            return;
         }
-        else { /* Log warning for non-binary? */ }
-    }
 
+        var (c1, rawCard1) = GetClassAndCardinality(roles[0]);
+        var (c2, rawCard2) = GetClassAndCardinality(roles[1]);
+        if (c1 is null || c2 is null || rawCard1 is null || rawCard2 is null)
+        {
+            _logger.LogWarning(
+                "Skipping association '{Name}' due to missing class or cardinality: " +
+                "first=({Class1},{Card1}), second=({Class2},{Card2})",
+                assoc.Name,
+                c1?.Name  ?? "<null>", rawCard1 ?? "<null>",
+                c2?.Name  ?? "<null>", rawCard2 ?? "<null>"
+            );
+            return;
+        }
+
+        static string Normalize(string raw) => $"\"{raw.Trim().Trim('\"')}\" ";
+
+        var card1 = Normalize(rawCard1);
+        var card2 = Normalize(rawCard2);
+
+        _mermaidScript.AppendLine(
+            $"{c1.Name} {card1}--o {card2}{c2.Name} : {assoc.Name}"
+        );
+    }
 
     private string VisitTypeDefInternal(TypeDef? type)
     {
