@@ -117,6 +117,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             return;
         }
 
+        // Clean up a raw cardinality (strip whitespace/quotes) and re-quote it with a trailing space for Mermaid syntax
         static string Normalize(string raw) => $"\"{raw.Trim().Trim('\"')}\" ";
 
         var cardinality1 = Normalize(rawCardinality1);
