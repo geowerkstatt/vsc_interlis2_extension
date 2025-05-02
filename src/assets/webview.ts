@@ -75,9 +75,15 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   }
 
   function sanitizeSvgString(svgString: string): string {
+    // Remove any <!DOCTYPE ...> entirely (including internal subset)
+    const noDoctype = svgString.replace(
+      /<!DOCTYPE[\s\S]*?>/gi,
+      ''
+    );
+
     // Parse into an XML document
     const parser = new DOMParser();
-    const doc = parser.parseFromString(svgString, "image/svg+xml");
+    const doc = parser.parseFromString(noDoctype, "image/svg+xml");
 
     // Remove every <script> tag
     doc.querySelectorAll("script").forEach((s) => s.remove());
