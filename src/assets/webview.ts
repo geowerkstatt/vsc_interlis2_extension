@@ -106,7 +106,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
       const id = `mermaid-${Date.now()}`;
       // mermaid.render already sanitizes the svg with dompurify: https://github.com/mermaid-js/mermaid/blob/a566353030e8b5aa6379b2989aa19663d5f37bc3/packages/mermaid/src/mermaidAPI.ts#L454
       const { svg } = await mermaid.render(id, diagramCode);
-      // codeql[js/unsafe-innerhtml] safe: sanitized by Mermaid’s built-in DOMPurify (securityLevel strict)
+      // codeql[js/xss] safe: sanitized by Mermaid’s built-in DOMPurify (securityLevel strict)
       container.innerHTML = svg;
 
       const svgElement = getSvgElement();
