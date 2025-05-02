@@ -27,7 +27,6 @@ export function getWebviewHTML(webview: vscode.Webview, extensionUri: vscode.Uri
   const nonce = getNonce();
   const csp = buildCSP(nonce, webview.cspSource);
 
-  const mermaidUri = `https://cdn.jsdelivr.net/npm/mermaid@${MERMAID_VERSION}/dist/mermaid.min.js`;
   const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "out", "assets", "webview.js")).toString();
   const style = readAsset(extensionUri, "out", "assets", "webview.css");
   let html = readAsset(extensionUri, "out", "assets", "webview.html");
@@ -35,7 +34,6 @@ export function getWebviewHTML(webview: vscode.Webview, extensionUri: vscode.Uri
   const replacements: Record<string, string> = {
     __CSP__: csp,
     __NONCE__: nonce,
-    __MERMAID_URI__: mermaidUri,
     __STYLE__: style,
     __WEBVIEW_SCRIPT_URI__: scriptUri,
   };
