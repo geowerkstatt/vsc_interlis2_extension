@@ -8,7 +8,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 /// <summary>
 /// INTERLIS AST visitor to generate markdown documentation.
 /// </summary>
-public class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
+internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 {
     private readonly StringBuilder documentation = new StringBuilder();
     private bool useHtml;
