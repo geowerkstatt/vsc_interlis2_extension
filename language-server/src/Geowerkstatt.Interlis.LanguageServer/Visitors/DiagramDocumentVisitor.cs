@@ -12,10 +12,10 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 /// </summary>
 internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 {
-    private readonly StringBuilder _mermaidScript = new();
-    private readonly List<ClassDef> _classes = new();
-    private readonly List<AssociationDef> _associations = new();
-    private readonly ILogger<DiagramDocumentVisitor> _logger;
+    private readonly StringBuilder mermaidScript = new();
+    private readonly List<ClassDef> classes = new();
+    private readonly List<AssociationDef> associations = new();
+    private readonly ILogger<DiagramDocumentVisitor> logger;
 
     private static readonly Dictionary<(long? Min, long? Max), string> MermaidCardinalityMap = new()
     {
@@ -27,57 +27,57 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger)
     {
-        _logger = logger;
-        _mermaidScript.AppendLine("classDiagram");
-        _mermaidScript.AppendLine("direction LR");
+        this.logger = logger;
+        mermaidScript.AppendLine("classDiagram");
+        mermaidScript.AppendLine("direction LR");
     }
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
-        _mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
         base.VisitTopicDef(topicDef);
-        _mermaidScript.AppendLine("}");
-        _mermaidScript.AppendLine();
+        mermaidScript.AppendLine("}");
+        mermaidScript.AppendLine();
 
-        foreach (var classDefs in _classes)
+        foreach (var classDefs in classes)
         {
             if (classDefs.Extends?.Target?.Name is not null and var parent)
-                _mermaidScript.AppendLine($"{classDefs.Name} --|> {parent}");
+                mermaidScript.AppendLine($"{classDefs.Name} --|> {parent}");
 
             if (classDefs.MetaAttributes.TryGetValue("geow.uml.color", out var color) &&
                 !string.IsNullOrWhiteSpace(color))
             {
-                _mermaidScript.AppendLine($"style {classDefs.Name} fill:{color},color:black,stroke:black");
+                mermaidScript.AppendLine($"style {classDefs.Name} fill:{color},color:black,stroke:black");
             }
 
             foreach (var attr in classDefs.Content.Values.OfType<AttributeDef>())
                 AppendAttributeDetails(attr);
 
-            _mermaidScript.AppendLine();
+            mermaidScript.AppendLine();
         }
 
-        foreach (var associationDef in _associations)
+        foreach (var associationDef in associations)
             AppendAssociationDetails(associationDef);
 
-        _mermaidScript.AppendLine();
+        mermaidScript.AppendLine();
 
-        _classes.Clear();
-        _associations.Clear();
+        classes.Clear();
+        associations.Clear();
 
         return null;
     }
 
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
-        _mermaidScript.AppendLine($"  class {classDef.Name}");
-        _classes.Add(classDef);
+        mermaidScript.AppendLine($"  class {classDef.Name}");
+        classes.Add(classDef);
 
         return base.VisitClassDef(classDef);
     }
 
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
     {
-        _associations.Add(associationDef);
+        associations.Add(associationDef);
         return base.VisitAssociationDef(associationDef);
     }
 
@@ -86,7 +86,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         if (attributeDef.Parent is ClassDef parentClass)
         {
             var typeString = VisitTypeDefInternal(attributeDef.TypeDef);
-            _mermaidScript.AppendLine($"{parentClass.Name}: +{typeString} {attributeDef.Name}");
+            mermaidScript.AppendLine($"{parentClass.Name}: +{typeString} {attributeDef.Name}");
         }
     }
 
@@ -96,7 +96,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var roles = assoc.Content.Values.OfType<AttributeDef>().ToList();
         if (roles.Count != 2)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Skipping association '{Name}' because it has {Count} roles (only binary supported)",
                 assoc.Name, roles.Count
             );
@@ -107,7 +107,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var (c2, rawCard2) = GetClassAndCardinality(roles[1]);
         if (c1 is null || c2 is null || rawCard1 is null || rawCard2 is null)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Skipping association '{Name}' due to missing class or cardinality: " +
                 "first=({Class1},{Card1}), second=({Class2},{Card2})",
                 assoc.Name,
@@ -122,7 +122,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var card1 = Normalize(rawCard1);
         var card2 = Normalize(rawCard2);
 
-        _mermaidScript.AppendLine(
+        mermaidScript.AppendLine(
             $"{c1.Name} {card1}--o {card2}{c2.Name} : {assoc.Name}"
         );
     }
@@ -166,6 +166,6 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public string GetDiagramDocument()
     {
-        return _mermaidScript.ToString();
+        return mermaidScript.ToString();
     }
 }
