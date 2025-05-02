@@ -41,7 +41,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
         foreach (var classDefs in classes)
         {
-            if (classDefs.Extends?.Target?.Name is not null and var parent)
+            if (classDefs.Extends?.Target?.Name is string parent)
                 mermaidScript.AppendLine($"{classDefs.Name} --|> {parent}");
 
             if (classDefs.MetaAttributes.TryGetValue("geow.uml.color", out var color) &&
