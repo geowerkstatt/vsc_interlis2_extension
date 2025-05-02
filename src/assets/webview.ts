@@ -1,3 +1,5 @@
+import mermaid from "mermaid";
+
 interface ViewBox {
   x: number;
   y: number;
@@ -15,15 +17,6 @@ interface WebviewMessage {
 }
 
 declare const acquireVsCodeApi: () => VSCodeApi;
-declare const mermaid: {
-  initialize(config: {
-    startOnLoad: boolean;
-    theme: string;
-    flowchart: { curve: string; nodeSpacing: number; rankSpacing: number };
-    securityLevel: string;
-  }): void;
-  render(id: string, code: string): Promise<{ svg: string }>;
-};
 
 (() => {
   // ---- State ----
