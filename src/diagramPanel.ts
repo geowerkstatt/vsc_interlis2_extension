@@ -115,7 +115,7 @@ function postMessage(type: string, text: string, resetZoom: boolean) {
   diagramPanel?.webview.postMessage({
     type: type,
     text: text,
-    resetZoom: resetZoom
+    resetZoom: resetZoom,
   });
 }
 

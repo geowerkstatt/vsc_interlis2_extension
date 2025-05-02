@@ -141,7 +141,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
 
       originalViewBox = { w: width, h: height };
 
-      if(!currentViewBox || resetZoom) {
+      if (!currentViewBox || resetZoom) {
         currentViewBox = { x: 0, y: 0, w: width, h: height };
         zoomLevel = 1;
       }
