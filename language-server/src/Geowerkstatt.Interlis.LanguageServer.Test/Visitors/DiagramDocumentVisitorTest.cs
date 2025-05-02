@@ -24,12 +24,11 @@ public class DiagramDocumentVisitorTests
                                   END T;
                                 END M.";
 
-        var ast     = _reader.ReadFile(new StringReader(model));
+        var ast = _reader.ReadFile(new StringReader(model));
         var visitor = CreateVisitor();
         visitor.VisitInterlisFile(ast);
 
-        var diagram = visitor.GetDiagramDocument()
-                             .ReplaceLineEndings("\n");
+        var diagram = visitor.GetDiagramDocument().ReplaceLineEndings("\n");
 
         var expected = new StringBuilder()
             .AppendLine("classDiagram")
