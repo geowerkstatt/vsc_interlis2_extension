@@ -131,12 +131,12 @@ const debouncedRequestDiagram = debounce((uri: string) => {
 }, 300);
 
 function debounce<T extends any[]>(fn: (...args: T) => void, delay: number) {
-  let timer: number | undefined;
+  let timer: NodeJS.Timeout | undefined;
   return (...args: T) => {
     if (timer !== undefined) {
       clearTimeout(timer);
     }
-    timer = window.setTimeout(() => fn(...args), delay);
+    timer = setTimeout(() => fn(...args), delay);
   };
 }
 
