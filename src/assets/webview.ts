@@ -89,7 +89,11 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     doc.querySelectorAll("*").forEach((el) => {
       Array.from(el.attributes).forEach(({ name, value }) => {
         const low = value.trim().toLowerCase();
-        if (name.startsWith("on") || ((name === "href" || name === "xlink:href") && low.startsWith("javascript:"))) {
+        if (
+          name.startsWith("on") ||
+          ((name === "href" || name === "xlink:href") &&
+            (low.startsWith("javascript:") || low.startsWith("data:") || low.startsWith("vbscript:")))
+        ) {
           el.removeAttribute(name);
         }
       });
