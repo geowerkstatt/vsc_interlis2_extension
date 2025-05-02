@@ -91,39 +91,39 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     }
 
 
-    private void AppendAssociationDetails(AssociationDef assoc)
+    private void AppendAssociationDetails(AssociationDef associationDef)
     {
-        var roles = assoc.Content.Values.OfType<AttributeDef>().ToList();
+        var roles = associationDef.Content.Values.OfType<AttributeDef>().ToList();
         if (roles.Count != 2)
         {
             logger.LogWarning(
                 "Skipping association '{Name}' because it has {Count} roles (only binary supported)",
-                assoc.Name, roles.Count
+                associationDef.Name, roles.Count
             );
             return;
         }
 
-        var (c1, rawCard1) = GetClassAndCardinality(roles[0]);
-        var (c2, rawCard2) = GetClassAndCardinality(roles[1]);
-        if (c1 is null || c2 is null || rawCard1 is null || rawCard2 is null)
+        var (class1, rawCardinality1) = GetClassAndCardinality(roles[0]);
+        var (class2, rawCardinality2) = GetClassAndCardinality(roles[1]);
+        if (class1 is null || class2 is null || rawCardinality1 is null || rawCardinality2 is null)
         {
             logger.LogWarning(
                 "Skipping association '{Name}' due to missing class or cardinality: " +
                 "first=({Class1},{Card1}), second=({Class2},{Card2})",
-                assoc.Name,
-                c1?.Name  ?? "<null>", rawCard1 ?? "<null>",
-                c2?.Name  ?? "<null>", rawCard2 ?? "<null>"
+                associationDef.Name,
+                class1?.Name ?? "<null>", rawCardinality1 ?? "<null>",
+                class2?.Name ?? "<null>", rawCardinality2 ?? "<null>"
             );
             return;
         }
 
         static string Normalize(string raw) => $"\"{raw.Trim().Trim('\"')}\" ";
 
-        var card1 = Normalize(rawCard1);
-        var card2 = Normalize(rawCard2);
+        var cardinality1 = Normalize(rawCardinality1);
+        var cardinality2 = Normalize(rawCardinality2);
 
         mermaidScript.AppendLine(
-            $"{c1.Name} {card1}--o {card2}{c2.Name} : {assoc.Name}"
+            $"{class1.Name} {cardinality1}--o {cardinality2}{class2.Name} : {associationDef.Name}"
         );
     }
 
