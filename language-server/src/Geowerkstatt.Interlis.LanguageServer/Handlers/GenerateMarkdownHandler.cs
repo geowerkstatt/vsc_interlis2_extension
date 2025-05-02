@@ -34,6 +34,12 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
     /// <returns>The generated markdown documentation, or <c>null</c> if the INTERLIS file was not found.</returns>
     public override Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
     {
+        if (options == null)
+        {
+            logger.LogWarning("generateMarkdown invoked without arguments");
+            return Task.FromResult<string?>(null);
+        }
+        
         var uri = options.Uri;
         var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))

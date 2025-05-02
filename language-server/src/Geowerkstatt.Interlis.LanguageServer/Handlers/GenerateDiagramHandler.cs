@@ -36,6 +36,12 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
     /// <returns>The generated diagram document, or <c>null</c> if the INTERLIS file was not found.</returns>
     public override Task<string?> Handle(GenerateDiagramOptions options, CancellationToken cancellationToken)
     {
+        if (options == null)
+        {
+            logger.LogWarning("generateDiagram invoked without arguments");
+            return Task.FromResult<string?>(null);
+        }
+
         var uri = options.Uri;
         var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))
