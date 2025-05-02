@@ -74,6 +74,28 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     errorDivs.forEach((div) => div.remove());
   }
 
+  function sanitizeSvgString(svgString: string): string {
+    // Parse into an XML document
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, "image/svg+xml");
+
+    // Remove every <script> tag
+    doc.querySelectorAll("script").forEach((s) => s.remove());
+
+    // For every element left, strip on* attrs and javascript: URIs
+    doc.querySelectorAll("*").forEach((el) => {
+      Array.from(el.attributes).forEach(({ name, value }) => {
+        const low = value.trim().toLowerCase();
+        if (name.startsWith("on") || ((name === "href" || name === "xlink:href") && low.startsWith("javascript:"))) {
+          el.removeAttribute(name);
+        }
+      });
+    });
+
+    // Serialize back to an SVG string
+    return new XMLSerializer().serializeToString(doc.documentElement);
+  }
+
   // ----- Mermaid Initialization -----
   function initMermaid(): void {
     if (mermaidInitialized) {
@@ -105,7 +127,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     try {
       const id = `mermaid-${Date.now()}`;
       const { svg } = await mermaid.render(id, diagramCode);
-      container.innerHTML = svg;
+      container.innerHTML = sanitizeSvgString(svg);
 
       const svgElement = getSvgElement();
       const viewBoxAttribute = svgElement?.getAttribute("viewBox");
