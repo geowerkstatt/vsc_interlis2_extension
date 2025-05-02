@@ -74,35 +74,6 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     errorDivs.forEach((div) => div.remove());
   }
 
-  function sanitizeSvgString(svgString: string): string {
-    // Remove any <!DOCTYPE ...> entirely (including internal subset)
-    const noDoctype = svgString.replace(/<!DOCTYPE[\s\S]*?>/gi, "");
-
-    // Parse into an XML document
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(noDoctype, "image/svg+xml");
-
-    // Remove every <script> tag
-    doc.querySelectorAll("script").forEach((s) => s.remove());
-
-    // For every element left, strip on* attrs and javascript: URIs
-    doc.querySelectorAll("*").forEach((el) => {
-      Array.from(el.attributes).forEach(({ name, value }) => {
-        const low = value.trim().toLowerCase();
-        if (
-          name.startsWith("on") ||
-          ((name === "href" || name === "xlink:href") &&
-            (low.startsWith("javascript:") || low.startsWith("data:") || low.startsWith("vbscript:")))
-        ) {
-          el.removeAttribute(name);
-        }
-      });
-    });
-
-    // Serialize back to an SVG string
-    return new XMLSerializer().serializeToString(doc.documentElement);
-  }
-
   // ----- Mermaid Initialization -----
   function initMermaid(): void {
     if (mermaidInitialized) {
@@ -133,8 +104,10 @@ declare const acquireVsCodeApi: () => VSCodeApi;
 
     try {
       const id = `mermaid-${Date.now()}`;
+      // mermaid.render already sanitizes the svg with dompurify: https://github.com/mermaid-js/mermaid/blob/a566353030e8b5aa6379b2989aa19663d5f37bc3/packages/mermaid/src/mermaidAPI.ts#L454
+      // codeql[js/unsafe-innerhtml] safe: sanitized by Mermaid’s built-in DOMPurify (securityLevel strict)
       const { svg } = await mermaid.render(id, diagramCode);
-      container.innerHTML = sanitizeSvgString(svg);
+      container.innerHTML = svg;
 
       const svgElement = getSvgElement();
       const viewBoxAttribute = svgElement?.getAttribute("viewBox");
