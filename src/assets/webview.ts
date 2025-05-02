@@ -14,6 +14,7 @@ interface VSCodeApi {
 interface WebviewMessage {
   type: "update";
   text: string;
+  resetZoom: boolean;
 }
 
 declare const acquireVsCodeApi: () => VSCodeApi;
@@ -89,7 +90,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   }
 
   // ----- Diagram Rendering -----
-  async function renderDiagram(diagramCode: string): Promise<void> {
+  async function renderDiagram(diagramCode: string, resetZoom: boolean): Promise<void> {
     if (!diagramCode) {
       container.innerHTML = "<div>Could not load diagram.</div>";
       resetPanZoom();
@@ -107,18 +108,21 @@ declare const acquireVsCodeApi: () => VSCodeApi;
       container.innerHTML = svg;
 
       const svgElement = getSvgElement();
-      const viewBoxAttr = svgElement?.getAttribute("viewBox");
-      if (!viewBoxAttr) {
+      const viewBoxAttribute = svgElement?.getAttribute("viewBox");
+      if (!viewBoxAttribute) {
         throw new Error("No viewBox on SVG");
       }
 
-      const [, , widthStr, heightStr] = viewBoxAttr.split(" ");
-      const width = Number(widthStr);
-      const height = Number(heightStr);
+      const [, , widthString, heightString] = viewBoxAttribute.split(" ");
+      const width = Number(widthString);
+      const height = Number(heightString);
 
       originalViewBox = { w: width, h: height };
-      currentViewBox = { x: 0, y: 0, w: width, h: height };
-      zoomLevel = 1;
+
+      if(!currentViewBox || resetZoom) {
+        currentViewBox = { x: 0, y: 0, w: width, h: height };
+        zoomLevel = 1;
+      }
       updateViewBox(currentViewBox);
       container.style.cursor = "grab";
       console.log("Render complete");
@@ -135,7 +139,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   function handleMessage(event: MessageEvent<WebviewMessage>): void {
     const msg = event.data;
     if (msg.type === "update") {
-      debouncedRender(msg.text);
+      debouncedRender(msg.text, msg.resetZoom);
     }
   }
 

@@ -7,6 +7,7 @@ let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
 let isAutoClosing = false;
 let closeTimer: NodeJS.Timeout | undefined;
+let lastSentMermaidDsl: string | undefined;
 
 function autoClosePanel() {
   if (diagramPanel) {
@@ -71,7 +72,8 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         if (editor?.document.languageId === "INTERLIS2") {
           const uri = editor.document.uri.toString();
           requestDiagram(uri).then((mermaidDsl) => {
-            diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl });
+            lastSentMermaidDsl = mermaidDsl;
+            diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
           });
         }
       } else {
@@ -104,10 +106,11 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
   );
 }
 
-function postMessage(type: string, text: string) {
+function postMessage(type: string, text: string, resetZoom: boolean) {
   diagramPanel?.webview.postMessage({
     type: type,
     text: text,
+    resetZoom: resetZoom
   });
 }
 
@@ -126,7 +129,8 @@ const debouncedAutoClosePanel = debounce(autoClosePanel, 100);
 
 const debouncedRequestDiagram = debounce((uri: string) => {
   requestDiagram(uri).then((mermaidDsl) => {
-    diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl });
+    lastSentMermaidDsl = mermaidDsl;
+    diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: false });
   });
 }, 300);
 
@@ -167,7 +171,8 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
 
       const uri = editor.document.uri.toString();
       const mermaidDsl = await requestDiagram(uri);
-      postMessage("update", mermaidDsl);
+      postMessage("update", mermaidDsl, mermaidDsl !== lastSentMermaidDsl);
+      lastSentMermaidDsl = mermaidDsl;
     }),
     vscode.workspace.onDidCloseTextDocument(() => updateDiagramVisibility(context)),
     vscode.workspace.onDidChangeTextDocument((e) => handleTextChange(e))
