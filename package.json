@@ -104,7 +104,6 @@
     "@typescript-eslint/parser": "^5.30.0",
     "@vscode/vsce": "^2.21.1",
     "cpy-cli": "^5.0.0",
-    "dompurify": "^3.2.5",
     "esbuild": "^0.25.3",
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^8.5.0",
