@@ -3,6 +3,11 @@ import { getWebviewHTML } from "./contentProvider";
 import { getLanguageClient } from "./languageServer";
 import { ExecuteCommandRequest } from "vscode-languageclient/node";
 
+interface Debounced<T extends any[]> {
+  run: (...args: T) => void;
+  cancel: () => void;
+}
+
 let diagramPanel: vscode.WebviewPanel | undefined;
 let hasUserClosedPanel = false;
 let isAutoClosing = false;
@@ -122,7 +127,7 @@ function handleTextChange(e: vscode.TextDocumentChangeEvent) {
   if (!diagramPanel || !diagramPanel.visible) {
     return;
   }
-  debouncedRequestDiagram(e.document.uri.toString());
+  debouncedRequestDiagram.run(e.document.uri.toString());
 }
 
 const debouncedAutoClosePanel = debounce(autoClosePanel, 100);
@@ -134,13 +139,21 @@ const debouncedRequestDiagram = debounce((uri: string) => {
   });
 }, 300);
 
-function debounce<T extends any[]>(fn: (...args: T) => void, delay: number) {
-  let timer: number | undefined;
-  return (...args: T) => {
-    if (timer !== undefined) {
-      clearTimeout(timer);
-    }
-    timer = window.setTimeout(() => fn(...args), delay);
+function debounce<T extends any[]>(fn: (...args: T) => void, delay: number): Debounced<T> {
+  let timer: NodeJS.Timeout | undefined;
+  return {
+    run: (...args: T) => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => fn(...args), delay);
+    },
+    cancel: () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = undefined;
+    },
   };
 }
 
@@ -148,9 +161,12 @@ export function updateDiagramVisibility(context: vscode.ExtensionContext) {
   const hasAnyIliOpen = vscode.window.visibleTextEditors.some((e) => e.document.languageId === "INTERLIS2");
 
   if (!hasAnyIliOpen) {
-    debouncedAutoClosePanel();
+    clearTimeout(closeTimer);
+    debouncedAutoClosePanel.run();
   } else {
     clearTimeout(closeTimer);
+    debouncedAutoClosePanel.cancel();
+    closeTimer = undefined;
 
     if (!diagramPanel && !hasUserClosedPanel) {
       revealDiagramPanelInternal(context);
