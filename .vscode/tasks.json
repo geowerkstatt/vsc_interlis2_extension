@@ -11,6 +11,8 @@
       ],
       "isBackground": true,
       "presentation": {
+        "clear": true,
+        "panel": "dedicated",
         "reveal": "never"
       },
       "group": {
