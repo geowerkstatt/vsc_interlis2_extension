@@ -89,9 +89,14 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "npm run build-webview && tsc -p ./ && npm run copy-assets",
-    "copy-assets": "cpy \"src/assets/**/*.{html,css}\" out/assets --flat",
-    "build-webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js",
+    "build:ts": "tsc -p ./",
+    "build:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js",
+    "copy:assets": "cpy \"src/assets/**/*.{html,css}\" out/assets --flat",
+    "compile": "npm run build:webview && npm run build:ts && npm run copy:assets",
+    "watch:ts": "tsc -watch -p ./",
+    "watch:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js --watch",
+    "watch:assets": "nodemon --watch src/assets --ext html,css --exec \"npm run copy:assets\"",
+    "watch": "concurrently npm:watch:*",
     "lint": "eslint . --ext .ts,.tsx",
     "watch": "npm run copy-assets && tsc -watch -p ./",
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
