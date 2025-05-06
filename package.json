@@ -103,7 +103,7 @@
     "restore:server": "dotnet restore ./language-server/src",
     "publish:server": "dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r win-x64 -o ./language-server/bin/win-x64 && dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r linux-x64 -o ./language-server/bin/linux-x64 && dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r osx-x64 -o ./language-server/bin/osx-x64",
     "package": "npm run clean && npm run restore:server && npm run publish:server && npm run compile && npx vsce package",
-    "package:prerelease": "npm run clean && npm run restore:server && npm run publish:server && npm run compile:prod && npx vsce package --pre-release"
+    "postinstall": "npm run restore:server"
   },
   "devDependencies": {
     "@types/node": "^16.11.7",
