@@ -14,9 +14,9 @@
         "--extensionDevelopmentPath=${workspaceFolder}"
       ],
       "outFiles": [
-        "${fileDirname}/*.js"
+        "${workspaceFolder}/out/**/*.js"
       ],
-      "preLaunchTask": "npm: watch"
+      "preLaunchTask": "watch-all"
     },
     {
       "name": "Run Web Extension in VS Code Web",
@@ -28,9 +28,20 @@
         "--extensionDevelopmentKind=web"
       ],
       "outFiles": [
-        "${fileDirname}/*.js"
+        "${workspaceFolder}/out/**/*.js"
       ],
-      "preLaunchTask": "npm: watch"
+      "preLaunchTask": "watch-all"
+    },
+    {
+      "name": "Attach to INTERLIS Language Server",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "Geowerkstatt.Interlis.LanguageServer.exe",
+      "justMyCode": true,
+      "sourceFileMap": {
+        "${workspaceFolder}/language-server/src/Geowerkstatt.Interlis.LanguageServer":
+        "${workspaceFolder}/language-server/src/Geowerkstatt.Interlis.LanguageServer"
+      }
     }
   ]
 }

@@ -8,38 +8,40 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
 /// <summary>
-/// Command handler to generate markdown documentation for an INTERLIS file.
+/// Command handler to generate diagram document for an INTERLIS file.
 /// Responds to workspace.executeCommand requests using the executeCommandProvider capability of the language server protocol.
 /// </summary>
-public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<GenerateMarkdownOptions, string?>
+public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<GenerateDiagramOptions, string?>
 {
-    public const string Command = "generateMarkdown";
+    public const string Command = "generateDiagram";
 
-    private readonly ILogger<GenerateMarkdownHandler> logger;
+    private readonly ILogger<GenerateDiagramHandler> logger;
+    private readonly ILoggerFactory loggerFactory;
     private readonly InterlisReader interlisReader;
     private readonly FileContentCache fileContentCache;
 
-    public GenerateMarkdownHandler(ILogger<GenerateMarkdownHandler> logger, InterlisReader interlisReader, FileContentCache fileContentCache, ISerializer serializer) : base(Command, serializer)
+    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, InterlisReader interlisReader, FileContentCache fileContentCache, ISerializer serializer) : base(Command, serializer)
     {
         this.logger = logger;
         this.interlisReader = interlisReader;
         this.fileContentCache = fileContentCache;
+        this.loggerFactory = loggerFactory;
     }
 
     /// <summary>
-    /// Handles the generateMarkdown requests.
+    /// Handles the generateDiagram requests.
     /// </summary>
     /// <param name="options">The requested options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
-    /// <returns>The generated markdown documentation, or <c>null</c> if the INTERLIS file was not found.</returns>
-    public override Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
+    /// <returns>The generated diagram document, or <c>null</c> if the INTERLIS file was not found.</returns>
+    public override Task<string?> Handle(GenerateDiagramOptions options, CancellationToken cancellationToken)
     {
         if (options == null)
         {
-            logger.LogWarning("generateMarkdown invoked without arguments");
+            logger.LogWarning("generateDiagram invoked without arguments");
             return Task.FromResult<string?>(null);
         }
-        
+
         var uri = options.Uri;
         var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))
@@ -47,19 +49,19 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             return Task.FromResult<string?>(null);
         }
 
-        logger.LogInformation("Generate markdown for {0}", uri);
+        logger.LogInformation("Generate diagram for {0}", uri);
 
         using var stringReader = new StringReader(fileContent);
         var interlisFile = interlisReader.ReadFile(stringReader);
-        var markdown = GenerateMarkdown(interlisFile);
+        var diagram = GenerateDiagram(interlisFile);
 
-        return Task.FromResult<string?>(markdown);
+        return Task.FromResult<string?>(diagram);
     }
 
-    private static string GenerateMarkdown(InterlisFile interlisFile)
+    private string GenerateDiagram(InterlisFile interlisFile)
     {
-        var visitor = new MarkdownDocumentationVisitor();
+        DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>());
         visitor.VisitInterlisFile(interlisFile);
-        return visitor.GetDocumentation();
+        return visitor.GetDiagramDocument();
     }
 }

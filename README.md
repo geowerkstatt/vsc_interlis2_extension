@@ -48,3 +48,6 @@ The example above associates extensions such as `.ili` with this extension.
 
 ### Markdown documentation
 The extension provides the command "Generate markdown documentation" to create markdown code from an INTERLIS 2 file describing the classes and their attributes. This command can be executed from the Command Palette (Default hotkey `Ctrl+Shift+P`) or the context menu of an open INTERLIS 2 file.
+
+### Live Diagram View
+Watch your ILI models come to life in real time. As you type, the diagram automatically updates so you can instantly see your model’s structure, spot inconsistencies, and keep everything aligned—no extra clicks required. Export the diagram as .SVG to embed in your webpages, or copy the mermaid code directly to your clipboard.

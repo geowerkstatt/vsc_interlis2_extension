@@ -2,24 +2,53 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "build-dotnet-server",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/language-server/src",
+        "-c",
+        "Debug"
+      ],
+      "type": "process",
+      "problemMatcher": "$msCompile",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "clear": true
+      },
+      "group": "build"
+    },
+    {
+      "label": "watch-all",
       "type": "npm",
       "script": "watch",
-      "problemMatcher": "$tsc-watch",
+      "problemMatcher": [
+        "$tsc-watch",
+        "$esbuild-watch"
+      ],
       "isBackground": true,
       "presentation": {
+        "clear": true,
+        "panel": "dedicated",
         "reveal": "never"
       },
       "group": {
         "kind": "build",
         "isDefault": true
+      },
+      "dependsOn": [
+        "build-dotnet-server"
+      ],
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": [
+            "/d",
+            "/c"
+          ]
+        }
       }
-    },
-    {
-      "type": "npm",
-      "script": "watch-web",
-      "group": "build",
-      "isBackground": true,
-      "problemMatcher": "$tsc-watch"
     }
   ]
 }

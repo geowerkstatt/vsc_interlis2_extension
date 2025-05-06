@@ -1,6 +1,6 @@
 # Change Log
 ### vNext
-
+* Added visual preview for INTERLIS models. Preview opens automatically when an INTERLIS model is active in the editor, or can be opened manually by using the _Show INTERLIS Diagram View_ command.
 
 ### 0.2.1 - 2024-11-26
 

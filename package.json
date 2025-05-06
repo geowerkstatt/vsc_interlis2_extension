@@ -1,96 +1,131 @@
 {
-    "name": "InterlisLanguageSupport",
-    "displayName": "INTERLIS 2",
-    "description": "Language support for INTERLIS 2.4",
-    "icon": "images/iliIcon.PNG",
-    "publisher": "geowerkstatt",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/GeoWerkstatt/vsc_interlis2_extension.git"
-    },
-    "version": "0.2.2",
-    "engines": {
-        "vscode": "^1.63.0"
-    },
-    "categories": [
-        "Programming Languages"
+  "name": "InterlisLanguageSupport",
+  "displayName": "INTERLIS 2",
+  "description": "Language support for INTERLIS 2.4",
+  "icon": "images/iliIcon.PNG",
+  "publisher": "geowerkstatt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeoWerkstatt/vsc_interlis2_extension.git"
+  },
+  "version": "0.2.2",
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:INTERLIS2"
+  ],
+  "main": "./out/extension.js",
+  "browser": "./out/browser.js",
+  "keywords": [
+    "INTERLIS",
+    "ili"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "INTERLIS2",
+        "aliases": [
+          "INTERLIS2",
+          "ili"
+        ],
+        "extensions": [
+          ".ili"
+        ],
+        "configuration": "./language-configuration.json"
+      }
     ],
-    "activationEvents": [
-        "onLanguage:INTERLIS2"
+    "grammars": [
+      {
+        "language": "INTERLIS2",
+        "scopeName": "source.ili",
+        "path": "./syntaxes/ili.tmLanguage.json"
+      }
     ],
-    "main": "./out/setup.js",
-    "browser": "./out/browser.js",
-    "keywords": [
-        "INTERLIS",
-        "ili"
+    "snippets": [
+      {
+        "language": "INTERLIS2",
+        "path": "./snippets/interlis2.json"
+      }
     ],
-    "contributes": {
-        "languages": [
-            {
-                "id": "INTERLIS2",
-                "aliases": [
-                    "INTERLIS2",
-                    "ili"
-                ],
-                "extensions": [
-                    ".ili"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "INTERLIS2",
-                "scopeName": "source.ili",
-                "path": "./syntaxes/ili.tmLanguage.json"
-            }
-        ],
-        "snippets": [
-            {
-                "language": "INTERLIS2",
-                "path": "./snippets/interlis2.json"
-            }
-        ],
-        "commands": [
-            {
-                "command": "interlis.generateMarkdown",
-                "title": "Generate markdown documentation",
-                "category": "INTERLIS 2"
-            }
-        ],
-        "menus": {
-            "editor/context": [
-                {
-                    "when": "editorLangId == INTERLIS2",
-                    "command": "interlis.generateMarkdown",
-                    "group": "navigation"
-                }
-            ]
+    "commands": [
+      {
+        "command": "interlis.generateMarkdown",
+        "title": "Generate markdown documentation",
+        "category": "INTERLIS 2"
+      },
+      {
+        "command": "interlis.showDiagramView",
+        "title": "Show INTERLIS Diagram View",
+        "category": "INTERLIS 2",
+        "icon": "$(symbol-misc)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == INTERLIS2",
+          "command": "interlis.generateMarkdown",
+          "group": "navigation"
+        },
+        {
+          "when": "editorLangId == INTERLIS2",
+          "command": "interlis.showDiagramView",
+          "group": "navigation"
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "lint": "eslint . --ext .ts,.tsx",
-        "watch": "tsc -watch -p ./",
-        "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\""
-    },
-    "devDependencies": {
-        "@types/node": "^16.11.7",
-        "@types/node-fetch": "^2.6.2",
-        "@types/vscode": "^1.34.0",
-        "@typescript-eslint/eslint-plugin": "^5.30.0",
-        "@typescript-eslint/parser": "^5.30.0",
-        "@vscode/vsce": "^2.21.1",
-        "eslint": "^8.13.0",
-        "eslint-config-prettier": "^8.5.0",
-        "eslint-plugin-prettier": "^4.2.1",
-        "prettier": "^2.7.1",
-        "typescript": "^4.8.4"
-    },
-    "dependencies": {
-        "node-fetch": "^2.6.7",
-        "vscode-languageclient": "^9.0.1"
+      ],
+      "editor/title": [
+        {
+          "when": "editorLangId == INTERLIS2",
+          "command": "interlis.showDiagramView",
+          "group": "navigation@1"
+        }
+      ]
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "build:ts": "tsc -p ./",
+    "build:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js",
+    "copy:assets": "cpy \"src/assets/**/*.{html,css}\" out/assets --flat",
+    "compile": "npm run build:webview && npm run build:ts && npm run copy:assets",
+    "watch:ts": "tsc -watch -p ./",
+    "watch:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js --watch",
+    "watch:assets": "nodemon --watch src/assets --ext html,css --exec \"npm run copy:assets\"",
+    "watch": "concurrently npm:watch:*",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\"",
+    "clean": "rimraf out language-server/bin && dotnet clean ./language-server/src --nologo",
+    "restore:server": "dotnet restore ./language-server/src",
+    "publish:server": "dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r win-x64 -o ./language-server/bin/win-x64 && dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r linux-x64 -o ./language-server/bin/linux-x64 && dotnet publish ./language-server/src/Geowerkstatt.Interlis.LanguageServer --self-contained -c Release -r osx-x64 -o ./language-server/bin/osx-x64",
+    "package": "npm run clean && npm run restore:server && npm run publish:server && npm run compile && npx vsce package",
+    "postinstall": "npm run restore:server"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "@types/node-fetch": "^2.6.2",
+    "@types/vscode": "^1.34.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.0",
+    "@vscode/vsce": "^2.21.1",
+    "concurrently": "^9.1.2",
+    "cpy-cli": "^5.0.0",
+    "esbuild": "^0.25.3",
+    "eslint": "^8.13.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "mermaid": "^11.6.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^2.7.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "vscode-languageclient": "^9.0.1"
+  }
 }
