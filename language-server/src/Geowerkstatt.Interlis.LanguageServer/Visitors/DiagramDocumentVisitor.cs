@@ -55,9 +55,13 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
         mermaidScript.AppendLine($"  class {classDef.Name}");
-        classes.Add(classDef);
 
-        return base.VisitClassDef(classDef);
+        if (classDef.IsStructure)
+            structures.Add(classDef);
+        else
+            classes.Add(classDef);
+
+        return DefaultResult;
     }
 
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
