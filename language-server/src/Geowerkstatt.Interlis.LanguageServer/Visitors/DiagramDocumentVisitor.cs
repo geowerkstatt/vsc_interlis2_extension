@@ -147,6 +147,27 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         );
     }
 
+    private static string FormatNumericType(NumericType numericType)
+    {
+        string text;
+        if (numericType.Min != null && numericType.Max != null)
+        {
+            string minStr = numericType.Min.ToString()!;
+            string maxStr = numericType.Max.ToString()!;
+            text = $"{minStr}..{maxStr}";
+        }
+        else
+        {
+            text = "Numeric";
+        }
+
+        var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault();
+        if (!string.IsNullOrEmpty(unitName))
+            text += $" [{unitName}]";
+
+        return text;
+    }
+
     private string VisitTypeDefInternal(TypeDef? type)
     {
         if (type == null) return "?";
