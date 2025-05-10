@@ -67,7 +67,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
     {
         associations.Add(associationDef);
-        return base.VisitAssociationDef(associationDef);
+        return DefaultResult;
     }
 
     private void AppendAttributeDetails(AttributeDef attributeDef)
