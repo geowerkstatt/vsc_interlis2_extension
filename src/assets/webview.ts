@@ -81,7 +81,8 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     }
     mermaid.initialize({
       startOnLoad: false,
-      theme: "forest",
+      theme: "neutral",
+      themeCSS: ".classGroup .methods { display: none; }",
       flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
       securityLevel: "strict",
     });
@@ -158,7 +159,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     const svgY = currentViewBox.y + (mouseY / rect.height) * currentViewBox.h;
 
     const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    const newZoom = Math.min(5, Math.max(0.2, zoomLevel * factor));
+    const newZoom = Math.min(15, Math.max(0.2, zoomLevel * factor));
     if (newZoom === zoomLevel) return;
 
     const newW = originalViewBox.w / newZoom;

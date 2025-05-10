@@ -286,4 +286,13 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
         return mermaidScript.ToString();
     }
+
+    internal static class MermaidConstants
+    {
+        public const string ClassStereotype = "**#60;#60;CLASS#62;#62;**#8203;";
+        public const string StructureStereotype = "**#60;#60;STRUCTURE#62;#62;**#8203;";
+        public const string Colon = "#colon;";
+        public const string LeftParenthesis = "#40;";
+        public const string RightParenthesis = "#41;";
+    }
 }
