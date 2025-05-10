@@ -196,10 +196,37 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         return string.Join(", ", enumerationValues.Select(v => v.Name));
     }
 
-    private static (ClassDef? classDef, string? Cardinality) GetClassAndCardinality(AttributeDef? attribute)
+    private static string FormatCardinality(Cardinality? cardinality)
     {
-        if (attribute?.TypeDef is not RoleType roleType || roleType.Cardinality is null)
+        if (cardinality is null)
+        {
+            return "\"*\" ";
+        }
+
+        var min = cardinality.Min?.ToString() ?? "*";
+        var max = cardinality.Max?.ToString() ?? "*";
+        return $"\"{(min == max ? min : $"{min}..{max}")}\" ";
+    }
+
+    private static string CardinalitySuffix(TypeDef? type)
+    {
+        if (type?.Cardinality is not { } cardinality
+            || cardinality.Min is not long min
+            || cardinality.Max is not long max
+            || min != max
+            || min <= 1)
+            return string.Empty;
+
+        return $" ×{min}";
+    }
+
+    private static (ClassDef? cls, string? card) GetClassAndCardinality(AttributeDef? attribute)
+    {
+        if (attribute?.TypeDef is not RoleType roleType)
+        {
             return (null, null);
+        }
+
         var classDef = roleType.Targets.FirstOrDefault()?.Value?.Target as ClassDef;
         var cardinalityTuple = (roleType.Cardinality.Min, roleType.Cardinality.Max);
         MermaidCardinalityMap.TryGetValue(cardinalityTuple, out string? cardinality);
