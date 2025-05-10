@@ -22,6 +22,11 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger)
     {
         this.logger = logger;
+        mermaidScript.AppendLine("---");
+        mermaidScript.AppendLine("  config:");
+        mermaidScript.AppendLine("    class:");
+        mermaidScript.AppendLine("      hideEmptyMembersBox: true");
+        mermaidScript.AppendLine("---");
         mermaidScript.AppendLine("classDiagram");
         mermaidScript.AppendLine("direction LR");
     }
