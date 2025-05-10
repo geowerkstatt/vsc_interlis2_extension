@@ -234,6 +234,56 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public string GetDiagramDocument()
     {
+        foreach (var classDef in classes)
+        {
+            if (classDef.Extends is { } extRef && extRef.Path.Any())
+            {
+                string parentSimple = extRef.Path.Last();
+
+                string parentLabel = extRef.Target != null
+                    ? parentSimple
+                    : $"`{parentSimple} #60;#60;EXTERNAL#62;#62;`";
+
+                mermaidScript.AppendLine($"{classDef.Name} --|> {parentLabel}");
+            }
+
+            if (classDef.MetaAttributes.TryGetValue("geow.uml.color", out var color) &&
+                !string.IsNullOrWhiteSpace(color))
+            {
+                mermaidScript.AppendLine($"style {classDef.Name} fill:{color},color:black,stroke:black");
+            }
+
+            mermaidScript.AppendLine(
+                $"{classDef.Name}: {MermaidConstants.ClassStereotype}"
+            );
+
+            foreach (var attr in classDef.Content.Values.OfType<AttributeDef>())
+            {
+                AppendAttributeDetailsToScript(classDef, attr);
+            }
+
+            mermaidScript.AppendLine();
+        }
+
+        foreach (var structure in structures)
+        {
+            mermaidScript.AppendLine($"{structure.Name}: {MermaidConstants.StructureStereotype}");
+            foreach (var attr in structure.Content.Values.OfType<AttributeDef>())
+                AppendAttributeDetailsToScript(structure, attr);
+
+            mermaidScript.AppendLine();
+        }
+
+        foreach (var associationDef in associations)
+        {
+            AppendAssociationDetailsToScript(associationDef);
+        }
+
+        mermaidScript.AppendLine();
+
+        foreach (var structure in structures)
+            mermaidScript.AppendLine($"style {structure.Name} fill:,stroke-dasharray:10 10");
+
         return mermaidScript.ToString();
     }
 }
