@@ -12,18 +12,12 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 /// </summary>
 internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 {
-    private readonly StringBuilder mermaidScript = new();
     private readonly List<ClassDef> classes = new();
+    private readonly List<ClassDef> structures = new();
     private readonly List<AssociationDef> associations = new();
-    private readonly ILogger<DiagramDocumentVisitor> logger;
+    private readonly StringBuilder mermaidScript = new();
 
-    private static readonly Dictionary<(long? Min, long? Max), string> MermaidCardinalityMap = new()
-    {
-        { (0, 1), "\"0..1\" " },
-        { (1, 1), "\"1\" " },
-        { (0, null), "\"*\"" },
-        { (1, null), "\"1..*\" " }
-    };
+    private readonly ILogger<DiagramDocumentVisitor> logger;
 
     public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger)
     {
