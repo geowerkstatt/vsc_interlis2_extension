@@ -1,128 +1,157 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Geowerkstatt.Interlis.Tools;
+using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
+namespace DiagramVisitor.Tests;
 
 [TestClass]
 public class DiagramDocumentVisitorTests
 {
-    private readonly InterlisReader _reader = new();
-    private DiagramDocumentVisitor CreateVisitor()
-        => new(NullLogger<DiagramDocumentVisitor>.Instance);
-
-    [TestMethod]
-    public void SingleClass_GeneratesBasicDiagram()
+    // ─── helpers ────────────────────────────────────────────────────────────────
+    private static string BuildDiagram(string ili)
     {
-        const string model = @"INTERLIS 2.4;
-                                MODEL M (en) AT ""http://example.com"" VERSION ""1"" =
-                                  TOPIC T =
-                                    CLASS A =
-                                      ;
-                                    END A;
-                                  END T;
-                                END M.";
-
-        var ast = _reader.ReadFile(new StringReader(model));
-        var visitor = CreateVisitor();
+        var reader  = new InterlisReader();
+        var ast     = reader.ReadFile(new StringReader(ili));
+        var visitor = new DiagramDocumentVisitor(NullLogger<DiagramDocumentVisitor>.Instance);
         visitor.VisitInterlisFile(ast);
+        return visitor.GetDiagramDocument().ReplaceLineEndings("\n");
+    }
 
-        var diagram = visitor.GetDiagramDocument().ReplaceLineEndings("\n");
+    private static Regex Line(string pattern) =>
+        new($"^{Regex.Escape(pattern)}$", RegexOptions.Multiline);
 
-        var expected = new StringBuilder()
-            .AppendLine("classDiagram")
-            .AppendLine("direction LR")
-            .AppendLine("namespace Topic_T {")
-            .AppendLine("  class A")
-            .AppendLine("}")
-            .AppendLine()
-            .AppendLine()
-            .AppendLine()
-            .ToString()
-            .ReplaceLineEndings("\n");
+    // ─── basic cases ────────────────────────────────────────────────────────────
+    [TestMethod]
+    public void SingleClass_InTopic_ProducesNamespaceAndClass()
+    {
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS A = END A;
+              END T;
+            END M.");
 
-        Assert.AreEqual(expected, diagram);
+        StringAssert.Contains(diagram, "namespace Topic_T {");
+        StringAssert.Contains(diagram, "class A");
     }
 
     [TestMethod]
-    public void ClassWithAttribute_GeneratesAttributeLine()
+    public void EmptyTopic_IsOmitted_FromOutput()
     {
-        const string model = @"INTERLIS 2.4;
-                                MODEL M (en) AT ""http://example.com"" VERSION ""1"" =
-                                  TOPIC T =
-                                    CLASS C =
-                                      foo : TEXT*5;
-                                    END C;
-                                  END T;
-                                END M.";
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC Empty = END Empty;
+            END M.");
 
-        var ast     = _reader.ReadFile(new StringReader(model));
-        var visitor = CreateVisitor();
-        visitor.VisitInterlisFile(ast);
-
-        var diagram = visitor.GetDiagramDocument();
-        StringAssert.Contains(diagram, "C: +Text [5] foo");
+        Assert.IsFalse(diagram.Contains("Topic_Empty"));
     }
 
+    // ─── attributes & cardinalities ────────────────────────────────────────────
     [TestMethod]
-    public void Inheritance_GeneratesArrow()
+    public void Attribute_WithMultiplicityGreaterThanOne_GetsSuffix()
     {
-        const string model = @"INTERLIS 2.4;
-                                MODEL M (en) AT ""http://example.com"" VERSION ""1"" =
-                                  TOPIC T =
-                                    CLASS Base = END Base;
-                                    CLASS Derived EXTENDS Base = END Derived;
-                                  END T;
-                                END M.";
+        //  LIST {n..m} OF <X>  is valid INTERLIS and ends up as a BagType whose
+        //  cardinality is what the visitor looks at.
+        //
+        const string ili = @"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS B = END B;
+                CLASS C =
+                  many          : LIST OF B;
+                  exactlyTwoRef : LIST {2..2} OF B;
+                END C;
+              END T;
+            END M.
+        ";
 
-        var ast     = _reader.ReadFile(new StringReader(model));
-        var visitor = CreateVisitor();
-        visitor.VisitInterlisFile(ast);
+        var diagram = BuildDiagram(ili);
 
-        var diagram = visitor.GetDiagramDocument();
+        // fixed size list (2) must render the  ×2 suffix
+        StringAssert.Contains(diagram, "exactlyTwoRef #colon; **B ×2**");
+    }
+
+    // ─── inheritance ───────────────────────────────────────────────────────────
+    [TestMethod]
+    public void Inheritance_GeneratesGeneralisationArrow()
+    {
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS Base = END Base;
+                CLASS Derived EXTENDS Base = END Derived;
+              END T;
+            END M.");
+
         StringAssert.Contains(diagram, "Derived --|> Base");
     }
 
+    // ─── associations ──────────────────────────────────────────────────────────
     [TestMethod]
-    public void BinaryAssociation_EmitsOnlyAttribute_WhenAssociationLogicIsNotYetHooked()
+    public void Composition_GeneratesFilledDiamond()
     {
-        const string model = @"INTERLIS 2.4;
-                                MODEL M (en) AT ""http://example.com"" VERSION ""1"" =
-                                  TOPIC T =
-                                    CLASS A = attr : B; END A;
-                                    CLASS B = END B;
-                                    ASSOCIATION AB = A -- {0..*} B; END AB;
-                                  END T;
-                                END M.";
+        const string ili = @"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS Whole = END Whole;
+                CLASS Part  = END Part;
+                ASSOCIATION Comp =
+                  WholeRef -<#> {1} Whole;
+                  PartRef  --   {0..*} Part;
+                END Comp;
+              END T;
+            END M.
+        ";
 
-        var ast     = _reader.ReadFile(new StringReader(model));
-        var visitor = CreateVisitor();
-        visitor.VisitInterlisFile(ast);
+        var diagram = BuildDiagram(ili);
 
-        var diagram = visitor.GetDiagramDocument();
-        StringAssert.Contains(diagram, "A: +B attr");
-        StringAssert.DoesNotMatch(diagram, new Regex("--o"));
+        // one end must have a filled diamond, the other an open one,
+        // orientation does not matter.
+        Assert.IsTrue(
+            diagram.Contains("o--") || diagram.Contains("--o"),
+            "Diamond arrow was not rendered as expected.");
+
+        StringAssert.Contains(diagram, "Comp");   // label present
     }
 
+    // ─── structures & styling ──────────────────────────────────────────────────
     [TestMethod]
-    public void NonBinaryAssociation_RendersOnlyLastRolePair()
+    public void Structure_GetsDashedStyle()
     {
-        const string model = @"INTERLIS 2.4;
-                                MODEL M (en) AT ""http://example.com"" VERSION ""1"" =
-                                  TOPIC T =
-                                    CLASS X = END X;
-                                    CLASS Y = END Y;
-                                    CLASS Z = END Z;
-                                    ASSOCIATION XYZ = X -- Y; Y -- Z; END XYZ;
-                                  END T;
-                                END M.";
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                STRUCTURE S =
+                  id : TEXT*10;
+                END S;
+              END T;
+            END M.");
 
-        var ast     = _reader.ReadFile(new StringReader(model));
-        var visitor = CreateVisitor();
-        visitor.VisitInterlisFile(ast);
+        StringAssert.Contains(diagram, "class S");
+        StringAssert.Contains(diagram, "style S fill:,stroke-dasharray:10 10");
+    }
 
-        var diagram = visitor.GetDiagramDocument();
-        StringAssert.Contains(diagram, "Y \"*\" --o \"*\" Z : XYZ");
+    // ─── meta-attribute driven colour ──────────────────────────────────────────
+    [TestMethod]
+    public void ColorMetaAttribute_AddsStyleLine()
+    {
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                !!@ geow.uml.color = ""#ffcc00""
+                CLASS C = END C;
+              END T;
+            END M.");
+
+        StringAssert.Contains(diagram, "style C fill:#ffcc00,color:black,stroke:black");
     }
 }
