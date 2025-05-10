@@ -33,35 +33,21 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
+        int headerStart = mermaidScript.Length;
         mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        int afterHeader = mermaidScript.Length;
         base.VisitTopicDef(topicDef);
-        mermaidScript.AppendLine("}");
-        mermaidScript.AppendLine();
+        bool hasContent = mermaidScript.Length > afterHeader;
 
-        foreach (var classDefs in classes)
+        if (hasContent)
         {
-            if (classDefs.Extends?.Target?.Name is string parent)
-                mermaidScript.AppendLine($"{classDefs.Name} --|> {parent}");
-
-            if (classDefs.MetaAttributes.TryGetValue("geow.uml.color", out var color) &&
-                !string.IsNullOrWhiteSpace(color))
-            {
-                mermaidScript.AppendLine($"style {classDefs.Name} fill:{color},color:black,stroke:black");
-            }
-
-            foreach (var attr in classDefs.Content.Values.OfType<AttributeDef>())
-                AppendAttributeDetails(attr);
-
+            mermaidScript.AppendLine("}");
             mermaidScript.AppendLine();
         }
-
-        foreach (var associationDef in associations)
-            AppendAssociationDetails(associationDef);
-
-        mermaidScript.AppendLine();
-
-        classes.Clear();
-        associations.Clear();
+        else
+        {
+            mermaidScript.Length = headerStart;
+        }
 
         return null;
     }
