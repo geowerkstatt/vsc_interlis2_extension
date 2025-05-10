@@ -70,50 +70,80 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         return DefaultResult;
     }
 
-    private void AppendAttributeDetails(AttributeDef attributeDef)
+    private void AppendAttributeDetailsToScript(ClassDef parentClass, AttributeDef attributeDef)
     {
-        if (attributeDef.Parent is ClassDef parentClass)
-        {
-            var typeString = VisitTypeDefInternal(attributeDef.TypeDef);
-            mermaidScript.AppendLine($"{parentClass.Name}: +{typeString} {attributeDef.Name}");
-        }
+        var typeString = VisitTypeDefInternal(attributeDef.TypeDef) + CardinalitySuffix(attributeDef.TypeDef);
+        mermaidScript.AppendLine(
+            $"{parentClass.Name}: {attributeDef.Name} {MermaidConstants.Colon} **{typeString}**#8203;"
+        );
     }
 
-
-    private void AppendAssociationDetails(AssociationDef associationDef)
+    private void AppendAssociationDetailsToScript(AssociationDef associationDef)
     {
-        var roles = associationDef.Content.Values.OfType<AttributeDef>().ToList();
+        var roles = associationDef.Content.Values
+            .OfType<AttributeDef>()
+            .Where(attribute => attribute.TypeDef is RoleType)
+            .ToList();
         if (roles.Count != 2)
         {
-            logger.LogWarning(
-                "Skipping association '{Name}' because it has {Count} roles (only binary supported)",
-                associationDef.Name, roles.Count
-            );
+            logger.LogWarning("Skip '{Name}' – needs exactly 2 role ends", associationDef.Name);
             return;
         }
 
-        var (class1, rawCardinality1) = GetClassAndCardinality(roles[0]);
-        var (class2, rawCardinality2) = GetClassAndCardinality(roles[1]);
-        if (class1 is null || class2 is null || rawCardinality1 is null || rawCardinality2 is null)
+        (ClassDef? classDef, string? cardinalityString, Cardinality.RelationshipType relType) MapRole(
+            AttributeDef attribute)
         {
-            logger.LogWarning(
-                "Skipping association '{Name}' due to missing class or cardinality: " +
-                "first=({Class1},{Card1}), second=({Class2},{Card2})",
-                associationDef.Name,
-                class1?.Name ?? "<null>", rawCardinality1 ?? "<null>",
-                class2?.Name ?? "<null>", rawCardinality2 ?? "<null>"
-            );
+            var (classDef, cardinalityString) = GetClassAndCardinality(attribute);
+            var roleType = ((RoleType)attribute.TypeDef!).Cardinality!.Type;
+            return (classDef, cardinalityString, roleType);
+        }
+
+        var left = MapRole(roles[0]);
+        var right = MapRole(roles[1]);
+
+        if (left.classDef == null || right.classDef == null || left.cardinalityString == null ||
+            right.cardinalityString == null)
+        {
+            logger.LogWarning("Skip association '{Name}' – unresolved role target or cardinality",
+                associationDef.Name);
             return;
         }
 
-        // Clean up a raw cardinality (strip whitespace/quotes) and re-quote it with a trailing space for Mermaid syntax
-        static string Normalize(string raw) => $"\"{raw.Trim().Trim('\"')}\" ";
+        bool leftDiamond =
+            left.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
+        bool rightDiamond =
+            right.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
 
-        var cardinality1 = Normalize(rawCardinality1);
-        var cardinality2 = Normalize(rawCardinality2);
+        if (leftDiamond && !rightDiamond)
+        {
+            (left, right) = (right, left);
+            (leftDiamond, rightDiamond) = (rightDiamond, leftDiamond);
+        }
+        else if (!leftDiamond && !rightDiamond &&
+                 string.Compare(left.classDef.Name, right.classDef.Name, StringComparison.Ordinal) > 0)
+        {
+            (left, right) = (right, left);
+        }
+
+        string symbol = (leftDiamond, rightDiamond) switch
+        {
+            (false, false) => "--",
+            (true, false) => "o--",
+            (false, true) => "--o",
+            _ => "o--o"
+        };
+
+        var extras = associationDef.Content.Values
+            .OfType<AttributeDef>()
+            .Where(a => a.TypeDef is not RoleType)
+            .Select(a => a.Name);
+
+        var label = extras.Any()
+            ? $"{associationDef.Name} ({string.Join(",", extras)})"
+            : associationDef.Name;
 
         mermaidScript.AppendLine(
-            $"{class1.Name} {cardinality1}--o {cardinality2}{class2.Name} : {associationDef.Name}"
+            $"{left.classDef.Name} {left.cardinalityString} {symbol} {right.cardinalityString}{right.classDef.Name} : {label}"
         );
     }
 
