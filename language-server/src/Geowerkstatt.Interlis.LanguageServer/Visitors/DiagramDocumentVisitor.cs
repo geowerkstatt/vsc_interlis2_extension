@@ -228,8 +228,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
 
         var classDef = roleType.Targets.FirstOrDefault()?.Value?.Target as ClassDef;
-        var cardinalityTuple = (roleType.Cardinality.Min, roleType.Cardinality.Max);
-        MermaidCardinalityMap.TryGetValue(cardinalityTuple, out string? cardinality);
+        var cardinality = FormatCardinality(roleType.Cardinality);
         return (classDef, cardinality);
     }
 
