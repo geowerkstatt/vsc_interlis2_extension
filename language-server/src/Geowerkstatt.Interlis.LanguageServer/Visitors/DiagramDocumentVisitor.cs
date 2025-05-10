@@ -174,16 +174,17 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         return type switch
         {
             ReferenceType rt => rt.Target.Value?.Path.Last() ?? "?",
-            TextType tt => tt.Length == null ? "Text" : $"Text [{tt.Length}]",
-            NumericType nt => nt is { Min: not null, Max: not null } ? $"{nt.Min}..{nt.Max}" : "Numeric",
+            TextType tt => tt.Length is { } len ? $"Text[{len}]" : "Text",
+            NumericType nt => FormatNumericType(nt),
             BooleanType => "Boolean",
             BlackboxType bt => bt.Kind switch
             {
-                BlackboxType.BlackboxTypeKind.Binary => "Blackbox (Binary)",
-                BlackboxType.BlackboxTypeKind.Xml => "Blackbox (XML)",
+                BlackboxType.BlackboxTypeKind.Binary => "Blackbox(Binary)",
+                BlackboxType.BlackboxTypeKind.Xml => "Blackbox(XML)",
                 _ => "Blackbox"
             },
-            EnumerationType et => $"({FormatEnumerationValues(et.Values)})",
+            EnumerationType et =>
+                $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
             TypeRef tr => tr.Extends?.Path.Last() ?? "?",
             RoleType => "Role",
             _ => type.GetType().Name
