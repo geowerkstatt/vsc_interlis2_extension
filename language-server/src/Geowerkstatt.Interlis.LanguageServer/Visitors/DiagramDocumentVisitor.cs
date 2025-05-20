@@ -72,9 +72,20 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private void AppendAttributeDetailsToScript(ClassDef parentClass, AttributeDef attributeDef)
     {
-        var typeString = VisitTypeDefInternal(attributeDef.TypeDef) + CardinalitySuffix(attributeDef.TypeDef);
+        string bracket = "";
+        var card = attributeDef.TypeDef?.Cardinality;
+        if (card != null)
+        {
+            var min = card.Min ?? 0;
+            var max = card.Max ?? 0;
+            bracket = min == max
+                ? $"[{min}]"
+                : $"[{min}..{max}]";
+        }
+
+        var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
         mermaidScript.AppendLine(
-            $"{parentClass.Name}: {attributeDef.Name} {MermaidConstants.Colon} **{typeString}**#8203;"
+            $"{parentClass.Name}: {attributeDef.Name}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
         );
     }
 
