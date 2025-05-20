@@ -13,6 +13,8 @@ let hasUserClosedPanel = false;
 let isAutoClosing = false;
 let closeTimer: NodeJS.Timeout | undefined;
 let lastSentMermaidDsl: string | undefined;
+let orientation = "LR";
+let currentIliUri: string | undefined;
 
 function autoClosePanel() {
   if (diagramPanel) {
