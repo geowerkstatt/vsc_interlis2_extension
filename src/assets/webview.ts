@@ -15,11 +15,16 @@ interface WebviewMessage {
   type: "update";
   text: string;
   resetZoom: boolean;
+  orientation: string;
 }
 
 declare const acquireVsCodeApi: () => VSCodeApi;
 
+const directions = ["LR", "TB"] as const;
+
 (() => {
+  const vscode = acquireVsCodeApi();
+
   // ---- State ----
   let mermaidInitialized = false;
   let lastMermaidCode = "";
@@ -28,11 +33,13 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   let zoomLevel = 1;
   let isPanning = false;
   let panStart = { x: 0, y: 0 };
+  let directionIndex = 0;
 
   // ---- DOM Elements ----
   const container = document.getElementById("mermaid-graph") as HTMLDivElement;
   const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
   const copyButton = document.getElementById("copy-code") as HTMLButtonElement;
+  const orientButton = document.getElementById("orientation-button") as HTMLButtonElement;
   const helpOverlay = document.getElementById("help-overlay") as HTMLDivElement;
   const helpButton = document.getElementById("help-button") as HTMLButtonElement;
   const closeHelpButton = document.getElementById("close-help") as HTMLButtonElement;
