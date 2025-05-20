@@ -72,8 +72,8 @@ public class DiagramDocumentVisitorTests
 
         var diagram = BuildDiagram(ili);
 
-        // fixed size list (2) must render the  ×2 suffix
-        StringAssert.Contains(diagram, "exactlyTwoRef #colon; **B ×2**");
+        // fixed size list (2) must render the [2] suffix
+        StringAssert.Contains(diagram, "exactlyTwoRef[2] #colon; **B**");
     }
 
     // ─── inheritance ───────────────────────────────────────────────────────────
