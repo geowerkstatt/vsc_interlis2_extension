@@ -19,7 +19,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private readonly ILogger<DiagramDocumentVisitor> logger;
 
-    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger)
+    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger, String orientation)
     {
         this.logger = logger;
         mermaidScript.AppendLine("---");
@@ -28,7 +28,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         mermaidScript.AppendLine("      hideEmptyMembersBox: true");
         mermaidScript.AppendLine("---");
         mermaidScript.AppendLine("classDiagram");
-        mermaidScript.AppendLine("direction LR");
+        mermaidScript.AppendLine("direction " + orientation);
     }
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
