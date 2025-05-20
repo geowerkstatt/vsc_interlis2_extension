@@ -274,8 +274,13 @@ const directions = ["LR", "TB"] as const;
   }
 
   function postWebviewLoaded(): void {
-    const vscode = acquireVsCodeApi();
     vscode.postMessage({ type: "webviewLoaded" });
+  }
+
+  function handleOrientationChange(): void {
+    directionIndex = (directionIndex + 1) % directions.length;
+    orientButton.textContent = "Orientation: " + directions[directionIndex];
+    vscode.postMessage({ type: "orientation", orientation: directions[directionIndex] });
   }
 
   function attachEvents(): void {
@@ -289,6 +294,7 @@ const directions = ["LR", "TB"] as const;
     helpButton.addEventListener("click", handleHelpOpen);
     downloadButton.addEventListener("click", handleDownload);
     closeHelpButton.addEventListener("click", handleHelpClose);
+    orientButton.addEventListener("click", handleOrientationChange);
   }
 
   function init(): void {
