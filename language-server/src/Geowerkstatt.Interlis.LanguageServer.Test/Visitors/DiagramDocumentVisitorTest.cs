@@ -14,7 +14,7 @@ public class DiagramDocumentVisitorTests
     {
         var reader  = new InterlisReader();
         var ast     = reader.ReadFile(new StringReader(ili));
-        var visitor = new DiagramDocumentVisitor(NullLogger<DiagramDocumentVisitor>.Instance);
+        var visitor = new DiagramDocumentVisitor(NullLogger<DiagramDocumentVisitor>.Instance, "LR");
         visitor.VisitInterlisFile(ast);
         return visitor.GetDiagramDocument().ReplaceLineEndings("\n");
     }
