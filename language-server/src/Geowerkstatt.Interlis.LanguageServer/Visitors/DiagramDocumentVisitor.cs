@@ -78,9 +78,18 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         {
             var min = card.Min ?? 0;
             var max = card.Max ?? 0;
-            bracket = min == max
-                ? $"[{min}]"
-                : $"[{min}..{max}]";
+            if (min == 1 && max == 1)
+            {
+                bracket = "";
+            }
+            else if (min == max)
+            {
+                bracket = $"[{min}]";
+            }
+            else
+            {
+                bracket = $"[{min}..{max}]";
+            }
         }
 
         var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
