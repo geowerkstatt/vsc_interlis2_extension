@@ -1,10 +1,7 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Geowerkstatt.Interlis.Tools;
-using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace DiagramVisitor.Tests;
+namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
 [TestClass]
 public class DiagramDocumentVisitorTests
