@@ -13,6 +13,8 @@ let hasUserClosedPanel = false;
 let isAutoClosing = false;
 let closeTimer: NodeJS.Timeout | undefined;
 let lastSentMermaidDsl: string | undefined;
+let orientation = "LR";
+let currentIliUri: string | undefined;
 
 function autoClosePanel() {
   if (diagramPanel) {
@@ -26,7 +28,7 @@ async function requestDiagram(uri: string): Promise<string> {
   try {
     const result = await getLanguageClient().sendRequest(ExecuteCommandRequest.type, {
       command: "generateDiagram",
-      arguments: [{ uri }],
+      arguments: [{ uri, orientation }],
     });
     return result ?? "";
   } catch (err) {
@@ -75,12 +77,19 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         const editor = vscode.window.activeTextEditor;
 
         if (editor?.document.languageId === "INTERLIS2") {
-          const uri = editor.document.uri.toString();
-          requestDiagram(uri).then((mermaidDsl) => {
+          currentIliUri = editor.document.uri.toString();
+          orientation = message.orientation || "LR";
+          requestDiagram(currentIliUri).then((mermaidDsl) => {
             lastSentMermaidDsl = mermaidDsl;
             diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
           });
         }
+      } else if (message.type === "orientation" && currentIliUri) {
+        orientation = message.orientation || "LR";
+        requestDiagram(currentIliUri).then((mermaidDsl) => {
+          lastSentMermaidDsl = mermaidDsl;
+          diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
+        });
       } else {
         console.warn(`Ignoring unknown message type from webview: ${message.type}`);
       }
@@ -185,8 +194,8 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
         return;
       }
 
-      const uri = editor.document.uri.toString();
-      const mermaidDsl = await requestDiagram(uri);
+      currentIliUri = editor.document.uri.toString();
+      const mermaidDsl = await requestDiagram(currentIliUri);
       postMessage("update", mermaidDsl, mermaidDsl !== lastSentMermaidDsl);
       lastSentMermaidDsl = mermaidDsl;
     }),

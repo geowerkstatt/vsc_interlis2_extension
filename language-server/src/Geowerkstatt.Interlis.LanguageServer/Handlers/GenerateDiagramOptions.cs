@@ -4,4 +4,4 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 /// Options for generating mermaid diagrams.
 /// </summary>
 /// <param name="Uri">The uri to identify the text document.</param>
-public record GenerateDiagramOptions(string? Uri);
+public record GenerateDiagramOptions(string? Uri, string Orientation);

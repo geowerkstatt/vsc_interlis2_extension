@@ -43,6 +43,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         }
 
         var uri = options.Uri;
+        var orientation = options.Orientation;
         var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
@@ -53,14 +54,14 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
         using var stringReader = new StringReader(fileContent);
         var interlisFile = interlisReader.ReadFile(stringReader);
-        var diagram = GenerateDiagram(interlisFile);
+        var diagram = GenerateDiagram(interlisFile, orientation);
 
         return Task.FromResult<string?>(diagram);
     }
 
-    private string GenerateDiagram(InterlisFile interlisFile)
+    private string GenerateDiagram(InterlisFile interlisFile, String orientation)
     {
-        DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>());
+        DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>(), orientation);
         visitor.VisitInterlisFile(interlisFile);
         return visitor.GetDiagramDocument();
     }

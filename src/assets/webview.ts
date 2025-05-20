@@ -15,11 +15,16 @@ interface WebviewMessage {
   type: "update";
   text: string;
   resetZoom: boolean;
+  orientation: string;
 }
 
 declare const acquireVsCodeApi: () => VSCodeApi;
 
+const directions = ["LR", "TB"] as const;
+
 (() => {
+  const vscode = acquireVsCodeApi();
+
   // ---- State ----
   let mermaidInitialized = false;
   let lastMermaidCode = "";
@@ -28,11 +33,13 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   let zoomLevel = 1;
   let isPanning = false;
   let panStart = { x: 0, y: 0 };
+  let directionIndex = 0;
 
   // ---- DOM Elements ----
   const container = document.getElementById("mermaid-graph") as HTMLDivElement;
   const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
   const copyButton = document.getElementById("copy-code") as HTMLButtonElement;
+  const orientButton = document.getElementById("orientation-button") as HTMLButtonElement;
   const helpOverlay = document.getElementById("help-overlay") as HTMLDivElement;
   const helpButton = document.getElementById("help-button") as HTMLButtonElement;
   const closeHelpButton = document.getElementById("close-help") as HTMLButtonElement;
@@ -81,7 +88,8 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     }
     mermaid.initialize({
       startOnLoad: false,
-      theme: "forest",
+      theme: "neutral",
+      themeCSS: ".classGroup .methods { display: none; }",
       flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
       securityLevel: "strict",
     });
@@ -158,7 +166,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     const svgY = currentViewBox.y + (mouseY / rect.height) * currentViewBox.h;
 
     const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    const newZoom = Math.min(5, Math.max(0.2, zoomLevel * factor));
+    const newZoom = Math.min(15, Math.max(0.2, zoomLevel * factor));
     if (newZoom === zoomLevel) return;
 
     const newW = originalViewBox.w / newZoom;
@@ -266,8 +274,13 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   }
 
   function postWebviewLoaded(): void {
-    const vscode = acquireVsCodeApi();
     vscode.postMessage({ type: "webviewLoaded" });
+  }
+
+  function handleOrientationChange(): void {
+    directionIndex = (directionIndex + 1) % directions.length;
+    orientButton.textContent = "Orientation: " + directions[directionIndex];
+    vscode.postMessage({ type: "orientation", orientation: directions[directionIndex] });
   }
 
   function attachEvents(): void {
@@ -281,6 +294,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     helpButton.addEventListener("click", handleHelpOpen);
     downloadButton.addEventListener("click", handleDownload);
     closeHelpButton.addEventListener("click", handleHelpClose);
+    orientButton.addEventListener("click", handleOrientationChange);
   }
 
   function init(): void {
