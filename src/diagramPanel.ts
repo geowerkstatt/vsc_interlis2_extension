@@ -78,14 +78,14 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
 
         if (editor?.document.languageId === "INTERLIS2") {
           currentIliUri = editor.document.uri.toString();
-          orientation = message?.orientation || "LR";
+          orientation = message.orientation || "LR";
           requestDiagram(currentIliUri).then((mermaidDsl) => {
             lastSentMermaidDsl = mermaidDsl;
             diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
           });
         }
       } else if (message.type === "orientation" && currentIliUri) {
-        orientation = message?.orientation || "LR";
+        orientation = message.orientation || "LR";
         requestDiagram(currentIliUri).then((mermaidDsl) => {
           lastSentMermaidDsl = mermaidDsl;
           diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
