@@ -16,9 +16,6 @@ public class DiagramDocumentVisitorTests
         return visitor.GetDiagramDocument().ReplaceLineEndings("\n");
     }
 
-    private static Regex Line(string pattern) =>
-        new($"^{Regex.Escape(pattern)}$", RegexOptions.Multiline);
-
     // ─── basic cases ────────────────────────────────────────────────────────────
     [TestMethod]
     public void SingleClass_InTopic_ProducesNamespaceAndClass()
