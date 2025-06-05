@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Improved model support in updated INTERLIS compiler.
 
 ### 0.3.0 - 2025-05-20
 
