@@ -90,11 +90,11 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "build:ts": "tsc -p ./",
-    "build:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js",
+    "build:webview": "vite build",
     "copy:assets": "cpy \"src/assets/**/*.{html,css}\" out/assets --flat",
     "compile": "npm run build:webview && npm run build:ts && npm run copy:assets",
     "watch:ts": "tsc -watch -p ./",
-    "watch:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js --watch",
+    "watch:webview": "vite",
     "watch:assets": "nodemon --watch src/assets --ext html,css --exec \"npm run copy:assets\"",
     "watch": "concurrently npm:watch:*",
     "lint": "eslint . --ext .ts,.tsx",
@@ -106,7 +106,7 @@
     "postinstall": "npm run restore:server"
   },
   "devDependencies": {
-    "@types/node": "^16.11.7",
+    "@types/node": "^24.0.0",
     "@types/node-fetch": "^2.6.2",
     "@types/vscode": "^1.34.0",
     "@typescript-eslint/eslint-plugin": "^5.30.0",
@@ -125,7 +125,13 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
+    "@xyflow/react": "^12.6.4",
+    "dagre": "^0.8.5",
     "node-fetch": "^2.6.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "reactflow": "^11.11.4",
+    "vite": "^6.3.5",
     "vscode-languageclient": "^9.0.1"
   }
 }

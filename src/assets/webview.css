@@ -5,7 +5,6 @@ body {
     padding: 0;
     background-color: var(--vscode-editor-background);
 }
-
 .diagram-container {
     flex: 1;
     display: flex;
