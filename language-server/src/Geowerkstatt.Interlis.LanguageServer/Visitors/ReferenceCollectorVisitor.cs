@@ -1,11 +1,18 @@
 using Geowerkstatt.Interlis.Compiler.AST;
+using Position = OmniSharp.Extensions.LanguageServer.Protocol.Models.Position;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors
 {
-    internal class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<(RangePosition position, IInterlisDefinition target)>>
+    public record ReferenceDefinition(
+        Position Start,
+        Position End,
+        IInterlisDefinition Target
+    );
+
+    public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<ReferenceDefinition>>
     {
-        protected override List<(RangePosition position, IInterlisDefinition target)>? AggregateResult(List<(RangePosition position, IInterlisDefinition target)>? aggregate, List<(RangePosition position, IInterlisDefinition target)>? nextResult)
+        protected override List<ReferenceDefinition>? AggregateResult(List<ReferenceDefinition>? aggregate, List<ReferenceDefinition>? nextResult)
         {
             if (aggregate is null) return nextResult;
             if (nextResult is null) return aggregate;
@@ -14,15 +21,17 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
             return aggregate;
         }
 
-        public override List<(RangePosition position, IInterlisDefinition target)>? VisitReference<T>([NotNull] Reference<T> reference)
+        public override List<ReferenceDefinition>? VisitReference<T>([NotNull] Reference<T> reference)
         {
             base.VisitReference(reference);
             var location = reference.ReferenceLocation;
             var target = reference.Target;
 
-            if (location is null || target is null) return new List<(RangePosition position, IInterlisDefinition target)>();
+            if (location is null || target is null) return new List<ReferenceDefinition>();
 
-            return new List<(RangePosition position, IInterlisDefinition target)> { (location, target) };
+            return new List<ReferenceDefinition> {
+                new ReferenceDefinition(location.Start.ToOmnisharpPosition(), location.End.ToOmnisharpPosition(), target)
+            };
         }
     }
 }

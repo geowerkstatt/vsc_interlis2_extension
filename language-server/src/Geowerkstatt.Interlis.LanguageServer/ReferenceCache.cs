@@ -7,12 +7,12 @@ using System.Collections.Concurrent;
 
 namespace Geowerkstatt.Interlis.LanguageServer;
 
-public sealed class ReferenceCache : ICache<List<(RangePosition position, IInterlisDefinition target)>>
+public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 {
     private readonly ILogger<ReferenceCache> logger;
     private readonly InterlisEnvironmentCache environmentCache;
     private readonly InterlisReader interlisReader;
-    private readonly ConcurrentDictionary<string, List<(RangePosition position, IInterlisDefinition target)>> referenceCache = new ConcurrentDictionary<string, List<(RangePosition position, IInterlisDefinition target)>>();
+    private readonly ConcurrentDictionary<string, List<ReferenceDefinition>> referenceCache = new ConcurrentDictionary<string, List<ReferenceDefinition>>();
 
     public event Action<DocumentUri>? DocumentInvalidated;
 
@@ -31,9 +31,9 @@ public sealed class ReferenceCache : ICache<List<(RangePosition position, IInter
         DocumentInvalidated?.Invoke(uri);
     }
 
-    public List<(RangePosition position, IInterlisDefinition target)> Get(DocumentUri uri)
+    public List<ReferenceDefinition> Get(DocumentUri uri)
     {
-        List<(RangePosition position, IInterlisDefinition target)>? definitions;
+        List<ReferenceDefinition>? definitions;
         if (referenceCache.TryGetValue(uri.ToString(), out definitions))
         {
             return definitions;
@@ -41,7 +41,7 @@ public sealed class ReferenceCache : ICache<List<(RangePosition position, IInter
 
         var environment = environmentCache.Get(uri);
         var referenceCollector = new ReferenceCollectorVisitor();
-        definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<(RangePosition position, IInterlisDefinition target)>();
+        definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
 
         referenceCache[uri.ToString()] = definitions;
         return definitions;

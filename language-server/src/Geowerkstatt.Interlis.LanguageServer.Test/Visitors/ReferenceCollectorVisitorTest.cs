@@ -38,7 +38,7 @@ public class ReferenceCollectorVisitorTest
 
         Assert.IsNotNull(references);
         Assert.AreEqual(2, references.Count);
-        Assert.AreEqual("ClassA", references[0].target.Name);
-        Assert.AreEqual("ClassB", references[1].target.Name);
+        Assert.AreEqual("ClassA", references[0].Target.Name);
+        Assert.AreEqual("ClassB", references[1].Target.Name);
     }
 }
