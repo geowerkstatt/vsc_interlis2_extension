@@ -24,6 +24,7 @@ var server = await LanguageServer.From(options =>
             services.AddTransient<InterlisReader>();
         })
         .WithHandler<TextDocumentSyncHandler>()
+        .WithHandler<LinterCodeActionHandler>()
         .WithHandler<FormatterHandler>()
         .WithHandler<GenerateMarkdownHandler>()
         .WithHandler<GenerateDiagramHandler>();
