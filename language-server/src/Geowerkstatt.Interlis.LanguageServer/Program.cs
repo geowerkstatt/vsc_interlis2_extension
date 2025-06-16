@@ -1,6 +1,6 @@
+using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
-using Geowerkstatt.Interlis.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
@@ -11,7 +11,8 @@ var server = await LanguageServer.From(options =>
     options
         .WithInput(Console.OpenStandardInput())
         .WithOutput(Console.OpenStandardOutput())
-        .ConfigureLogging(options => {
+        .ConfigureLogging(options =>
+        {
             options
                 .ClearProviders()
                 .AddLanguageProtocolLogging()
