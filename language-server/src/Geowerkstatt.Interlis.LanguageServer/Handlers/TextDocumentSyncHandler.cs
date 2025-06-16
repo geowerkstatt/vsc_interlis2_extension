@@ -1,8 +1,12 @@
+using Geowerkstatt.Interlis.Compiler;
+using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
@@ -14,14 +18,18 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 {
     private const string LanguageName = "INTERLIS2";
 
+    private readonly InterlisReader interlisReader;
     private readonly FileContentCache fileContentCache;
+    private readonly ILanguageServerFacade router;
     private readonly TextDocumentSelector documentSelector = TextDocumentSelector.ForLanguage(LanguageName);
 
     public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
 
-    public TextDocumentSyncHandler(FileContentCache fileContentCache)
+    public TextDocumentSyncHandler(FileContentCache fileContentCache, ILanguageServerFacade router, InterlisReader interlisReader)
     {
+        this.interlisReader = interlisReader;
         this.fileContentCache = fileContentCache;
+        this.router = router;
     }
 
     /// <inheritdoc />
@@ -30,14 +38,22 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
     /// <inheritdoc />
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
     {
-        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
+        var text = notification.TextDocument.Text;
+        var uri = notification.TextDocument.Uri;
+        fileContentCache.UpdateBuffer(uri, text);
+        RunLinter(uri, text);
+
         return Unit.Task;
     }
 
     /// <inheritdoc />
     public override Task<Unit> Handle(DidChangeTextDocumentParams notification, CancellationToken token)
     {
-        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
+        var text = notification.ContentChanges.Last().Text;
+        var uri = notification.TextDocument.Uri;
+        fileContentCache.UpdateBuffer(uri, text);        
+        RunLinter(uri, text);
+
         return Unit.Task;
     }
 
@@ -61,5 +77,24 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
         Change = Change,
         Save = new SaveOptions() { IncludeText = true }
     };
+
+    private void RunLinter(DocumentUri uri, string text)
+    {
+
+        using var stringReader = new StringReader(text);
+        var interlisFile = interlisReader.ReadFile(stringReader);
+
+        var visitor = new LintDocumentationVisitor();
+        var diagnostics = visitor.VisitInterlisEnvironment(interlisFile);
+
+        if (diagnostics != null && diagnostics.Count > 0)
+        {
+            router.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
+            {
+                Uri = uri,
+                Diagnostics = diagnostics
+            });
+        }
+    }
 }
 
