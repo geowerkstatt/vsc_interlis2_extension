@@ -44,7 +44,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
         var uri = options.Uri;
         var orientation = options.Orientation;
-        var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
+        var fileContent = uri == null ? null : fileContentCache.Get(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
             return Task.FromResult<string?>(null);

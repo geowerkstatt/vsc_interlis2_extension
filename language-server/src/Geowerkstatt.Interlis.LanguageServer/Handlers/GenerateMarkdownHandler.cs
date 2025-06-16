@@ -41,7 +41,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         }
 
         var uri = options.Uri;
-        var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
+        var fileContent = uri == null ? null : fileContentCache.Get(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
             return Task.FromResult<string?>(null);
