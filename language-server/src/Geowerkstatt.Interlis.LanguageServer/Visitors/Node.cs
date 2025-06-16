@@ -6,29 +6,35 @@ using System.Threading.Tasks;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors
 {
-    internal class Node
+    public class ReactflowResponse
+    {
+        public List<Node>? Nodes { get; set; }
+        public List<Edge>? Edges { get; set; }
+
+    }
+
+    public class Edge
+    {
+        public string? Id { get; set; }
+        public string? Source { get; set; }
+        public string? Target { get; set; }
+    }
+
+    public class Node
     {
         public string? Id { get; set; }
         public NodeData? Data { get; set; }
-        public string? Label { get; set; }
-        public NodePosition? Position { get; set; }
         public NodeStyle? Style { get; set; }
 
     }
 
-    internal class NodeData
+    public class NodeData
     {
         public string? Title { get; set; }
         public List<string> Attributes { get; set; } = new List<string>();
     }
 
-    internal class NodePosition
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-    }
-
-    internal class NodeStyle {
+    public class NodeStyle {
         public string Background { get; set; } = "#ffffff"; // Default white
         public string Color { get; set; } = "#000000"; // Default black
         public string Border { get; set; } = "2px solid black";  // Default black

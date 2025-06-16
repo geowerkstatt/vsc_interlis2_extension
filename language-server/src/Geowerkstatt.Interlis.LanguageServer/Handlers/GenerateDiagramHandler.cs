@@ -54,8 +54,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
         using var stringReader = new StringReader(fileContent);
         var interlisFile = interlisReader.ReadFile(stringReader);
-        var diagram = GenerateDiagram(interlisFile, orientation);
-
+        var diagram = GenerateReactFlow(interlisFile);
         return Task.FromResult<string?>(diagram);
     }
 
@@ -64,5 +63,13 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>(), orientation);
         visitor.VisitInterlisFile(interlisFile);
         return visitor.GetDiagramDocument();
+    }
+
+    private string GenerateReactFlow(InterlisFile interlisFile)
+    {
+        ReactFlowVisitor visitor = new ReactFlowVisitor(loggerFactory.CreateLogger<ReactFlowVisitor>());
+        visitor.VisitInterlisFile(interlisFile);
+        var nodes = visitor.GetDiagramDocument();
+        return System.Text.Json.JsonSerializer.Serialize(nodes, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
 }
