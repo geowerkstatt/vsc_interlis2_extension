@@ -22,11 +22,14 @@ var server = await LanguageServer.From(options =>
         .WithServices(services =>
         {
             services.AddSingleton<FileContentCache>();
+            services.AddSingleton<InterlisEnvironmentCache>();
+            services.AddSingleton<ReferenceCache>();
             services.AddTransient<InterlisReader>();
             services.AddSingleton(TextDocumentSelector.ForLanguage(ServerConstants.InterlisLanguageName));
         })
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<GenerateMarkdownHandler>()
+        .WithHandler<DefinitionHandler>()
         .WithHandler<GenerateDiagramHandler>();
 }).ConfigureAwait(false);
 
