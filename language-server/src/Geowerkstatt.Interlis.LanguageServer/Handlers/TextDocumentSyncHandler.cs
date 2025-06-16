@@ -84,7 +84,7 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
         using var stringReader = new StringReader(text);
         var interlisFile = interlisReader.ReadFile(stringReader);
 
-        var visitor = new LintDocumentationVisitor();
+        var visitor = new LinterDocumentationVisitor();
         var diagnostics = visitor.VisitInterlisEnvironment(interlisFile);
 
         if (diagnostics != null && diagnostics.Count > 0)
