@@ -3,6 +3,7 @@ using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
 
@@ -22,6 +23,7 @@ var server = await LanguageServer.From(options =>
         {
             services.AddSingleton<FileContentCache>();
             services.AddTransient<InterlisReader>();
+            services.AddSingleton(TextDocumentSelector.ForLanguage(ServerConstants.InterlisLanguageName));
         })
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<GenerateMarkdownHandler>()
