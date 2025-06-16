@@ -6,7 +6,7 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
-internal class LintDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagnostic>>
+internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagnostic>>
 {
     protected override List<Diagnostic>? AggregateResult(List<Diagnostic>? aggregate, List<Diagnostic>? nextResult)
     {
@@ -25,7 +25,7 @@ internal class LintDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagnost
             diagnostics.Add(new Diagnostic
             {
                 Severity = DiagnosticSeverity.Warning,
-                Message = "Use Interlis.Boolean",
+                Message = "Boolean should be INTERLIS.BOOLEAN",
                 Range = MapGeoWRangePosition(domainDef.NameLocations),
             });
         }
@@ -42,7 +42,7 @@ internal class LintDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagnost
             diagnostics.Add(new Diagnostic
             {
                 Severity = DiagnosticSeverity.Warning,
-                Message = "Use Interlis.Boolean",
+                Message = "Boolean should be INTERLIS.BOOLEAN",
                 Range = MapGeoWRangePosition(attributeDef.NameLocations),
             });
         }
