@@ -1,6 +1,6 @@
+using Geowerkstatt.Interlis.Compiler;
+using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
-using Geowerkstatt.Interlis.Tools;
-using Geowerkstatt.Interlis.Tools.AST;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
@@ -59,10 +59,10 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         return Task.FromResult<string?>(diagram);
     }
 
-    private string GenerateDiagram(InterlisFile interlisFile, String orientation)
+    private string GenerateDiagram(InterlisEnvironment interlisFile, String orientation)
     {
         DiagramDocumentVisitor visitor = new DiagramDocumentVisitor(loggerFactory.CreateLogger<DiagramDocumentVisitor>(), orientation);
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         return visitor.GetDiagramDocument();
     }
 }

@@ -1,4 +1,4 @@
-using Geowerkstatt.Interlis.Tools;
+using Geowerkstatt.Interlis.Compiler;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
@@ -12,7 +12,7 @@ public class DiagramDocumentVisitorTests
         var reader  = new InterlisReader();
         var ast     = reader.ReadFile(new StringReader(ili));
         var visitor = new DiagramDocumentVisitor(NullLogger<DiagramDocumentVisitor>.Instance, "LR");
-        visitor.VisitInterlisFile(ast);
+        visitor.VisitInterlisEnvironment(ast);
         return visitor.GetDiagramDocument().ReplaceLineEndings("\n");
     }
 

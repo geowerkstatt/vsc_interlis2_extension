@@ -1,6 +1,6 @@
+using Geowerkstatt.Interlis.Compiler;
+using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
-using Geowerkstatt.Interlis.Tools;
-using Geowerkstatt.Interlis.Tools.AST;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
@@ -39,7 +39,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             logger.LogWarning("generateMarkdown invoked without arguments");
             return Task.FromResult<string?>(null);
         }
-        
+
         var uri = options.Uri;
         var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
         if (string.IsNullOrEmpty(fileContent))
@@ -56,10 +56,10 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         return Task.FromResult<string?>(markdown);
     }
 
-    private static string GenerateMarkdown(InterlisFile interlisFile)
+    private static string GenerateMarkdown(InterlisEnvironment interlisFile)
     {
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         return visitor.GetDocumentation();
     }
 }

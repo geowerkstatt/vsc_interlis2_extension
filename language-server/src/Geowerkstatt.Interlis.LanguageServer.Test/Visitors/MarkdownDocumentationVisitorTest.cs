@@ -1,4 +1,4 @@
-using Geowerkstatt.Interlis.Tools;
+using Geowerkstatt.Interlis.Compiler;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
@@ -103,7 +103,7 @@ public class MarkdownDocumentationVisitorTest
         var interlisFile = reader.ReadFile(new StringReader(TestModel));
 
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         var documentation = visitor.GetDocumentation();
 
         const string expected = """
@@ -128,7 +128,7 @@ public class MarkdownDocumentationVisitorTest
         var interlisFile = reader.ReadFile(new StringReader(TestModelAssociation));
 
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         var documentation = visitor.GetDocumentation();
 
         const string expected = """
@@ -159,7 +159,7 @@ public class MarkdownDocumentationVisitorTest
         var interlisFile = reader.ReadFile(new StringReader(TestModelEnumeration));
 
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         var documentation = visitor.GetDocumentation();
 
         const string expected = """
@@ -183,7 +183,7 @@ public class MarkdownDocumentationVisitorTest
         var interlisFile = reader.ReadFile(new StringReader(TestModelNestedStruct));
 
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         var documentation = visitor.GetDocumentation();
 
         const string structInlineTable =
@@ -225,7 +225,7 @@ public class MarkdownDocumentationVisitorTest
         var interlisFile = reader.ReadFile(new StringReader(TestModelDoubleNestedStruct));
 
         var visitor = new MarkdownDocumentationVisitor();
-        visitor.VisitInterlisFile(interlisFile);
+        visitor.VisitInterlisEnvironment(interlisFile);
         var documentation = visitor.GetDocumentation();
 
         const string structLevel2InlineTable =

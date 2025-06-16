@@ -1,5 +1,5 @@
-using Geowerkstatt.Interlis.Tools.AST;
-using Geowerkstatt.Interlis.Tools.AST.Types;
+using Geowerkstatt.Interlis.Compiler.AST;
+using Geowerkstatt.Interlis.Compiler.AST.Types;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
