@@ -63,6 +63,16 @@
         "title": "Show INTERLIS Diagram View",
         "category": "INTERLIS 2",
         "icon": "$(symbol-misc)"
+      },
+      {
+        "command": "interlis.lintAll",
+        "title": "Lint all INTERLIS2 files",
+        "category": "INTERLIS 2"
+      },
+      {
+        "command": "interlis.fixAll",
+        "title": "Fix all INTERLIS2 linter Warnings",
+        "category": "INTERLIS 2"
       }
     ],
     "menus": {
