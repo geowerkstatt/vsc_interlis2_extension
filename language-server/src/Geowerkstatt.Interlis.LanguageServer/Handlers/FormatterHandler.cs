@@ -40,7 +40,7 @@ public class FormatterHandler : DocumentFormattingHandlerBase
         var interlisParser = reader.GetParser(tokenStream);
         var parseTree = interlisParser.interlis();
 
-        var formatter = new FormatterVisitor(loggerFactory);
+        var formatter = new FormatterVisitor(loggerFactory, tokenStream);
         var formattedOutput = formatter.VisitInterlis(parseTree);
 
         var lastToken = tokenStream.GetTokens().Last();
