@@ -15,6 +15,7 @@ let closeTimer: NodeJS.Timeout | undefined;
 let lastSentMermaidDsl: string | undefined;
 let orientation = "LR";
 let currentIliUri: string | undefined;
+let currentEditor: vscode.TextEditor | undefined;
 
 function autoClosePanel() {
   if (diagramPanel) {
@@ -72,11 +73,28 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         console.warn("Ignoring invalid message from webview:", message);
         return;
       }
-
-      if (message.type === "webviewLoaded") {
+      if (message.type === "nodesChange") {
+        if (!message.changes || !Array.isArray(message.changes)) {
+          console.warn("Ignoring invalid nodesChange message:", message);
+          return;
+        }
+        // Handle nodes change
+        console.log("onNodesChange:", message.changes);
+        vscode.commands.executeCommand("interlis.diagram.nodeChange", message.changes);
+      } else if (message.type === "colorChange") {
+        if (!message.changes || !Array.isArray(message.changes)) {
+          console.warn("Ignoring invalid colorChange message:", message);
+          return;
+        }
+        // Handle color change
+        console.log("onColorchange:", message.changes);
+        const editor = vscode.window.activeTextEditor;
+        vscode.commands.executeCommand("interlis.diagram.colorChange", message.changes, currentEditor);
+      } else if (message.type === "webviewLoaded") {
         const editor = vscode.window.activeTextEditor;
 
         if (editor?.document.languageId === "INTERLIS2") {
+          currentEditor = editor;
           currentIliUri = editor.document.uri.toString();
           orientation = message.orientation || "LR";
           requestDiagram(currentIliUri).then((mermaidDsl) => {
@@ -187,17 +205,23 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext) {
   updateDiagramVisibility(context);
 
   context.subscriptions.push(
+    // Replace this entire event handler with your new code block
     vscode.window.onDidChangeActiveTextEditor(async (editor) => {
       updateDiagramVisibility(context);
 
-      if (editor?.document.languageId !== "INTERLIS2" || !diagramPanel) {
-        return;
-      }
+      if (editor?.document.languageId === "INTERLIS2") {
+        // Update our tracked editor whenever an INTERLIS file becomes active
+        currentEditor = editor;
+        currentIliUri = editor.document.uri.toString();
+        
+        if (!diagramPanel) {
+          return;
+        }
 
-      currentIliUri = editor.document.uri.toString();
-      const mermaidDsl = await requestDiagram(currentIliUri);
-      postMessage("update", mermaidDsl, mermaidDsl !== lastSentMermaidDsl);
-      lastSentMermaidDsl = mermaidDsl;
+        const mermaidDsl = await requestDiagram(currentIliUri);
+        postMessage("update", mermaidDsl, mermaidDsl !== lastSentMermaidDsl);
+        lastSentMermaidDsl = mermaidDsl;
+      }
     }),
     vscode.workspace.onDidCloseTextDocument(() => updateDiagramVisibility(context)),
     vscode.workspace.onDidChangeTextDocument((e) => handleTextChange(e))

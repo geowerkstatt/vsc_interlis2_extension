@@ -141,6 +141,7 @@ export function App() {
   const handleNodesChange = useCallback(
     (changes) => {
       console.log("onNodesChange:", changes);
+      vscodeApi.postMessage({ type: "nodesChange", changes: changes });
       onNodesChange(changes);
     },
     [onNodesChange]
@@ -148,7 +149,11 @@ export function App() {
 
   // Add a handler to update node background color
   const handleNodeColorChange = (id, color) => {
-    console.log(id, color);
+    vscodeApi.postMessage({
+      type: "colorChange",
+      changes: [{ className: id, color: color }],
+    });
+
     setNodes((nds) =>
       nds.map((node) =>
         node.id === id

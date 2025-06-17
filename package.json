@@ -63,6 +63,16 @@
         "title": "Show INTERLIS Diagram View",
         "category": "INTERLIS 2",
         "icon": "$(symbol-misc)"
+      },
+      {
+        "command": "interlis.diagram.colorChange",
+        "title": "Handle color change",
+        "category": "INTERLIS 2"
+      },
+      {
+        "command": "interlis.diagram.nodeChange",
+        "title": "Handle node position change",
+        "category": "INTERLIS 2"
       }
     ],
     "menus": {
