@@ -2,7 +2,6 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using Geowerkstatt.Interlis.Compiler;
-using Geowerkstatt.Interlis.Compiler.AST;
 using Microsoft.Extensions.Logging;
 using System.Text;
 
@@ -197,8 +196,9 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
                     sb.Append(Environment.NewLine);
                 }
 
+                var contents = context.modelContents();
                 sb.Append(string.Concat(context.modelContents()
-                    .Select(c => GetSpacesNormalizedString(c.Start.TokenIndex, c.Stop.TokenIndex))
+                    .Select(Visit)
                     .Select(s => s + Environment.NewLine)));
             }
             else
@@ -217,6 +217,96 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
         sb.Append(Environment.NewLine);
 
+        return sb.ToString();
+    }
+
+    public override string VisitTopicDef([NotNull] Interlis24Parser.TopicDefContext context)
+    {
+        var sb = new StringBuilder();
+
+        var startIndex = context.Start.TokenIndex;
+        var equalSignIndex = context.EQUAL_SIGN().Symbol.TokenIndex;
+        var extendsIndex = context.EXTENDS()?.Symbol.TokenIndex ?? -1;
+        var endIndex = context.END().Symbol.TokenIndex;
+        var stopIndex = context.Stop.TokenIndex;
+
+        if (extendsIndex == -1)
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, equalSignIndex));
+        }
+        else
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, extendsIndex - 1));
+            sb.Append(Environment.NewLine);
+            sb.Append(GetSpacesNormalizedString(extendsIndex, equalSignIndex));
+        }
+        sb.Append(Environment.NewLine);
+
+        indentationSteps += 1;
+        using (var scope = new Scope(() => indentationSteps -= 1))
+        {
+            var contents = context.topicContents();
+            sb.Append(string.Concat(context.topicContents()
+                .Select(Visit)
+                .Select(s => s + Environment.NewLine)));
+        }
+
+        sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+
+        return sb.ToString();
+    }
+
+    public override string VisitClassDef([NotNull] Interlis24Parser.ClassDefContext context)
+    {
+        var sb = new StringBuilder();
+
+        var startIndex = context.Start.TokenIndex;
+        var equalSignIndex = context.EQUAL_SIGN().Symbol.TokenIndex;
+        var extendsIndex = context.EXTENDS()?.Symbol.TokenIndex ?? -1;
+        var endIndex = context.END().Symbol.TokenIndex;
+        var stopIndex = context.Stop.TokenIndex;
+
+        if (extendsIndex == -1)
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, equalSignIndex));
+        }
+        else
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, extendsIndex - 1));
+            sb.Append(Environment.NewLine);
+            sb.Append(GetSpacesNormalizedString(extendsIndex, equalSignIndex));
+        }
+        sb.Append(Environment.NewLine);
+
+        indentationSteps += 1;
+        using (var scope = new Scope(() => indentationSteps -= 1))
+        {
+            sb.Append(Visit(context.classContent()));
+        }
+
+        sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+
+        return sb.ToString();
+    }
+
+    public override string VisitClassContent([NotNull] Interlis24Parser.ClassContentContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(string.Concat(context.children
+            .Select(Visit)
+        .Select((s, i) => s + (i < context.children.Count - 1 ? Environment.NewLine : ""))));
+        sb.Append(Environment.NewLine);
+        return sb.ToString();
+    }
+
+    public override string VisitAttributeDef([NotNull] Interlis24Parser.AttributeDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
         return sb.ToString();
     }
 }

@@ -67,10 +67,14 @@ public class FormatterVisitorTest
               VERSION
             "123"
               =
-            CLASS ClassName =
+            CLASS ClassName
+            EXTENDS AbstractClassName =
+              Property1 : MANDATORY BOOLEAN;
+              Property2: text*50;
               END ClassName;
             TOPIC TopicName =
               CLASS TopicClassName =
+            PropertyA : MANDATORY BOOLEAN;
             END TopicClassName;
               END TopicName;
                 /*COM*/
@@ -90,7 +94,5 @@ public class FormatterVisitorTest
 
         var formatter = new FormatterVisitor(loggerFactory, tokenStream);
         var formattedOutput = formatter.VisitInterlis(parseTree);
-
-        
     }
 }
