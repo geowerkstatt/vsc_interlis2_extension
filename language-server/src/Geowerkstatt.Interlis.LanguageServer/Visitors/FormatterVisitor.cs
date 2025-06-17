@@ -312,4 +312,67 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
         return sb.ToString();
     }
+
+    public override string VisitMetaDataBasketDef([NotNull] Interlis24Parser.MetaDataBasketDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitUnitDef([NotNull] Interlis24Parser.UnitDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitFunctionDef([NotNull] Interlis24Parser.FunctionDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitLineFormTypeDef([NotNull] Interlis24Parser.LineFormTypeDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitDomainDef([NotNull] Interlis24Parser.DomainDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitContextDef([NotNull] Interlis24Parser.ContextDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitRunTimeParameterDef([NotNull] Interlis24Parser.RunTimeParameterDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
 }
