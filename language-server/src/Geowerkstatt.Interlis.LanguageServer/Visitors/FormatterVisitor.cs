@@ -56,6 +56,22 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         this.tokenStream = tokenStream;
     }
 
+    private class Scope : IDisposable
+    {
+        private Action? action;
+
+        public Scope(Action action)
+        {
+            this.action = action;
+        }
+
+        public void Dispose()
+        {
+            action?.Invoke();
+            action = null;
+        }
+    }
+
     /// <summary>
     /// Get the input text of the <paramref name="context"/>. That includes Whitespace and comments.
     /// </summary>
@@ -103,7 +119,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
             sb.Append(token.Text.Trim());
             lastToken = token;
         }
-        return sb.ToString();
+        return SetIndentation(sb.ToString(), indentationSteps * spacesPerIndentation);
     }
 
     public override string VisitTerminal(ITerminalNode node)
@@ -132,7 +148,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         {
             sb.Append(GetSpacesNormalizedString(startIndex, contentStartIndex.Value - 1));
             sb.Append(Environment.NewLine);
-            sb.Append(string.Concat(context.modelDef().Select(Visit).Select(s => s + Environment.NewLine)));
+            sb.Append(string.Concat(context.modelDef().Select(Visit)));
         }
         else
         {
@@ -152,47 +168,55 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         return sb.ToString();
     }
 
-    public override string VisitModelDef([Antlr4.Runtime.Misc.NotNull] Interlis24Parser.ModelDefContext context)
+    public override string VisitModelDef([NotNull] Interlis24Parser.ModelDefContext context)
     {
-        return GetSpacesNormalizedString(context.Start.TokenIndex, context.Stop.TokenIndex);
+        var sb = new StringBuilder();
 
-        //indentationSteps += 1;
+        var startIndex = context.Start.TokenIndex;
+        var atIndex = context.AT().Symbol.TokenIndex;
+        var equalSignIndex = context.EQUAL_SIGN().Symbol.TokenIndex;
+        var contentStartIndex = context.modelContents().FirstOrDefault()?.Start.TokenIndex;
+        var contentEndIndex = context.modelContents().LastOrDefault()?.Stop.TokenIndex;
+        var endIndex = context.END().Symbol.TokenIndex;
+        var stopIndex = context.Stop.TokenIndex;
 
-        //var inputStream = context.Start.InputStream;
+        sb.Append(GetSpacesNormalizedString(startIndex, atIndex - 1));
+        sb.Append(Environment.NewLine);
+        sb.Append(GetSpacesNormalizedString(atIndex, equalSignIndex));
+        sb.Append(Environment.NewLine);
 
-        //var startIndex = context.Start.StartIndex;
-        //var atIndex = context.AT().Symbol.StartIndex;
-        //var equalSignIndex = context.EQUAL_SIGN().Symbol.StartIndex;
-        //var contentStartIndex = context.modelContents().FirstOrDefault()?.Start.StartIndex;
-        //var contentEndIndex = context.modelContents().LastOrDefault()?.Stop.StopIndex;
-        //var endIndex = context.END().Symbol.StartIndex;
-        //var stopIndex = context.Stop.StopIndex;
+        indentationSteps += 1;
+        using (var scope = new Scope(() => indentationSteps -= 1))
+        {
+            if (contentStartIndex.HasValue)
+            {
+                var modelConfig = GetSpacesNormalizedString(equalSignIndex + 1, contentStartIndex.Value - 1);
+                if (!string.IsNullOrEmpty(modelConfig))
+                {
+                    sb.Append(modelConfig);
+                    sb.Append(Environment.NewLine);
+                }
 
-        //var content = Environment.NewLine;
-        //if (contentStartIndex != null)
-        //{
-        //    content = string.Concat(context.modelContents().Select(Visit).Select(s => s + Environment.NewLine));
-        //}
+                sb.Append(string.Concat(context.modelContents()
+                    .Select(c => GetSpacesNormalizedString(c.Start.TokenIndex, c.Stop.TokenIndex))
+                    .Select(s => s + Environment.NewLine)));
+            }
+            else
+            {
+                // no content
+                var modelConfig = GetSpacesNormalizedString(equalSignIndex + 1, endIndex - 1);
+                if (!string.IsNullOrEmpty(modelConfig))
+                {
+                    sb.Append(modelConfig);
+                    sb.Append(Environment.NewLine);
+                }
+            }
+        }
 
-        ////var modelLine = inputStream.GetText(new Interval(startIndex, context.));
-        //var endLine = inputStream.GetText(new Interval(endIndex, stopIndex));
+        // end
+        sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+        sb.Append(Environment.NewLine);
 
-        //indentationSteps -= 1;
-
-        //if (contentStartIndex != null)
-        //{
-        //    var startLines = inputStream.GetText(new Interval(startIndex, contentStartIndex.Value - 1));
-        //    return startLines + Environment.NewLine + content + Environment.NewLine + endLine;
-        //}
-        //else
-        //{
-        //    return GetInputText(context);
-        //}
-    }
-
-    public override string VisitTopicDef([NotNull] Interlis24Parser.TopicDefContext context)
-    {
-        var text = GetInputText(context);
-        return SetIndentation(text, indentationSteps * spacesPerIndentation);
+        return sb.ToString();
     }
 }
