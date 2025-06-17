@@ -109,34 +109,7 @@ function getLayoutedNodes(nodes, edges, direction = "TB") {
 export function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [inputData, setInputData] = useState(null);
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
-
-  // Check for config file get its inputs
-  // useEffect(() => {
-  //   async function loadInput() {
-  //     let configModule = null;
-  //     let configData = null;
-  //     let sourceFile = "input.json";
-  //     try {
-  //       configModule = await import("../input_config.json");
-  //       configData = configModule.default || configModule;
-  //       if (configData.initialNodes?.length && configData.initialEdges?.length) {
-  //         sourceFile = "input_config.json";
-  //       } else {
-  //         throw new Error("input_config.json is empty");
-  //       }
-  //     } catch (e) {
-  //       const inputModule = await import("../input.json");
-  //       configData = inputModule.default || inputModule;
-  //     }
-  //     configData.__sourceFile = sourceFile;
-  //     setInputData(configData);
-  //     setNodes(configData.initialNodes);
-  //     setEdges(configData.initialEdges);
-  //   }
-  //   loadInput();
-  // }, []);
 
   const handleNodesChange = useCallback(
     (changes) => {
