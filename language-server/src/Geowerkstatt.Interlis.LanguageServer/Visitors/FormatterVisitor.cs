@@ -1,22 +1,114 @@
+using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using Geowerkstatt.Interlis.Compiler;
+using Geowerkstatt.Interlis.Compiler.AST;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
 public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
 {
+    private readonly CommonTokenStream tokenStream;
     private readonly ILogger logger;
 
-    public FormatterVisitor(ILoggerFactory loggerFactory)
+    private int indentationSteps = 0;
+    private int spacesPerIndentation = 4;
+
+    /// <summary>
+    /// Tokens that are not printet in the output.
+    /// </summary>
+    private static HashSet<int> SkippedTokens = new HashSet<int>
+    {
+        TokenConstants.EOF,
+        Interlis24Lexer.WHITESPACE,
+    };
+
+    /// <summary>
+    /// Tokens that should not have a space before them.
+    /// </summary>
+    private static HashSet<int> NoSpaceBefore = new HashSet<int>
+    {
+        Interlis24Lexer.SEMICOLON,
+        Interlis24Lexer.COMMA,
+        Interlis24Lexer.DOT,
+        Interlis24Lexer.DOUBLE_QUOTE_CLOSE,
+        Interlis24Lexer.R_PAREN,
+        Interlis24Lexer.R_BRACK,
+        Interlis24Lexer.R_BRACE,
+    };
+
+    /// <summary>
+    /// Tokens that should not have a space after them.
+    /// </summary>
+    private static HashSet<int> NoSpaceAfter = new HashSet<int>
+    {
+        Interlis24Lexer.L_PAREN,
+        Interlis24Lexer.L_BRACK,
+        Interlis24Lexer.L_BRACE,
+        Interlis24Lexer.DOUBLE_QUOTE_OPEN,
+    };
+
+    public FormatterVisitor(ILoggerFactory loggerFactory, CommonTokenStream tokenStream)
     {
         logger = loggerFactory.CreateLogger<FormatterVisitor>();
+        this.tokenStream = tokenStream;
+    }
+
+    /// <summary>
+    /// Get the input text of the <paramref name="context"/>. That includes Whitespace and comments.
+    /// </summary>
+    private string GetInputText(ParserRuleContext context)
+        => context.Start.InputStream.GetText(context.SourceInterval);
+
+    /// <summary>
+    /// Change the input in a way that every line has <paramref name="indentation"/> count of spaces at the beginning.
+    /// </summary>
+    internal static string SetIndentation(string input, int indentation)
+    {
+        if (indentation < 0) indentation = 0;
+        var indent = new string(' ', indentation);
+        var lines = input.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            // Only indent non-empty lines to avoid trailing spaces on blank lines
+            if (!string.IsNullOrWhiteSpace(lines[i]))
+            {
+                lines[i] = indent + lines[i].Trim();
+            }
+        }
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    internal string GetSpacesNormalizedString(int tokenStartIndex, int tokenStopIndex)
+    {
+        var sb = new StringBuilder();
+        var tokens = tokenStream.Get(tokenStartIndex, tokenStopIndex);
+        IToken? lastToken = null;
+        for (int i = 0; i < tokens.Count; i++)
+        {
+            var token = tokens[i];
+            if (SkippedTokens.Contains(token.Type))
+            {
+                continue;
+            }
+
+            // Insert appropriate space
+            if (lastToken != null && !NoSpaceAfter.Contains(lastToken.Type) && !NoSpaceBefore.Contains(token.Type))
+            {
+                sb.Append(' ');
+            }
+
+            sb.Append(token.Text.Trim());
+            lastToken = token;
+        }
+        return sb.ToString();
     }
 
     public override string VisitTerminal(ITerminalNode node)
     {
-        return node.ToString() ?? string.Empty;
+        return node.Symbol.Text;
     }
 
     protected override string AggregateResult(string aggregate, string nextResult)
@@ -26,10 +118,81 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
 
     public override string VisitInterlis([NotNull] Interlis24Parser.InterlisContext context)
     {
-        var start = context.Start.StartIndex;
-        var stop = context.Stop.StopIndex;
-        var inputStream = context.Start.InputStream;
-        var result = inputStream.GetText(new Antlr4.Runtime.Misc.Interval(start, stop));
-        return result;
+        var sb = new StringBuilder();
+
+        var startIndex = context.Start.TokenIndex;
+        var contentStartIndex = context.modelDef().FirstOrDefault()?.Start.TokenIndex;
+        var stopIndex = context.Stop.TokenIndex;
+
+        // Append all tokens at the start of the file
+        sb.Append(GetSpacesNormalizedString(0, startIndex - 1));
+        sb.Append(Environment.NewLine);
+
+        if (contentStartIndex.HasValue)
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, contentStartIndex.Value - 1));
+            sb.Append(Environment.NewLine);
+            sb.Append(string.Concat(context.modelDef().Select(Visit).Select(s => s + Environment.NewLine)));
+        }
+        else
+        {
+            // No models
+            sb.Append(GetSpacesNormalizedString(startIndex, stopIndex));
+            sb.Append(Environment.NewLine);
+        }
+
+        // Things after the last model
+        var fileEndString = GetSpacesNormalizedString(stopIndex + 1, tokenStream.Size - 2);
+        if (!string.IsNullOrEmpty(fileEndString))
+        {
+            sb.Append(fileEndString);
+            sb.Append(Environment.NewLine);
+        }
+
+        return sb.ToString();
+    }
+
+    public override string VisitModelDef([Antlr4.Runtime.Misc.NotNull] Interlis24Parser.ModelDefContext context)
+    {
+        return GetSpacesNormalizedString(context.Start.TokenIndex, context.Stop.TokenIndex);
+
+        //indentationSteps += 1;
+
+        //var inputStream = context.Start.InputStream;
+
+        //var startIndex = context.Start.StartIndex;
+        //var atIndex = context.AT().Symbol.StartIndex;
+        //var equalSignIndex = context.EQUAL_SIGN().Symbol.StartIndex;
+        //var contentStartIndex = context.modelContents().FirstOrDefault()?.Start.StartIndex;
+        //var contentEndIndex = context.modelContents().LastOrDefault()?.Stop.StopIndex;
+        //var endIndex = context.END().Symbol.StartIndex;
+        //var stopIndex = context.Stop.StopIndex;
+
+        //var content = Environment.NewLine;
+        //if (contentStartIndex != null)
+        //{
+        //    content = string.Concat(context.modelContents().Select(Visit).Select(s => s + Environment.NewLine));
+        //}
+
+        ////var modelLine = inputStream.GetText(new Interval(startIndex, context.));
+        //var endLine = inputStream.GetText(new Interval(endIndex, stopIndex));
+
+        //indentationSteps -= 1;
+
+        //if (contentStartIndex != null)
+        //{
+        //    var startLines = inputStream.GetText(new Interval(startIndex, contentStartIndex.Value - 1));
+        //    return startLines + Environment.NewLine + content + Environment.NewLine + endLine;
+        //}
+        //else
+        //{
+        //    return GetInputText(context);
+        //}
+    }
+
+    public override string VisitTopicDef([NotNull] Interlis24Parser.TopicDefContext context)
+    {
+        var text = GetInputText(context);
+        return SetIndentation(text, indentationSteps * spacesPerIndentation);
     }
 }
