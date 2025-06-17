@@ -12,9 +12,9 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
     private readonly Dictionary<string, string> _editorConfig;
     private readonly LinterRuleContext _ruleContext;
 
-    public LinterDocumentationVisitor(string? filePath = null)
+    public LinterDocumentationVisitor()
     {
-        _editorConfig = filePath != null ? EditorConfigLoader.Load(filePath) : new Dictionary<string, string>();
+        _editorConfig = EditorConfigLoader.LoadFromWorkspace();
         _ruleContext = new LinterRuleContext { EditorConfig = _editorConfig };
     }
 

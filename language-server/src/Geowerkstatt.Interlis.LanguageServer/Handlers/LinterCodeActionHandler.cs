@@ -10,7 +10,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
         {
             var actions = new List<CommandOrCodeAction>();
             var filePath = request.TextDocument.Uri.GetFileSystemPath();
-            var editorConfig = EditorConfigLoader.Load(filePath);
+            var editorConfig = EditorConfigLoader.LoadFromWorkspace();
             var ruleContext = new LinterRuleContext { EditorConfig = editorConfig };
 
             foreach (var diagnostic in request.Context.Diagnostics)
