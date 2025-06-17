@@ -140,8 +140,11 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         var stopIndex = context.Stop.TokenIndex;
 
         // Append all tokens at the start of the file
-        sb.Append(GetSpacesNormalizedString(0, startIndex - 1));
-        sb.Append(Environment.NewLine);
+        if (startIndex > 0)
+        {
+            sb.Append(GetSpacesNormalizedString(0, startIndex - 1));
+            sb.Append(Environment.NewLine);
+        }
 
         if (contentStartIndex.HasValue)
         {
