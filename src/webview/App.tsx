@@ -29,9 +29,9 @@ function getBasicNodes(nodes) {
     data: { ...n.Data, label: renderLabel(n.Data) },
     type: "ResizableNode",
     style: {
-      background: n.Style.Background ?? "#fff",
-      color: n.Style.Color ?? "#000",
-      border: n.Style.Border ?? "1px solid #000",
+      background: n.Style?.Background ?? "#fff",
+      color: n.Style?.Color ?? "#000",
+      border: n.Style?.Border ?? "1px solid #000",
     },
     position: { x: 900, y: 200 },
   }));
@@ -57,7 +57,7 @@ function renderLabel(nodeData: { Title: string; Attributes: string[] }) {
   );
 }
 
-function getLayoutedNodes(nodes, edges, direction = "LR") {
+function getLayoutedNodes(nodes, edges, direction = "RL") {
   dagreGraph.setGraph(
     dagreGraph.setGraph({
       rankdir: direction,
@@ -78,7 +78,7 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
 
   dagre.layout(dagreGraph);
 
-  return nodes.map((node) => {
+  const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     return {
       ...node,
@@ -88,6 +88,16 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
       },
     };
   });
+
+  const layoutedEdges = edges.map((edge) => {
+    const edgeInfo = dagreGraph.edge(edge.source, edge.target);
+    return {
+      ...edge,
+      points: edgeInfo.points, // array of {x, y} control points
+    };
+  });
+
+  return { layoutedNodes, layoutedEdges };
 }
 
 export function App() {
@@ -105,12 +115,13 @@ export function App() {
       const { Nodes, Edges } = response;
       const initialNodes = getBasicNodes(Nodes);
       const initialEdges = getBasicEdges(Edges);
-      const layoutedNodes = getLayoutedNodes(initialNodes, initialEdges);
-      console.log(initialEdges);
-      console.log(initialNodes);
+      const { layoutedNodes, layoutedEdges } = getLayoutedNodes(initialNodes, initialEdges);
+      console.log(Edges);
+      console.log(layoutedEdges);
+      console.log(Nodes);
       console.log(layoutedNodes);
       setNodes(layoutedNodes);
-      setEdges(initialEdges);
+      setEdges(layoutedEdges);
     });
 
     // Notify extension that webview is loaded

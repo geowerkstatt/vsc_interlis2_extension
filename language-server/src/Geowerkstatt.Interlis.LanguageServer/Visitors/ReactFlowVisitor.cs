@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using static System.Net.Mime.MediaTypeNames;
+using Antlr4.Runtime.Tree;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
@@ -81,11 +82,30 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
             return;
         }
 
-      
-        else if (string.Compare(left.classDef.Name, right.classDef.Name, StringComparison.Ordinal) > 0)
+        bool leftDiamond =
+            left.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
+        bool rightDiamond =
+            right.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
+
+        if (leftDiamond && !rightDiamond)
+        {
+            (left, right) = (right, left);
+            (leftDiamond, rightDiamond) = (rightDiamond, leftDiamond);
+        }
+        else if (!leftDiamond && !rightDiamond &&
+                 string.Compare(left.classDef.Name, right.classDef.Name, StringComparison.Ordinal) > 0)
         {
             (left, right) = (right, left);
         }
+
+        string symbol = (leftDiamond, rightDiamond) switch
+        {
+            (false, false) => "--",
+            (true, false) => "o--",
+            (false, true) => "--o",
+            _ => "o--o"
+        };
+
 
         edges.Add(new Edge
         {
@@ -151,10 +171,22 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
         {
             var nodeToAdd = new Node();
         
-
             nodeToAdd.Id= type.Name;
             nodeToAdd.Data = new NodeData() { Title = type.Name };
-            
+
+            if (type.Extends is { } extRef && extRef.Path.Any())
+            {
+                string parentSimple = extRef.Path.Last();
+                string parentLabel =
+                    extRef.Target != null ? parentSimple : $"`{parentSimple} #60;#60;EXTERNAL#62;#62;`";
+
+                edges.Add(new Edge
+                {
+                    Id = $"`{parentLabel}_{type.Name}`",
+                    Source = type.Name,
+                    Target = parentLabel,
+                });
+            }
 
             if (type.MetaAttributes.TryGetValue("geow.uml.color", out var color) && !string.IsNullOrWhiteSpace(color))
             {
@@ -167,17 +199,43 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
             }
 
             var stereo = type.IsStructure ? MermaidConstants.StructureStereotype : MermaidConstants.ClassStereotype;
-            // mermaidScript.AppendLine($"{type.Name}: {stereo}");
 
             foreach (var attr in type.Content.Values.OfType<AttributeDef>())
                 AppendAttributeDetailsToScript(type, attr, nodeToAdd);
 
-            // mermaidScript.AppendLine();
             nodes.Add(nodeToAdd);
         }
 
         foreach (var associationDef in associations)
             AppendAssociationDetailsToScript(associationDef, edges);
+
+        var defaultColors = new[]
+        {
+            "#ffadadff", // melon
+            "#ffd6a5ff", // sunset
+            "#fdffb6ff", // cream
+            "#caffbfff", // tea-green
+            "#9bf6ffff", // electric-blue
+            "#a0c4ffff", // jordy-blue
+            "#bdb2ffff", // periwinkle
+            "#ffc6ffff", // mauve
+            "#fffffcff"  // baby-powder
+        };
+
+        int colorIndex = 0;
+        foreach (var node in nodes)
+        {
+            if (node.Style == null)
+            {
+                node.Style = new NodeStyle()
+                {
+                    Background = defaultColors[colorIndex % defaultColors.Length],
+                    Color = "black",
+                    Border = "2px solid black"
+                };
+                colorIndex++;
+            }
+        }
 
         return new ReactflowResponse() {
             Nodes = nodes,
