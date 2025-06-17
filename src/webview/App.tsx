@@ -1,14 +1,10 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { ReactFlow, useNodesState, useEdgesState, addEdge } from "@xyflow/react";
 import dagre from "dagre";
 import { graphlib } from "dagre";
 import "@xyflow/react/dist/style.css";
 import ResizableNode from "./ResizableNode";
 import { PointsEdge } from "./PointsEdge";
-
-const nodeTypes = {
-  ResizableNode,
-};
 
 const edgeTypes = {
   PointsEdge,
@@ -113,8 +109,65 @@ function getLayoutedNodes(nodes, edges, direction = "TB") {
 export function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
+  const [inputData, setInputData] = useState(null);
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+  // Check for config file get its inputs
+  // useEffect(() => {
+  //   async function loadInput() {
+  //     let configModule = null;
+  //     let configData = null;
+  //     let sourceFile = "input.json";
+  //     try {
+  //       configModule = await import("../input_config.json");
+  //       configData = configModule.default || configModule;
+  //       if (configData.initialNodes?.length && configData.initialEdges?.length) {
+  //         sourceFile = "input_config.json";
+  //       } else {
+  //         throw new Error("input_config.json is empty");
+  //       }
+  //     } catch (e) {
+  //       const inputModule = await import("../input.json");
+  //       configData = inputModule.default || inputModule;
+  //     }
+  //     configData.__sourceFile = sourceFile;
+  //     setInputData(configData);
+  //     setNodes(configData.initialNodes);
+  //     setEdges(configData.initialEdges);
+  //   }
+  //   loadInput();
+  // }, []);
+
+  const handleNodesChange = useCallback(
+    (changes) => {
+      console.log("onNodesChange:", changes);
+      onNodesChange(changes);
+    },
+    [onNodesChange]
+  );
+
+  // Add a handler to update node background color
+  const handleNodeColorChange = (id, color) => {
+    console.log(id, color);
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              style: { ...node.style, background: color },
+            }
+          : node
+      )
+    );
+  };
+
+  // Memoize nodeTypes to avoid React Flow warning and ensure color updates
+  const nodeTypes = useMemo(
+    () => ({
+      ResizableNode: (nodeProps) => <ResizableNode {...nodeProps} onColorChange={handleNodeColorChange} />,
+    }),
+    [handleNodeColorChange]
+  );
 
   useEffect(() => {
     // Listen for messages from the extension
@@ -145,7 +198,7 @@ export function App() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
