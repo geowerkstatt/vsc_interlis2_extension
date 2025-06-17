@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.Compiler.AST.Types;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -25,35 +26,23 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
         return aggregate;
     }
 
-    public override List<Diagnostic> VisitDomainDef(DomainDef? domainDef)
+    public override List<Diagnostic> VisitDomainDef([NotNull] DomainDef domainDef)
     {
-        if (domainDef == null) return [];
         var diagnostics = base.VisitDomainDef(domainDef) ?? [];
-
-        if (domainDef.TypeDef is BooleanType)
-        {
-            var rule = LinterRules.All.Find(r => r.Id == "interlis.boolean-type");
-            if (rule != null && LinterRules.IsRuleEnabled(rule.Id, _ruleContext))
-            {
-                var description = rule.Description;
-                diagnostics.Add(new Diagnostic
-                {
-                    Severity = DiagnosticSeverity.Warning,
-                    Message = description,
-                    Range = MapGeoWRangePosition(domainDef.NameLocations),
-                });
-            }
-        }
-
+        VisitTypeDef(diagnostics, domainDef.TypeDef, domainDef.NameLocations);
         return diagnostics;
     }
 
-    public override List<Diagnostic> VisitAttributeDef(AttributeDef? attributeDef)
+    public override List<Diagnostic> VisitAttributeDef([NotNull] AttributeDef attributeDef)
     {
-        if (attributeDef == null) return [];
         var diagnostics = base.VisitAttributeDef(attributeDef) ?? [];
+        VisitTypeDef(diagnostics, attributeDef.TypeDef, attributeDef.NameLocations);
+        return diagnostics;
+    }
 
-        if (attributeDef.TypeDef is BooleanType)
+    private List<Diagnostic> VisitTypeDef(List<Diagnostic> diagnostics, TypeDef typeDef, ICollection<RangePosition> rangePosition)
+    {
+        if (typeDef is BooleanType)
         {
             var rule = LinterRules.All.Find(r => r.Id == "interlis.boolean-type");
             if (rule != null && LinterRules.IsRuleEnabled(rule.Id, _ruleContext))
@@ -63,7 +52,8 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
                 {
                     Severity = DiagnosticSeverity.Warning,
                     Message = description,
-                    Range = MapGeoWRangePosition(attributeDef.NameLocations),
+                    Range = MapGeoWRangePosition(rangePosition),
+                    Code = rule.Id,
                 });
             }
         }

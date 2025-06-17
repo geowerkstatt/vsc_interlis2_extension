@@ -1,4 +1,3 @@
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -16,34 +15,21 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
 
             foreach (var diagnostic in request.Context.Diagnostics)
             {
-                var rule = LinterRules.All.Find(r => r.Id == "interlis.boolean-type");
-                if (rule == null || diagnostic.Message == null) continue;
+                if (diagnostic == null || diagnostic.Code.HasValue == false) continue;
+                
+                var rule = LinterRules.All.Find(r => diagnostic.Code == r.Id);
+                if (rule == null || LinterRules.IsRuleEnabled(rule.Id, ruleContext) == false || rule.GetWorkspaceEdit == null) continue;
 
-                if (LinterRules.IsRuleEnabled(rule.Id, ruleContext) && diagnostic.Message != null && diagnostic.Message.Contains(rule.Description))
+                var edit = rule.GetWorkspaceEdit(request, request.Context.Diagnostics, ruleContext);
+                if (edit == null) continue;
+
+                actions.Add(new CodeAction
                 {
-                    var edit = new WorkspaceEdit
-                    {
-                        Changes = new Dictionary<DocumentUri, IEnumerable<TextEdit>>
-                        {
-                            [request.TextDocument.Uri] = new[]
-                            {
-                                new TextEdit
-                                {
-                                    NewText = "INTERLIS.BOOLEAN",
-                                    Range = diagnostic.Range
-                                }
-                            }
-                        }
-                    };
-
-                    actions.Add(new CodeAction
-                    {
-                        Title = rule.Description,
-                        Kind = CodeActionKind.QuickFix,
-                        Diagnostics = new[] { diagnostic },
-                        Edit = edit
-                    });
-                }
+                    Title = rule.Description,
+                    Kind = CodeActionKind.QuickFix,
+                    Diagnostics = new[] { diagnostic },
+                    Edit = edit
+                });
             }
 
             return Task.FromResult<CommandOrCodeActionContainer?>(new CommandOrCodeActionContainer(actions));

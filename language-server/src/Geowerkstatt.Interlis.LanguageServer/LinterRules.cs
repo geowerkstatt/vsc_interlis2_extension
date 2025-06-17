@@ -1,11 +1,14 @@
+using OmniSharp.Extensions.LanguageServer.Protocol;
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+
 namespace Geowerkstatt.Interlis.LanguageServer
 {
     public class LinterRule
     {
-        public string Id { get; set; }
-        public string Description { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public bool DefaultEnabled { get; set; }
-        public Func<LinterRuleContext, bool> IsEnabled { get; set; } = _ => true;
+        public Func<CodeActionParams, IEnumerable<Diagnostic>, LinterRuleContext, WorkspaceEdit?>? GetWorkspaceEdit { get; set; }
     }
 
     public class LinterRuleContext
@@ -19,8 +22,28 @@ namespace Geowerkstatt.Interlis.LanguageServer
         {
             new() {
                 Id = "interlis.boolean-type",
-                Description = "Use INTERLIS.Boolean instead of Boolean",
-                DefaultEnabled = true
+                Description = "Use INTERLIS.BOOLEAN instead of BOOLEAN",
+                DefaultEnabled = true,
+                GetWorkspaceEdit = (request, diagnostics, context) =>
+                {
+                    var edits = new List<TextEdit>();
+                    foreach (var diagnostic in diagnostics)
+                    {
+                        edits.Add(new TextEdit
+                        {
+                            NewText = "INTERLIS.BOOLEAN",
+                            Range = diagnostic.Range
+                        });
+                    }
+                    if (edits.Count == 0) return null;
+                    return new WorkspaceEdit
+                    {
+                        Changes = new Dictionary<DocumentUri, IEnumerable<TextEdit>>
+                        {
+                            [request.TextDocument.Uri] = edits
+                        }
+                    };
+                }
             },
         };
 
