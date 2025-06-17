@@ -23,6 +23,13 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<FileContentCache>();
             services.AddTransient<InterlisReader>();
         })
+        .OnInitialize(async (server, request, token) =>
+        {
+            var rootUri = request.RootUri?.GetFileSystemPath();
+            var rootPath = request.RootPath;
+            WorkspaceInfo.WorkspaceRoot = rootUri ?? rootPath;
+            await Task.CompletedTask;
+        })
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<LinterCodeActionHandler>()
         .WithHandler<FormatterHandler>()

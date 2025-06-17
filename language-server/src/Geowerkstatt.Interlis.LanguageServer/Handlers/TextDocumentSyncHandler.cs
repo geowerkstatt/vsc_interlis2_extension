@@ -82,7 +82,7 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
         var logProvider = new LinterLogProvider();
         var loggerFactory = LoggerFactory.Create(b => b.AddProvider(logProvider));
         var interlisFile = new InterlisReader(loggerFactory).ReadFile(stringReader);
-        var visitor = new LinterDocumentationVisitor(uri.Path);
+        var visitor = new LinterDocumentationVisitor();
         var diagnostics = visitor.VisitInterlisEnvironment(interlisFile) ?? new List<Diagnostic>();
 
         // Add log messages as diagnostics (extract position if present)
