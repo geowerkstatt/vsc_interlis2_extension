@@ -4,9 +4,14 @@ import dagre from "dagre";
 import { graphlib } from "dagre";
 import "@xyflow/react/dist/style.css";
 import ResizableNode from "./ResizableNode";
+import { PointsEdge } from "./PointsEdge";
 
 const nodeTypes = {
   ResizableNode,
+};
+
+const edgeTypes = {
+  PointsEdge,
 };
 
 const vscodeApi = (window as any).acquireVsCodeApi
@@ -33,7 +38,7 @@ function getBasicNodes(nodes) {
       color: n.Style?.Color ?? "#000",
       border: n.Style?.Border ?? "1px solid #000",
     },
-    position: { x: 900, y: 200 },
+    position: { x: 0, y: 0 },
   }));
 }
 
@@ -57,7 +62,7 @@ function renderLabel(nodeData: { Title: string; Attributes: string[] }) {
   );
 }
 
-function getLayoutedNodes(nodes, edges, direction = "RL") {
+function getLayoutedNodes(nodes, edges, direction = "TB") {
   dagreGraph.setGraph(
     dagreGraph.setGraph({
       rankdir: direction,
@@ -93,7 +98,12 @@ function getLayoutedNodes(nodes, edges, direction = "RL") {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
     return {
       ...edge,
-      points: edgeInfo.points, // array of {x, y} control points
+      type: "PointsEdge",
+      sourcePosition: "bottom",
+      targetPosition: "top",
+      data: {
+        points: edgeInfo.points,
+      },
     };
   });
 
@@ -139,6 +149,7 @@ export function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
         />
       </div>

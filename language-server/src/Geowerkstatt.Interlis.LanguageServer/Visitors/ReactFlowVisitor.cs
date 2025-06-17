@@ -183,8 +183,8 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
                 edges.Add(new Edge
                 {
                     Id = $"`{parentLabel}_{type.Name}`",
-                    Source = type.Name,
-                    Target = parentLabel,
+                    Source = parentLabel,
+                    Target = type.Name,
                 });
             }
 
@@ -209,6 +209,8 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
         foreach (var associationDef in associations)
             AppendAssociationDetailsToScript(associationDef, edges);
 
+
+        // Todo decide colors based on the type of class
         var defaultColors = new[]
         {
             "#ffadadff", // melon
