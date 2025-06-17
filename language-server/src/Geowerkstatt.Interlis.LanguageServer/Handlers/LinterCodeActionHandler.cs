@@ -10,11 +10,16 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
         public override Task<CommandOrCodeActionContainer?> Handle(CodeActionParams request, CancellationToken cancellationToken)
         {
             var actions = new List<CommandOrCodeAction>();
+            var filePath = request.TextDocument.Uri.GetFileSystemPath();
+            var editorConfig = EditorConfigLoader.Load(filePath);
+            var ruleContext = new LinterRuleContext { EditorConfig = editorConfig };
 
             foreach (var diagnostic in request.Context.Diagnostics)
             {
-                // Only offer a fix for diagnostics about 'Boolean' (customize as needed)
-                if (diagnostic.Message != null && diagnostic.Message.Contains("Boolean should be INTERLIS.BOOLEAN"))
+                var rule = LinterRules.All.Find(r => r.Id == "interlis.boolean-type");
+                if (rule == null || diagnostic.Message == null) continue;
+
+                if (LinterRules.IsRuleEnabled(rule.Id, ruleContext) && diagnostic.Message != null && diagnostic.Message.Contains(rule.Description))
                 {
                     var edit = new WorkspaceEdit
                     {
@@ -33,7 +38,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
 
                     actions.Add(new CodeAction
                     {
-                        Title = "Replace with INTERLIS.BOOLEAN",
+                        Title = rule.Description,
                         Kind = CodeActionKind.QuickFix,
                         Diagnostics = new[] { diagnostic },
                         Edit = edit

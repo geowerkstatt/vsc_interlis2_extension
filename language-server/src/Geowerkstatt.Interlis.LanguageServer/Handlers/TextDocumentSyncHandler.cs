@@ -1,7 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -80,21 +79,15 @@ internal class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 
     private void RunLinter(DocumentUri uri, string text)
     {
-
         using var stringReader = new StringReader(text);
         var interlisFile = interlisReader.ReadFile(stringReader);
-
-        var visitor = new LinterDocumentationVisitor();
+        var visitor = new LinterDocumentationVisitor(uri.Path);
         var diagnostics = visitor.VisitInterlisEnvironment(interlisFile);
-
-        if (diagnostics != null && diagnostics.Count > 0)
+        router.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
-            router.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
-            {
-                Uri = uri,
-                Diagnostics = diagnostics
-            });
-        }
+            Uri = uri,
+            Diagnostics = diagnostics ?? new List<Diagnostic>()
+        });
     }
 }
 
