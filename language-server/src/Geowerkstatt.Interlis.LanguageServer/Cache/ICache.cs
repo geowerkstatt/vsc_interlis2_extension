@@ -1,6 +1,6 @@
 using OmniSharp.Extensions.LanguageServer.Protocol;
 
-namespace Geowerkstatt.Interlis.LanguageServer
+namespace Geowerkstatt.Interlis.LanguageServer.Cache
 {
     internal interface ICache<T> where T : class
     {

@@ -1,7 +1,7 @@
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Concurrent;
 
-namespace Geowerkstatt.Interlis.LanguageServer;
+namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 
 /// <summary>
 /// Stores the content of the currently opened INTERLIS files in memory.

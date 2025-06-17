@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
+using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;

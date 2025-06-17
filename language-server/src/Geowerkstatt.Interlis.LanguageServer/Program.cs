@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
+using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

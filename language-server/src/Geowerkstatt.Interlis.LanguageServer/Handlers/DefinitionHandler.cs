@@ -1,3 +1,4 @@
+using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;

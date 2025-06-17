@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Concurrent;
 
-namespace Geowerkstatt.Interlis.LanguageServer;
+namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 
 public sealed class InterlisEnvironmentCache: ICache<InterlisEnvironment>
 {
