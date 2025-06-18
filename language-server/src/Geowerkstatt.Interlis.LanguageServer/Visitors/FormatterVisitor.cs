@@ -49,6 +49,16 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         Interlis24Lexer.DOUBLE_QUOTE_OPEN,
     };
 
+    /// <summary>
+    /// Tokens that should not have a space after them.
+    /// </summary>
+    private static HashSet<int> NewLineAfter = new HashSet<int>
+    {
+        Interlis24Lexer.LINE_COMMENT,
+        Interlis24Lexer.DOC_COMMENT,
+        Interlis24Lexer.META_COMMENT_CLOSE,
+    };
+
     public FormatterVisitor(ILoggerFactory loggerFactory, CommonTokenStream tokenStream)
     {
         logger = loggerFactory.CreateLogger<FormatterVisitor>();
@@ -114,6 +124,10 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
             {
                 sb.Append(' ');
             }
+            //else if (lastToken != null && !NewLineAfter.Contains(lastToken.Type))
+            //{
+            //    sb.Append(Environment.NewLine);
+            //}
 
             sb.Append(token.Text.Trim());
             lastToken = token;
