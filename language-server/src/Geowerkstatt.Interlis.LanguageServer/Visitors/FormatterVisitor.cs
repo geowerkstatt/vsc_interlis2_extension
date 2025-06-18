@@ -210,12 +210,18 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         {
             if (contentStartIndex.HasValue)
             {
-                var modelConfig = GetSpacesNormalizedString(equalSignIndex + 1, contentStartIndex.Value - 1);
-                if (!string.IsNullOrEmpty(modelConfig))
+                var importsCount = context.IMPORTS().Length;
+                var import = context.IMPORTS().First().Symbol.TokenIndex;
+
+                var imports = context.IMPORTS().Select(s => s.Symbol.TokenIndex).ToList();
+                for (int i = 0; i < imports.Count; i++)
                 {
-                    sb.Append(modelConfig);
+                    int start = imports[i];
+                    int stop = (i < imports.Count - 1) ? imports[i + 1] - 1 : contentStartIndex.Value - 1;
+                    sb.Append(GetSpacesNormalizedString(start, stop));
                     sb.Append(Environment.NewLine);
                 }
+                sb.Append(Environment.NewLine);
 
                 var contents = context.modelContents();
                 sb.Append(string.Concat(context.modelContents()

@@ -73,6 +73,7 @@ public class FormatterVisitorTest
               VERSION
             "123"
               =
+            IMPORTS Units; IMPORTS GeometryCHLV95_V2; IMPORTS DMAVTYM_Geometrie_V1_0; IMPORTS DMAVTYM_Topologie_V1_0; IMPORTS DMAVTYM_Vermarkung_V1_0; IMPORTS DMAVTYM_Qualitaet_V1_0; IMPORTS DMAVTYM_Grafik_V1_0;
             CLASS ClassName
             EXTENDS AbstractClassName =
               Property1 : MANDATORY BOOLEAN;
