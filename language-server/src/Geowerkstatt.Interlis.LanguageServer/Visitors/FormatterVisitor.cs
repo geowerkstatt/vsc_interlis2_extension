@@ -313,7 +313,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         var contentEndIndex = context.Stop.TokenIndex;
         sb.Append(string.Concat(context.children
             .Select(Visit)
-        .Select((s, i) => s + (i < context.children.Count - 1 ? Environment.NewLine : ""))));
+            .Select((s, i) => s + (i < context.children.Count - 1 ? Environment.NewLine : ""))));
         sb.Append(Environment.NewLine);
         return sb.ToString();
     }
@@ -382,6 +382,85 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
     }
 
     public override string VisitRunTimeParameterDef([NotNull] Interlis24Parser.RunTimeParameterDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitAssociationDef([NotNull] Interlis24Parser.AssociationDefContext context)
+    {
+        var sb = new StringBuilder();
+
+        var startIndex = context.Start.TokenIndex;
+        var equalSignIndex = context.EQUAL_SIGN().First().Symbol.TokenIndex;
+        var extendsIndex = context.EXTENDS()?.Symbol.TokenIndex ?? -1;
+        var endIndex = context.END().Symbol.TokenIndex;
+        var stopIndex = context.Stop.TokenIndex;
+
+        if (extendsIndex == -1)
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, equalSignIndex));
+        }
+        else
+        {
+            sb.Append(GetSpacesNormalizedString(startIndex, extendsIndex - 1));
+            sb.Append(Environment.NewLine);
+            sb.Append(GetSpacesNormalizedString(extendsIndex, equalSignIndex));
+        }
+        sb.Append(Environment.NewLine);
+
+        indentationSteps += 1;
+        using (var scope = new Scope(() => indentationSteps -= 1))
+        {
+            sb.Append(string.Concat(context.roleDef()
+                .Select(Visit)
+                .Select(s => s + Environment.NewLine)));
+
+            sb.Append(string.Concat(context.attributeDef()
+                .Select(Visit)
+                .Select(s => s + Environment.NewLine)));
+
+            sb.Append(string.Concat(context.constraintDef()
+                .Select(Visit)
+                .Select(s => s + Environment.NewLine)));
+        }
+
+        sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+
+        return sb.ToString();
+    }
+
+    public override string VisitConstraintDef([NotNull] Interlis24Parser.ConstraintDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitViewDef([NotNull] Interlis24Parser.ViewDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitGraphicDef([NotNull] Interlis24Parser.GraphicDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
+    public override string VisitRoleDef([NotNull] Interlis24Parser.RoleDefContext context)
     {
         var sb = new StringBuilder();
         var startIndex = context.Start.TokenIndex;

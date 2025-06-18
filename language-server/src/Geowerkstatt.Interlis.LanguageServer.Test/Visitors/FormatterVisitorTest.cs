@@ -74,8 +74,12 @@ public class FormatterVisitorTest
               END ClassName;
             TOPIC TopicName =
               CLASS TopicClassName =
-            PropertyA : MANDATORY BOOLEAN;
-            END TopicClassName;
+                PropertyA : MANDATORY BOOLEAN;
+              END TopicClassName;
+              ASSOCIATION Entstehung_Grenzpunkt =
+                Entstehung -- {1} GSNachfuehrung;
+                entstehender_Grenzpunkt -- {0..*} Grenzpunkt;        
+            END Entstehung_Grenzpunkt;
               END TopicName;
                 /*COM*/
             END ModelName.
