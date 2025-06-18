@@ -27,6 +27,8 @@ namespace Geowerkstatt.Interlis.LanguageServer.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(fileCacheLocation) ?? TempDirectory);
                 File.WriteAllText(fileCacheLocation, modelDeclaration.FileContent?.Content);
 
+                File.SetAttributes(fileCacheLocation, FileAttributes.ReadOnly)
+
                 return new Uri(fileCacheLocation);
             }
             catch (SystemException ex) {
