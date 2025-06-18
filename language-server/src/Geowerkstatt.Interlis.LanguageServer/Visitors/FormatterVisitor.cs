@@ -407,6 +407,28 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
     public override string VisitDomainDef([NotNull] Interlis24Parser.DomainDefContext context)
     {
         var sb = new StringBuilder();
+
+
+        var startIndex = context.Start.TokenIndex;
+        var firstDomainTypeIndex = context.domainTypeDef().First().Start.TokenIndex;
+
+        sb.Append(GetSpacesNormalizedString(startIndex, firstDomainTypeIndex - 1));
+        sb.Append(Environment.NewLine);
+
+        indentationSteps += 1;
+        using (var scope = new Scope(() => indentationSteps -= 1))
+        {
+            sb.Append(string.Concat(context.domainTypeDef()
+            .Select(Visit)
+            .Select((s, i) => s + (i < context.domainTypeDef().Length - 1 ? Environment.NewLine : ""))));
+        }
+
+        return sb.ToString();
+    }
+
+    public override string VisitDomainTypeDef([NotNull] Interlis24Parser.DomainTypeDefContext context)
+    {
+        var sb = new StringBuilder();
         var startIndex = context.Start.TokenIndex;
         var contentEndIndex = context.Stop.TokenIndex;
         sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
