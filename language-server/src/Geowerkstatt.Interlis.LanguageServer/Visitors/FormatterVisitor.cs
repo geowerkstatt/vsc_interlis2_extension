@@ -226,7 +226,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
                 var contents = context.modelContents();
                 sb.Append(string.Concat(context.modelContents()
                     .Select(Visit)
-                    .Select(s => s + Environment.NewLine)));
+                    .Select(s => s + Environment.NewLine + Environment.NewLine)));
             }
             else
             {
@@ -298,11 +298,10 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
             var contents = context.topicContents();
             sb.Append(string.Concat(context.topicContents()
                 .Select(Visit)
-                .Select(s => s + Environment.NewLine)));
+                .Select(s => s + Environment.NewLine + Environment.NewLine)));
         }
 
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
-        sb.Append(Environment.NewLine);
 
         return sb.ToString();
     }
@@ -336,7 +335,6 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         }
 
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
-        sb.Append(Environment.NewLine);
 
         return sb.ToString();
     }
