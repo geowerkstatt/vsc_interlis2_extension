@@ -98,13 +98,9 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
 
   const layoutedEdges = edges.map((edge) => {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
-    const targetPos = isHorizontal ? "left" : "top";
-    const sourcePos = isHorizontal ? "right" : "bottom";
     return {
       ...edge,
       // type: ConnectionLineType.SmoothStep,
-      sourcePosition: sourcePos,
-      targetPosition: targetPos,
       data: {
         points: edgeInfo.points,
         symbol: edge.Symbol ?? " --|>",
