@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState } from "react";
-import { ReactFlow, useNodesState, useEdgesState, addEdge } from "@xyflow/react";
+import { ReactFlow, useNodesState, useEdgesState, addEdge, ConnectionLineType } from "@xyflow/react";
 import dagre from "dagre";
 import { graphlib } from "dagre";
 import "@xyflow/react/dist/style.css";
@@ -58,16 +58,15 @@ function renderLabel(nodeData: { Title: string; Attributes: string[] }) {
   );
 }
 
-function getLayoutedNodes(nodes, edges, direction = "TB") {
-  dagreGraph.setGraph(
-    dagreGraph.setGraph({
-      rankdir: direction,
-      nodesep: 200,
-      ranksep: 400,
-      marginx: 20,
-      marginy: 20,
-    })
-  );
+function getLayoutedNodes(nodes, edges, direction = "LR") {
+  const isHorizontal = direction === "LR";
+  dagreGraph.setGraph({
+    rankdir: direction,
+    nodesep: 100,
+    ranksep: 400,
+    marginx: 20,
+    marginy: 20,
+  });
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
@@ -83,6 +82,8 @@ function getLayoutedNodes(nodes, edges, direction = "TB") {
     const nodeWithPosition = dagreGraph.node(node.id);
     return {
       ...node,
+      targetPosition: isHorizontal ? "left" : "top",
+      sourcePosition: isHorizontal ? "right" : "bottom",
       position: {
         x: nodeWithPosition.x - nodeWidth / 2,
         y: nodeWithPosition.y - nodeHeight / 2,
@@ -94,15 +95,14 @@ function getLayoutedNodes(nodes, edges, direction = "TB") {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
     return {
       ...edge,
-      type: "PointsEdge",
-      sourcePosition: "bottom",
-      targetPosition: "top",
+      type: ConnectionLineType.SmoothStep,
+      sourcePosition: isHorizontal ? "right" : "bottom",
+      targetPosition: isHorizontal ? "left" : "top",
       data: {
         points: edgeInfo.points,
       },
     };
   });
-
   return { layoutedNodes, layoutedEdges };
 }
 
@@ -180,7 +180,7 @@ export function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
+          connectionLineType={ConnectionLineType.SmoothStep}
           fitView
         />
       </div>
