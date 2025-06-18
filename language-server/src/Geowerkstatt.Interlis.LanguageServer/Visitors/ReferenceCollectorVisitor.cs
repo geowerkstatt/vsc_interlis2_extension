@@ -5,8 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors
 {
     public record ReferenceDefinition(
-        Position Start,
-        Position End,
+        Uri OccurenceFile,
+        Position OccurenceStart,
+        Position OccurenceEnd,
+        Uri? TargetFile,
         IInterlisDefinition Target
     );
 
@@ -24,14 +26,38 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
         public override List<ReferenceDefinition>? VisitReference<T>([NotNull] Reference<T> reference)
         {
             base.VisitReference(reference);
-            var location = reference.ReferenceLocation;
+            var occurenceUri = GetFileUriFromEnvironment(reference);
+            var occurenceLocation = reference.ReferenceLocation;
             var target = reference.Target;
-
-            if (location is null || target is null) return new List<ReferenceDefinition>();
+            var targetUri = GetRootUriForTarget(target);
+            if (occurenceUri is null
+                ||occurenceLocation is null
+                || target is null
+                || targetUri is null)
+                return new List<ReferenceDefinition>();
 
             return new List<ReferenceDefinition> {
-                new ReferenceDefinition(location.Start.ToOmnisharpPosition(), location.End.ToOmnisharpPosition(), target)
+                new ReferenceDefinition(
+                    occurenceUri,                    
+                    occurenceLocation.Start.ToOmnisharpPosition(),
+                    occurenceLocation.End.ToOmnisharpPosition(),
+                    targetUri,
+                    target)
             };
+        }
+
+        private Uri? GetFileUriFromEnvironment<T>(Reference<T> reference) where T : class, IInterlisDefinition
+            => GetRootUriForTarget(reference.Source);
+
+        private Uri? GetRootUriForTarget(IInterlisDefinition? target)
+        {
+            while (target?.Parent != null && target is not ModelDef)
+            {
+                target = target.Parent;
+            }
+
+            var modelDef = target as ModelDef ?? throw new InvalidOperationException("Could not find ModelDef in tree");
+            return modelDef.URI is not null ? new Uri(modelDef.URI) : null;
         }
     }
 }

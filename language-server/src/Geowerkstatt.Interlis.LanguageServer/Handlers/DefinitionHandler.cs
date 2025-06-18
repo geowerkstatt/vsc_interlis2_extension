@@ -18,7 +18,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
 
             var references = referenceCache
                 .Get(uri)
-                .Where(r => r.Start <= location && r.End >= location && r.Target.NameLocations.Any())
+                .Where(r => r.OccurenceStart <= location && r.OccurenceEnd >= location && r.Target.NameLocations.Any())
                 .Select(r => new Location
                 {
                     Uri = uri,
