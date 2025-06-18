@@ -40,7 +40,7 @@ function getBasicNodes(nodes) {
 function getBasicEdges(edges) {
   return edges.map((e) => ({
     id: e.Id,
-     type: "PointsEdge",
+    type: "PointsEdge",
     source: e.Source,
     target: e.Target,
   }));
@@ -60,6 +60,7 @@ function renderLabel(nodeData: { Title: string; Attributes: string[] }) {
 
 function getLayoutedNodes(nodes, edges, direction = "LR") {
   const isHorizontal = direction === "LR";
+  console.log("getLayoutedNodes", direction, isHorizontal);
   dagreGraph.setGraph({
     rankdir: direction,
     nodesep: 80,
@@ -80,23 +81,29 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
 
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
-    const caluculatedHeight  = 42.5 + node.Data.Attributes.length * 17.5;
+    const caluculatedHeight = 42.5 + node.Data.Attributes.length * 17.5;
+    const targetPos = isHorizontal ? "left" : "top";
+    const sourcePos = isHorizontal ? "right" : "bottom";
     return {
       ...node,
-      targetPosition: isHorizontal ? "left" : "top",
-      sourcePosition: isHorizontal ? "right" : "bottom",
-      position: node.Position ?? {x: nodeWithPosition.x - nodeWidth / 2, y:  nodeWithPosition.y - caluculatedHeight / 2,
+      targetPosition: targetPos,
+      sourcePosition: sourcePos,
+      position: node.Position ?? {
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - caluculatedHeight / 2,
       },
     };
   });
 
   const layoutedEdges = edges.map((edge) => {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
+    const targetPos = isHorizontal ? "left" : "top";
+    const sourcePos = isHorizontal ? "right" : "bottom";
     return {
       ...edge,
       // type: ConnectionLineType.SmoothStep,
-      sourcePosition: isHorizontal ? "right" : "bottom",
-      targetPosition: isHorizontal ? "left" : "top",
+      sourcePosition: sourcePos,
+      targetPosition: targetPos,
       data: {
         points: edgeInfo.points,
       },
@@ -108,16 +115,30 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
 export function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [direction, setDirection] = useState("LR"); // State for layout direction
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+  // Function to re-layout nodes with new direction
+  const onLayoutChange = useCallback(
+    (newDirection) => {
+      setDirection(newDirection);
+      setNodes((nds) => {
+        const initialEdges = edges.map((e) => ({ ...(e as any) }));
+        const { layoutedNodes, layoutedEdges } = getLayoutedNodes(nds, initialEdges, newDirection);
+        setEdges(layoutedEdges);
+        return layoutedNodes;
+      });
+    },
+    [edges, setEdges, setNodes]
+  );
 
   const handleNodesChange = useCallback(
     (changes) => {
-
       //Todo adapt style of changes
       console.log("onNodesChange:", changes);
-      vscodeApi.postMessage({ type: "nodesChange", 
-         changes: [{ className: changes[0].id, position: changes[0].position, }],
-          });
+      vscodeApi.postMessage({
+        type: "nodesChange",
+        changes: [{ className: changes[0].id, position: changes[0].position }],
+      });
       onNodesChange(changes);
     },
     [onNodesChange]
@@ -149,7 +170,6 @@ export function App() {
     }),
     [handleNodeColorChange]
   );
-
   useEffect(() => {
     // Listen for messages from the extension
     window.addEventListener("message", (event) => {
@@ -159,7 +179,7 @@ export function App() {
       const { Nodes, Edges } = response;
       const initialNodes = getBasicNodes(Nodes);
       const initialEdges = getBasicEdges(Edges);
-      const { layoutedNodes, layoutedEdges } = getLayoutedNodes(initialNodes, initialEdges);
+      const { layoutedNodes, layoutedEdges } = getLayoutedNodes(initialNodes, initialEdges, direction);
       console.log(Edges);
       console.log(layoutedEdges);
       console.log(Nodes);
@@ -170,12 +190,52 @@ export function App() {
 
     // Notify extension that webview is loaded
     vscodeApi.postMessage({ type: "webviewLoaded" });
-  }, []);
-
+  }, [direction]);
   return (
     <div>
       <h2>INTERLIS Diagram (React)</h2>
-      <div style={{ width: "100%", height: "90vh" }}>
+      <div style={{ position: "relative", width: "100%", height: "90vh" }}>
+        <div
+          style={{
+            position: "absolute",
+            right: "10px",
+            top: "10px",
+            zIndex: 10,
+            display: "flex",
+            gap: "10px",
+            background: "white",
+            padding: "5px",
+            borderRadius: "5px",
+            boxShadow: "0 1px 4px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <button
+            onClick={() => onLayoutChange("LR")}
+            style={{
+              fontWeight: direction === "LR" ? "bold" : "normal",
+              background: direction === "LR" ? "#e6f7ff" : "white",
+              border: "1px solid #ccc",
+              padding: "5px 10px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Horizontal
+          </button>
+          <button
+            onClick={() => onLayoutChange("TB")}
+            style={{
+              fontWeight: direction === "TB" ? "bold" : "normal",
+              background: direction === "TB" ? "#e6f7ff" : "white",
+              border: "1px solid #ccc",
+              padding: "5px 10px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Vertical
+          </button>
+        </div>
         <ReactFlow
           nodes={nodes}
           edges={edges}
