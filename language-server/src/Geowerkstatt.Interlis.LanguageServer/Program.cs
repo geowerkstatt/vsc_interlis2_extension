@@ -2,6 +2,8 @@ using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
+using Geowerkstatt.Interlis.LanguageServer.Services;
+using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -25,6 +27,9 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<FileContentCache>();
             services.AddSingleton<InterlisEnvironmentCache>();
             services.AddSingleton<ReferenceCache>();
+            services.AddSingleton<ExternalImportFileService>();
+            services.AddSingleton<RepositorySearcher>();
+            services.AddSingleton<IRepositoryCrawler, RepositoryCrawler>();
             services.AddTransient<InterlisReader>();
             services.AddSingleton(TextDocumentSelector.ForLanguage(ServerConstants.InterlisLanguageName));
         })
