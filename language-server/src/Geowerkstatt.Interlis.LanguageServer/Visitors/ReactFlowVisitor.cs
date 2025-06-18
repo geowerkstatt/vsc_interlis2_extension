@@ -109,7 +109,8 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
         {
             Id = $"{left.classDef.Name}-{right.classDef.Name}",
             Source = left.classDef.Name,
-            Target = right.classDef.Name
+            Target = right.classDef.Name,
+            Symbol = symbol,
         });
     }
 
@@ -183,6 +184,7 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
                     Id = $"`{parentLabel}_{type.Name}`",
                     Source = parentLabel,
                     Target = type.Name,
+                    Symbol = " --|>"
                 });
             }
 

@@ -39,8 +39,9 @@ function getBasicNodes(nodes) {
 
 function getBasicEdges(edges) {
   return edges.map((e) => ({
+    ...e,
     id: e.Id,
-     type: "PointsEdge",
+    type: "PointsEdge",
     source: e.Source,
     target: e.Target,
   }));
@@ -99,6 +100,7 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
       targetPosition: isHorizontal ? "left" : "top",
       data: {
         points: edgeInfo.points,
+        symbol: edge.Symbol ?? " --|>",
       },
     };
   });
