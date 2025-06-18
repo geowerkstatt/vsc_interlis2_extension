@@ -182,9 +182,9 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
                 edges.Add(new Edge
                 {
                     Id = $"`{parentLabel}_{type.Name}`",
-                    Source = parentLabel,
-                    Target = type.Name,
-                    Symbol = " --|>"
+                    Source = type.Name,
+                    Target = parentLabel,
+                    Symbol = "--|>",
                 });
             }
 
