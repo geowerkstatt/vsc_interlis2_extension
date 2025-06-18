@@ -29,18 +29,18 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
     public override List<Diagnostic> VisitDomainDef([NotNull] DomainDef domainDef)
     {
         var diagnostics = base.VisitDomainDef(domainDef) ?? [];
-        VisitTypeDef(diagnostics, domainDef.TypeDef, domainDef.NameLocations);
+        VisitTypeDef(diagnostics, domainDef.TypeDef);
         return diagnostics;
     }
 
     public override List<Diagnostic> VisitAttributeDef([NotNull] AttributeDef attributeDef)
     {
         var diagnostics = base.VisitAttributeDef(attributeDef) ?? [];
-        VisitTypeDef(diagnostics, attributeDef.TypeDef, attributeDef.NameLocations);
+        VisitTypeDef(diagnostics, attributeDef.TypeDef);
         return diagnostics;
     }
 
-    private List<Diagnostic> VisitTypeDef(List<Diagnostic> diagnostics, TypeDef typeDef, ICollection<RangePosition> rangePosition)
+    private List<Diagnostic> VisitTypeDef(List<Diagnostic> diagnostics, TypeDef typeDef)
     {
         if (typeDef is BooleanType)
         {
@@ -52,7 +52,7 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
                 {
                     Severity = DiagnosticSeverity.Warning,
                     Message = description,
-                    Range = MapGeoWRangePosition(rangePosition),
+                    Range = MapGeoWRangePosition(typeDef.SourceRange),
                     Code = rule.Id,
                 });
             }
@@ -61,13 +61,13 @@ internal class LinterDocumentationVisitor : Interlis24AstBaseVisitor<List<Diagno
         return diagnostics;
     }
 
-    private Range MapGeoWRangePosition(ICollection<RangePosition> rangePosition)
+    private Range MapGeoWRangePosition(RangePosition? rangePosition)
     {
-        if (rangePosition == null || rangePosition.Count != 1)
+        if (rangePosition == null)
         {
             return new Range(new Position(0, 0), new Position(0, 0));
         }
 
-        return new Range(new Position(rangePosition.First().Start.Line, rangePosition.First().Start.Character), new Position(rangePosition.First().End.Line, rangePosition.First().End.Character));
+        return new Range(new Position(rangePosition.Start.Line, rangePosition.Start.Character), new Position(rangePosition.End.Line, rangePosition.End.Character));
     }
 }
