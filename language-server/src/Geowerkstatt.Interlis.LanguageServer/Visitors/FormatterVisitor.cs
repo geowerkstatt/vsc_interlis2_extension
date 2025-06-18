@@ -433,6 +433,15 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         return sb.ToString();
     }
 
+    public override string VisitConstraintsDef([NotNull] Interlis24Parser.ConstraintsDefContext context)
+    {
+        var sb = new StringBuilder();
+        var startIndex = context.Start.TokenIndex;
+        var contentEndIndex = context.Stop.TokenIndex;
+        sb.Append(GetSpacesNormalizedString(startIndex, contentEndIndex));
+        return sb.ToString();
+    }
+
     public override string VisitConstraintDef([NotNull] Interlis24Parser.ConstraintDefContext context)
     {
         var sb = new StringBuilder();
