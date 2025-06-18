@@ -1,10 +1,8 @@
 using Geowerkstatt.Interlis.Tools.AST;
 using Geowerkstatt.Interlis.Tools.AST.Types;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Microsoft.Extensions.Logging;
-using static System.Net.Mime.MediaTypeNames;
-using Antlr4.Runtime.Tree;
+using System.Text.Json;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
@@ -196,6 +194,20 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
                     Color = "black",
                     Border = "2px solid black"
                 };
+            }
+
+            if (type.MetaAttributes.TryGetValue("geow.uml.position", out var position) && !string.IsNullOrWhiteSpace(position))
+            {
+                try
+                {
+                    NodePosition? savedPosition = JsonSerializer.Deserialize<NodePosition>(position);
+                    nodeToAdd.Position = savedPosition ?? new NodePosition();
+                }
+                catch (JsonException ex)
+                {
+                    nodeToAdd.Position = new NodePosition();
+                    logger.LogWarning("Invalid position JSON: {Position}, error: {Error}", position, ex.Message);
+                }
             }
 
             var stereo = type.IsStructure ? MermaidConstants.StructureStereotype : MermaidConstants.ClassStereotype;

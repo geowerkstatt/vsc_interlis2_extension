@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors
@@ -25,6 +26,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
         public string? Id { get; set; }
         public NodeData? Data { get; set; }
         public NodeStyle? Style { get; set; }
+        public NodePosition? Position { get; set; }
 
     }
 
@@ -34,9 +36,19 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
         public List<string> Attributes { get; set; } = new List<string>();
     }
 
-    public class NodeStyle {
+    public class NodeStyle
+    {
         public string Background { get; set; } = "#ffffff"; // Default white
         public string Color { get; set; } = "#000000"; // Default black
         public string Border { get; set; } = "2px solid black";  // Default black
+    }
+
+    public class NodePosition
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; } = 0;
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; } = 0;
     }
 }

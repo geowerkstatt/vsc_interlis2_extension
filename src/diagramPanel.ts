@@ -80,7 +80,7 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         }
         // Handle nodes change
         console.log("onNodesChange:", message.changes);
-        vscode.commands.executeCommand("interlis.diagram.nodeChange", message.changes);
+        vscode.commands.executeCommand("interlis.diagram.nodesChange", message.changes, currentEditor);
       } else if (message.type === "colorChange") {
         if (!message.changes || !Array.isArray(message.changes)) {
           console.warn("Ignoring invalid colorChange message:", message);
@@ -88,7 +88,6 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         }
         // Handle color change
         console.log("onColorchange:", message.changes);
-        const editor = vscode.window.activeTextEditor;
         vscode.commands.executeCommand("interlis.diagram.colorChange", message.changes, currentEditor);
       } else if (message.type === "webviewLoaded") {
         const editor = vscode.window.activeTextEditor;

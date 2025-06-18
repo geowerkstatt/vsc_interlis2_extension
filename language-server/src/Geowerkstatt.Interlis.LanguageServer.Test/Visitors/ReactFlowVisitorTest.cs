@@ -78,6 +78,7 @@ MODEL SG_Sondernutzungsplaene_kt_V1_2_00
   TOPIC Transfermetadaten =
     !!@ geow.doc.description = ""Diese Klasse enthält Angaben zur zuständigen Stelle, welche die Geobasisdaten bearbeitet hat.""
     !!@ geow.uml.color = ""#ffdc97""
+    !!@ geow.uml.position = ""{\""x\"":598,\""y\"":350}""
     CLASS Stelle =
       !!@ geow.doc.description = ""Name der bearbeitenden Stelle""
       !!@ geow.doc.alias = ""Name""

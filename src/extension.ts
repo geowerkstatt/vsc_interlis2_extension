@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext) {
 const colorChangeCommand = vscode.commands.registerCommand(
   "interlis.diagram.colorChange",
   (changes, editor: TextEditor) => {
-      if (!editor || editor.document.languageId !== "INTERLIS2") return;
+    if (!editor || editor.document.languageId !== "INTERLIS2") return;
 
     editor.edit(editBuilder => {
       for (const change of changes) {
@@ -46,35 +46,104 @@ const colorChangeCommand = vscode.commands.registerCommand(
           const colorTag = `!!@ geow.uml.color = "${color}"\n`;
 
           // Check if a color tag already exists above the class
-          const prevLine = classLine.line > 0 ? doc.lineAt(classLine.line - 1) : null;
-          if (prevLine && prevLine.text.trim().startsWith("!!@ geow.uml.color")) {
-            // Replace existing color tag
-            console.log("Replacing existing color tag");
-            editBuilder.replace(prevLine.range, colorTag.trim());
-          } else {
+          let lineToCheck = classLine.line - 1;
+          let colorTagExists = false;
+          
+          // Look at up to 2 lines before the class definition to find color or position tags
+          for (let i = 0; i < 2; i++) {
+            if (lineToCheck < 0) break;
+            
+            const checkLine = doc.lineAt(lineToCheck);
+            if (checkLine.text.trim().startsWith("!!@ geow.uml.color")) {
+              // Replace existing color tag
+              console.log("Replacing existing color tag");
+              editBuilder.replace(checkLine.range, colorTag.trim());
+              colorTagExists = true;
+              break;
+            }
+            
+            if (!checkLine.text.trim().startsWith("!!@")) {
+              // Stop looking if we hit a non-tag line
+              break;
+            }
+            
+            lineToCheck--;
+          }
+          
+          if (!colorTagExists) {
             // Insert new color tag above the class
             console.log("Adding new color tag");
-            editBuilder.insert(new vscode.Position(classLine.line, 0), colorTag);
+            const insertLine = classLine.line;
+            editBuilder.insert(new vscode.Position(insertLine, 0), colorTag);
           }
         }
       }
     });
+  }
+);
+
+  // Register the nodesChangeCommand
+  const nodesChangeCommand = vscode.commands.registerCommand(
+    "interlis.diagram.nodesChange",
+    (changes, editor: TextEditor) => {
+      if (!editor || editor.document.languageId !== "INTERLIS2") return;
+
+      editor.edit(editBuilder => {
+        for (const change of changes) {
+          const { className, position } = change; // Expecting { className: string, position: { x: number, y: number } }
+          if(!position) return;
+          console.log("extension.ts", className, position);
+          const doc = editor.document;
+          const text = doc.getText();
+          const classRegex = new RegExp(`(^|\\n)(\\s*)CLASS\\s+${className}\\b`, "i");
+          const match = classRegex.exec(text);
+
+          if (match) {
+            const classLine = doc.positionAt(match.index + match[1].length);
+            const positionTag = `!!@ geow.uml.position = "{\\"x\\":${position.x},\\"y\\":${position.y}}"\n`;
+            // Check if a position tag already exists above the class
+            let lineToCheck = classLine.line - 1;
+            let positionTagExists = false;
+            
+            // Look at up to 2 lines before the class definition to find position or color tags
+            for (let i = 0; i < 2; i++) {
+              if (lineToCheck < 0) break;
+              
+              const checkLine = doc.lineAt(lineToCheck);
+              if (checkLine.text.trim().startsWith("!!@ geow.uml.position")) {
+                // Replace existing position tag
+                console.log("Replacing existing position tag");
+                editBuilder.replace(checkLine.range, positionTag.trim());
+                positionTagExists = true;
+                break;
+              }
+              
+              if (!checkLine.text.trim().startsWith("!!@")) {
+                // Stop looking if we hit a non-tag line
+                break;
+              }
+              
+              lineToCheck--;
+            }
+            
+            if (!positionTagExists) {
+              // Insert new position tag above the class (and below any existing color tag)
+              console.log("Adding new position tag");
+              const insertLine = classLine.line;
+              editBuilder.insert(new vscode.Position(insertLine, 0), positionTag);
+            }
+          }
+        }
+      });
     }
   );
 
-  // Register the nodeChange command
-  const nodeChangeCommand = vscode.commands.registerTextEditorCommand(
-    "interlis.diagram.nodeChange",
-     (editor, edit, changes) => {
-      console.log("Node changes received:", changes);
-    }
-  );
 
   context.subscriptions.push(markdownCommand);
   context.subscriptions.push(showDiagramCommand);
   context.subscriptions.push(implementationProvider);
   context.subscriptions.push(colorChangeCommand);
-  context.subscriptions.push(nodeChangeCommand);
+  context.subscriptions.push(nodesChangeCommand);
 }
 
 export async function deactivate() {

@@ -26,6 +26,7 @@ const nodeHeight = 100;
 
 function getBasicNodes(nodes) {
   return nodes.map((n) => ({
+    ...n,
     id: n.Id,
     data: { ...n.Data, label: renderLabel(n.Data) },
     type: "ResizableNode",
@@ -34,7 +35,6 @@ function getBasicNodes(nodes) {
       color: n.Style?.Color ?? "#000",
       border: n.Style?.Border ?? "1px solid #000",
     },
-    position: { x: 0, y: 0 },
   }));
 }
 
@@ -84,9 +84,7 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
       ...node,
       targetPosition: isHorizontal ? "left" : "top",
       sourcePosition: isHorizontal ? "right" : "bottom",
-      position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
+      position: node.Position ?? {x: nodeWithPosition.x - nodeWidth / 2, y:  nodeWithPosition.y - nodeHeight / 2,
       },
     };
   });
@@ -113,8 +111,12 @@ export function App() {
 
   const handleNodesChange = useCallback(
     (changes) => {
+
+      //Todo adapt style of changes
       console.log("onNodesChange:", changes);
-      vscodeApi.postMessage({ type: "nodesChange", changes: changes });
+      vscodeApi.postMessage({ type: "nodesChange", 
+         changes: [{ className: changes[0].id, position: changes[0].position, }],
+          });
       onNodesChange(changes);
     },
     [onNodesChange]
