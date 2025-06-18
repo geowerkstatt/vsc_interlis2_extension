@@ -283,6 +283,14 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
                 optionalProps.Add(context.OID()[optionalProps.Count].Symbol.TokenIndex);
             }
 
+            if (context.DEPENDS() != null && context.DEPENDS().Length > 0)
+            {
+                foreach (var item in context.DEPENDS())
+                {
+                    optionalProps.Add(item.Symbol.TokenIndex);
+                }
+            }
+
             if (optionalProps.Count > 0 && contentStartIndex != null)
             {
                 for (int i = 0; i < optionalProps.Count; i++)

@@ -82,6 +82,7 @@ public class FormatterVisitorTest
             TOPIC TopicName =
                         BASKET OID AS INTERLIS.UUIDOID;
             OID AS INTERLIS.UUIDOID;
+            DEPENDS ON LWB_Nutzungsflaechen_V2_0.LNF_Kataloge, LWB_Bewirtschaftungseinheiten_V2_0.Landw_Betrieb;
             DOMAIN
               Grundstuecksart = (
                 Liegenschaft,
