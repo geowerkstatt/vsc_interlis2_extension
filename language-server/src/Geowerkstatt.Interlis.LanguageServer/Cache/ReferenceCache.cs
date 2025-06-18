@@ -43,7 +43,7 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
         var environment = environmentCache.Get(uri);
         AddReferencesFromEnvironment(environment);
 
-        return referenceCache[uri.ToString()];
+        return referenceCache[uri.ToUnencodedString()];
     }
 
     private void AddReferencesFromEnvironment(InterlisEnvironment environment)

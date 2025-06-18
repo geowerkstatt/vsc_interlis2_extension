@@ -30,6 +30,12 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
             var occurenceUri = GetFileUriFromEnvironment(reference);
             var occurenceLocation = reference.ReferenceLocation;
             var target = reference.Target;
+
+            if (target is null)
+            {
+                return new List<ReferenceDefinition>();
+            }
+
             var targetUri = GetRootUriForTarget(target);
             if (occurenceUri is null
                 ||occurenceLocation is null
@@ -59,8 +65,8 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
 
             var modelDef = target as ModelDef ?? throw new InvalidOperationException("Could not find ModelDef in tree");
 
-            if (modelDef.URI is null) return null;
-            var uri = new Uri(modelDef.URI);
+            if (modelDef.SourceUri is null) return null;
+            var uri = new Uri(modelDef.SourceUri);
 
             if (uri.IsFile)
             {
