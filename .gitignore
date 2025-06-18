@@ -60,3 +60,4 @@ bin/
 # Jetbrains IDE config files
 .idea/
 .fleet/
+src/webview/tst.ili
