@@ -272,6 +272,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         }
 
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+        sb.Append(Environment.NewLine);
 
         return sb.ToString();
     }
@@ -305,6 +306,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         }
 
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
+        sb.Append(Environment.NewLine);
 
         return sb.ToString();
     }
