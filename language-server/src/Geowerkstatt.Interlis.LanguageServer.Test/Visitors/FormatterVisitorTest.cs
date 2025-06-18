@@ -57,7 +57,13 @@ public class FormatterVisitorTest
     public void Test()
     {
         var input = """
-              !! comment
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !! comment
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                !! Lolo
+                !! Lala
+                !! Dodo
             INTERLIS /*COM*/2.4;
             /*COM*/
               MODEL

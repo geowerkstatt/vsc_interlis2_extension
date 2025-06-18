@@ -50,9 +50,9 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
     };
 
     /// <summary>
-    /// Tokens that should not have a space after them.
+    /// Tokens that require a newline after them.
     /// </summary>
-    private static HashSet<int> NewLineAfter = new HashSet<int>
+    private static HashSet<int> RequiresNewlineAfter = new HashSet<int>
     {
         Interlis24Lexer.LINE_COMMENT,
         Interlis24Lexer.DOC_COMMENT,
@@ -120,14 +120,17 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
             }
 
             // Insert appropriate space
-            if (lastToken != null && !NoSpaceAfter.Contains(lastToken.Type) && !NoSpaceBefore.Contains(token.Type))
+            if (lastToken != null)
             {
-                sb.Append(' ');
+                if (RequiresNewlineAfter.Contains(lastToken.Type))
+                {
+                    sb.Append(Environment.NewLine);
+                }
+                else if (!NoSpaceAfter.Contains(lastToken.Type) && !NoSpaceBefore.Contains(token.Type))
+                {
+                    sb.Append(' ');
+                }
             }
-            //else if (lastToken != null && !NewLineAfter.Contains(lastToken.Type))
-            //{
-            //    sb.Append(Environment.NewLine);
-            //}
 
             sb.Append(token.Text.Trim());
             lastToken = token;
