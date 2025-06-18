@@ -44,8 +44,8 @@ public class FormatterVisitorTest
             "Ut enim ad minim veniam, lorem.";
 
         var expected =
-            "    Lorem ipsum dolor sit amet, test.\r\n" +
-            "    Sed do eiusmod tempor incididunt.\r\n" +
+            "    Lorem ipsum dolor sit amet, test." + Environment.NewLine +
+            "    Sed do eiusmod tempor incididunt." + Environment.NewLine +
             "    Ut enim ad minim veniam, lorem.";
 
         var result = FormatterVisitor.SetIndentation(input, 4);
@@ -57,7 +57,13 @@ public class FormatterVisitorTest
     public void Test()
     {
         var input = """
-              !! comment
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !! comment
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                !! Lolo
+                !! Lala
+                !! Dodo
             INTERLIS /*COM*/2.4;
             /*COM*/
               MODEL
