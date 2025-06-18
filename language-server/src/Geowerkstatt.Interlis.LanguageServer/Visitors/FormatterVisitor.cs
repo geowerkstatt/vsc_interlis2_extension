@@ -233,7 +233,6 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
 
         // end
         sb.Append(GetSpacesNormalizedString(endIndex, stopIndex));
-        sb.Append(Environment.NewLine);
 
         return sb.ToString();
     }
