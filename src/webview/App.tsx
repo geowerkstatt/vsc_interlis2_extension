@@ -22,7 +22,6 @@ dagreGraph.setDefaultEdgeLabel(() => ({}));
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
 const nodeWidth = 200;
-const nodeHeight = 100;
 
 function getBasicNodes(nodes) {
   return nodes.map((n) => ({
@@ -41,6 +40,7 @@ function getBasicNodes(nodes) {
 function getBasicEdges(edges) {
   return edges.map((e) => ({
     id: e.Id,
+     type: "PointsEdge",
     source: e.Source,
     target: e.Target,
   }));
@@ -62,14 +62,14 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
   const isHorizontal = direction === "LR";
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: 100,
-    ranksep: 400,
+    nodesep: 80,
+    ranksep: 80,
     marginx: 20,
     marginy: 20,
   });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: 42.5 + node.Data.Attributes.length * 17.5 });
   });
 
   edges.forEach((edge) => {
@@ -80,11 +80,12 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
 
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    const caluculatedHeight  = 42.5 + node.Data.Attributes.length * 17.5;
     return {
       ...node,
       targetPosition: isHorizontal ? "left" : "top",
       sourcePosition: isHorizontal ? "right" : "bottom",
-      position: node.Position ?? {x: nodeWithPosition.x - nodeWidth / 2, y:  nodeWithPosition.y - nodeHeight / 2,
+      position: node.Position ?? {x: nodeWithPosition.x - nodeWidth / 2, y:  nodeWithPosition.y - caluculatedHeight / 2,
       },
     };
   });
@@ -93,7 +94,7 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
     return {
       ...edge,
-      type: ConnectionLineType.SmoothStep,
+      // type: ConnectionLineType.SmoothStep,
       sourcePosition: isHorizontal ? "right" : "bottom",
       targetPosition: isHorizontal ? "left" : "top",
       data: {
@@ -182,6 +183,7 @@ export function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           connectionLineType={ConnectionLineType.SmoothStep}
           fitView
         />
