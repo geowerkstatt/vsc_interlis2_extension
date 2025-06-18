@@ -38,17 +38,25 @@ public sealed class InterlisResolveService(InterlisReader interlisReader, Reposi
                     continue;
                 }
 
-                var importedModel = await repositorySearcher.SearchModel(import);
+                var schemaLanguage = "ili" + interlisEnvironment.Version?.ToString().Replace('.', '_');
+                var importedModel = (await repositorySearcher.SearchModels(m => m.Name == import && m.SchemaLanguage == schemaLanguage)).FirstOrDefault();
                 if (importedModel?.FileContent != null)
                 {
-                    var importedEnvironment = interlisReader.ReadFile(new StringReader(importedModel.FileContent.Content), importedModel.Uri?.ToString());
-                    if (importedEnvironment.Version == interlisEnvironment.Version)
+                    try
                     {
-                        AddEnvironmentContent(interlisEnvironment, importedEnvironment);
+                        var importedEnvironment = interlisReader.ReadFile(new StringReader(importedModel.FileContent.Content), importedModel.Uri?.ToString());
+                        if (importedEnvironment.Version == interlisEnvironment.Version)
+                        {
+                            AddEnvironmentContent(interlisEnvironment, importedEnvironment);
+                        }
+                        else
+                        {
+                            logger.LogError("Imported model '{ImportedModel}' has version {ImportedVersion}, expected version {Version}.", importedModel.Name, importedEnvironment.Version, interlisEnvironment.Version);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        logger.LogError("Imported model '{ImportedModel}' has version {ImportedVersion}, expected version {Version}.", importedModel.Name, importedEnvironment.Version, interlisEnvironment.Version);
+                        logger.LogError(ex, "Failed to compile imported model '{ImportedModel}' from {Uri}.", importedModel.Name, importedModel.Uri);
                     }
                 }
             }
