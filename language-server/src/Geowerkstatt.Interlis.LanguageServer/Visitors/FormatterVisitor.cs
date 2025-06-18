@@ -46,6 +46,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         Interlis24Lexer.L_PAREN,
         Interlis24Lexer.L_BRACK,
         Interlis24Lexer.L_BRACE,
+        Interlis24Lexer.DOT,
         Interlis24Lexer.DOUBLE_QUOTE_OPEN,
     };
 
