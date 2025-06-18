@@ -109,6 +109,11 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
 
     internal string GetSpacesNormalizedString(int tokenStartIndex, int tokenStopIndex)
     {
+        if (tokenStartIndex < 0 || tokenStopIndex < 0 || tokenStartIndex > tokenStopIndex)
+        {
+            return string.Empty;
+        }
+
         var sb = new StringBuilder();
         var tokens = tokenStream.Get(tokenStartIndex, tokenStopIndex);
         IToken? lastToken = null;
@@ -351,11 +356,62 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
     {
         var sb = new StringBuilder();
         var startIndex = context.Start.TokenIndex;
-        var contentEndIndex = context.Stop.TokenIndex;
-        sb.Append(string.Concat(context.children
-            .Select(Visit)
-            .Select((s, i) => s + (i < context.children.Count - 1 ? Environment.NewLine : ""))));
-        sb.Append(Environment.NewLine);
+        var stopIndex = context.Stop.TokenIndex;
+
+        if (context.ATTRIBUTE() != null)
+        {
+            sb.Append(context.ATTRIBUTE().Symbol.Text);
+            sb.Append(Environment.NewLine);
+        }
+
+        var elementStartIndex = context.ATTRIBUTE()?.Symbol.TokenIndex + 1 ?? startIndex;
+        foreach (var attrDef in context.attributeDef())
+        {
+            var comments = GetSpacesNormalizedString(elementStartIndex, attrDef.Start.TokenIndex - 1);
+            if (!string.IsNullOrEmpty(comments))
+            {
+                sb.Append(comments);
+                sb.Append(Environment.NewLine);
+            }
+            sb.Append(Visit(attrDef));
+            sb.Append(Environment.NewLine);
+
+            elementStartIndex = attrDef.Stop.TokenIndex + 1;
+        }
+        foreach (var constrDef in context.constraintDef())
+        {
+            var comments = GetSpacesNormalizedString(elementStartIndex, constrDef.Start.TokenIndex - 1);
+            if (!string.IsNullOrEmpty(comments))
+            {
+                sb.Append(comments);
+                sb.Append(Environment.NewLine);
+            }
+            sb.Append(Visit(constrDef));
+            sb.Append(Environment.NewLine);
+
+            elementStartIndex = constrDef.Stop.TokenIndex + 1;
+        }
+        if (context.PARAMETER() != null)
+        {
+            sb.Append(context.PARAMETER().Symbol.Text);
+            elementStartIndex = context.PARAMETER().Symbol.TokenIndex + 1;
+
+            foreach (var paramDef in context.constraintDef())
+            {
+                var paramComment = GetSpacesNormalizedString(elementStartIndex, paramDef.Start.TokenIndex - 1);
+                if (!string.IsNullOrEmpty(paramComment))
+                {
+                    sb.Append(paramComment);
+                    sb.Append(Environment.NewLine);
+                }
+                sb.Append(Visit(paramDef));
+                sb.Append(Environment.NewLine);
+
+                elementStartIndex = paramDef.Stop.TokenIndex + 1;
+            }
+        }
+
+        //sb.Append(Environment.NewLine);
         return sb.ToString();
     }
 

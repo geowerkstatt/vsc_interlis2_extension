@@ -76,8 +76,11 @@ public class FormatterVisitorTest
             IMPORTS Units; IMPORTS GeometryCHLV95_V2; IMPORTS DMAVTYM_Geometrie_V1_0; IMPORTS DMAVTYM_Topologie_V1_0; IMPORTS DMAVTYM_Vermarkung_V1_0; IMPORTS DMAVTYM_Qualitaet_V1_0; IMPORTS DMAVTYM_Grafik_V1_0;
             CLASS ClassName
             EXTENDS AbstractClassName =
+            /** Doc comment before */
               Property1 : MANDATORY BOOLEAN;
+            /** Doc comment between */
               Property2: text*50;
+            /** Doc comment after */
               END ClassName;
             TOPIC TopicName =
                         BASKET OID AS INTERLIS.UUIDOID;
@@ -117,5 +120,7 @@ public class FormatterVisitorTest
 
         var formatter = new FormatterVisitor(loggerFactory, tokenStream);
         var formattedOutput = formatter.VisitInterlis(parseTree);
+
+        Console.WriteLine(formattedOutput);
     }
 }
