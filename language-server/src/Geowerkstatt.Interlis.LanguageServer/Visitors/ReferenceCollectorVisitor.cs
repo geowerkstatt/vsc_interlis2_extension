@@ -1,6 +1,7 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Position = OmniSharp.Extensions.LanguageServer.Protocol.Models.Position;
 using System.Diagnostics.CodeAnalysis;
+using Geowerkstatt.Interlis.LanguageServer.Services;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors
 {
@@ -12,7 +13,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
         IInterlisDefinition Target
     );
 
-    public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<ReferenceDefinition>>
+    public class ReferenceCollectorVisitor(ExternalImportFileService externalImportFileService) : Interlis24AstBaseVisitor<List<ReferenceDefinition>>
     {
         protected override List<ReferenceDefinition>? AggregateResult(List<ReferenceDefinition>? aggregate, List<ReferenceDefinition>? nextResult)
         {
@@ -57,7 +58,18 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors
             }
 
             var modelDef = target as ModelDef ?? throw new InvalidOperationException("Could not find ModelDef in tree");
-            return modelDef.URI is not null ? new Uri(modelDef.URI) : null;
+
+            if (modelDef.URI is null) return null;
+            var uri = new Uri(modelDef.URI);
+
+            if (uri.IsFile)
+            {
+                return uri;
+            }
+            else
+            {
+                return externalImportFileService.GetModelUriAsync(modelDef).Result;
+            }          
         }
     }
 }

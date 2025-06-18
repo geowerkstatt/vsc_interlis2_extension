@@ -12,16 +12,16 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 {
     private readonly ILogger<ReferenceCache> logger;
     private readonly InterlisEnvironmentCache environmentCache;
-    private readonly ExternalImportFileService externalImportFileService;
+    private readonly ReferenceCollectorVisitor referenceCollector;
     private readonly ConcurrentDictionary<string, List<ReferenceDefinition>> referenceCache = new ConcurrentDictionary<string, List<ReferenceDefinition>>();
 
     public event Action<DocumentUri>? DocumentInvalidated;
 
-    public ReferenceCache(ILogger<ReferenceCache> logger, InterlisEnvironmentCache environmentCache, ExternalImportFileService externalImportFileService)
+    public ReferenceCache(ILogger<ReferenceCache> logger, InterlisEnvironmentCache environmentCache, ReferenceCollectorVisitor referenceCollector)
     {
         this.logger = logger;
         this.environmentCache = environmentCache;
-        this.externalImportFileService = externalImportFileService;
+        this.referenceCollector = referenceCollector;
 
         this.environmentCache.DocumentInvalidated += InvalidateCache;
     }
@@ -48,7 +48,11 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 
     private void AddReferencesFromEnvironment(InterlisEnvironment environment)
     {
-        var referenceCollector = new ReferenceCollectorVisitor();
         var definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
+        var groupedDefinitions = definitions.GroupBy(d => d.OccurenceFile);
+        foreach (var fileDefinitions in groupedDefinitions)
+        {
+            referenceCache[fileDefinitions.Key.ToString()] = fileDefinitions.ToList(); ;
+        }
     }
 }
