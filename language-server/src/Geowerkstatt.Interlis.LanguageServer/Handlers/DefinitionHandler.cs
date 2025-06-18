@@ -18,10 +18,14 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers
 
             var references = referenceCache
                 .Get(uri)
-                .Where(r => r.OccurenceStart <= location && r.OccurenceEnd >= location && r.Target.NameLocations.Any())
+                .Where(r =>
+                    r.OccurenceStart <= location
+                    && r.OccurenceEnd >= location
+                    && r.Target.NameLocations.Any()
+                    && r.TargetFile is not null)
                 .Select(r => new Location
                 {
-                    Uri = uri,
+                    Uri = r.TargetFile!,
                     Range = new Range(r.Target.NameLocations.First().Start.ToOmnisharpPosition(), r.Target.NameLocations.First().End.ToOmnisharpPosition())
                 })
                 .Select(location => new LocationOrLocationLink(location));

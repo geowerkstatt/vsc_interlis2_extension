@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
+using Geowerkstatt.Interlis.LanguageServer.Services;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -11,16 +12,16 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 {
     private readonly ILogger<ReferenceCache> logger;
     private readonly InterlisEnvironmentCache environmentCache;
-    private readonly InterlisReader interlisReader;
+    private readonly ExternalImportFileService externalImportFileService;
     private readonly ConcurrentDictionary<string, List<ReferenceDefinition>> referenceCache = new ConcurrentDictionary<string, List<ReferenceDefinition>>();
 
     public event Action<DocumentUri>? DocumentInvalidated;
 
-    public ReferenceCache(ILogger<ReferenceCache> logger, InterlisEnvironmentCache environmentCache, InterlisReader interlisReader)
+    public ReferenceCache(ILogger<ReferenceCache> logger, InterlisEnvironmentCache environmentCache, ExternalImportFileService externalImportFileService)
     {
         this.logger = logger;
         this.environmentCache = environmentCache;
-        this.interlisReader = interlisReader;
+        this.externalImportFileService = externalImportFileService;
 
         this.environmentCache.DocumentInvalidated += InvalidateCache;
     }
@@ -40,10 +41,14 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
         }
 
         var environment = environmentCache.Get(uri);
-        var referenceCollector = new ReferenceCollectorVisitor();
-        definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
+        AddReferencesFromEnvironment(environment);
 
-        referenceCache[uri.ToString()] = definitions;
-        return definitions;
+        return referenceCache[uri.ToString()];
+    }
+
+    private void AddReferencesFromEnvironment(InterlisEnvironment environment)
+    {
+        var referenceCollector = new ReferenceCollectorVisitor();
+        var definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
     }
 }
