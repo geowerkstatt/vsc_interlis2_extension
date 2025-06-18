@@ -61,13 +61,10 @@ function renderLabel(nodeData: { Title: string; Attributes: string[] }) {
 
 function getLayoutedNodes(nodes, edges, direction = "LR") {
   const isHorizontal = direction === "LR";
-  console.log("getLayoutedNodes", direction, isHorizontal);
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: 80,
-    ranksep: 80,
-    marginx: 20,
-    marginy: 20,
+    nodesep: 50,
+    ranksep: 50,
   });
 
   nodes.forEach((node) => {
@@ -100,7 +97,6 @@ function getLayoutedNodes(nodes, edges, direction = "LR") {
     const edgeInfo = dagreGraph.edge(edge.source, edge.target);
     return {
       ...edge,
-      // type: ConnectionLineType.SmoothStep,
       data: {
         points: edgeInfo.points,
         symbol: edge.Symbol ?? " --|>",
@@ -131,8 +127,6 @@ export function App() {
 
   const handleNodesChange = useCallback(
     (changes) => {
-      //Todo adapt style of changes
-      console.log("onNodesChange:", changes);
       vscodeApi.postMessage({
         type: "nodesChange",
         changes: [{ className: changes[0].id, position: changes[0].position }],
@@ -178,10 +172,6 @@ export function App() {
       const initialNodes = getBasicNodes(Nodes);
       const initialEdges = getBasicEdges(Edges);
       const { layoutedNodes, layoutedEdges } = getLayoutedNodes(initialNodes, initialEdges, direction);
-      console.log(Edges);
-      console.log(layoutedEdges);
-      console.log(Nodes);
-      console.log(layoutedNodes);
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
     });
@@ -191,8 +181,8 @@ export function App() {
   }, [direction]);
   return (
     <div>
-      <h2>INTERLIS Diagram (React)</h2>
-      <div style={{ position: "relative", width: "100%", height: "90vh" }}>
+      <h2>UML Diagram</h2>
+      <div style={{ position: "relative", width: "100%", height: "700px", padding: "10px" }}>
         <div
           style={{
             position: "absolute",
@@ -244,6 +234,7 @@ export function App() {
           edgeTypes={edgeTypes}
           connectionLineType={ConnectionLineType.SmoothStep}
           fitView
+          fitViewOptions={{ padding: 0.2, includeHiddenNodes: false }}
         />
       </div>
     </div>

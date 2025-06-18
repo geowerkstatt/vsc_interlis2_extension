@@ -4,7 +4,7 @@
 // @ts-nocheck
 import React, { memo, useState } from "react";
 import { Handle, Position, NodeResizer } from "@xyflow/react";
-const ResizableNode = ({ id, data, style = {}, selected, onColorChange }) => {
+const ResizableNode = ({ id, data, sourcePosition, targetPosition, style = {}, selected, onColorChange }) => {
   const [showColor, setShowColor] = useState(false);
   const handleDoubleClick = (e) => {
     e.stopPropagation();
@@ -19,7 +19,7 @@ const ResizableNode = ({ id, data, style = {}, selected, onColorChange }) => {
   return (
     <>
       <NodeResizer minWidth={100} minHeight={30} isVisible={selected} />
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={targetPosition} />
       <div
         style={{
           padding: 10,
@@ -48,7 +48,7 @@ const ResizableNode = ({ id, data, style = {}, selected, onColorChange }) => {
           />
         )}
       </div>
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={sourcePosition} />
     </>
   );
 };

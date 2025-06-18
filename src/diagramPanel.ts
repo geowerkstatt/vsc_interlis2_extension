@@ -87,7 +87,6 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
           return;
         }
         // Handle color change
-        console.log("onColorchange:", message.changes);
         vscode.commands.executeCommand("interlis.diagram.colorChange", message.changes, currentEditor);
       } else if (message.type === "webviewLoaded") {
         const editor = vscode.window.activeTextEditor;

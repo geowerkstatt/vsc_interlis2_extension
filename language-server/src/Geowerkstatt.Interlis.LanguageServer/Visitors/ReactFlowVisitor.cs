@@ -203,11 +203,11 @@ internal class ReactFlowVisitor : Interlis24AstBaseVisitor<object?>
                 try
                 {
                     NodePosition? savedPosition = JsonSerializer.Deserialize<NodePosition>(position);
-                    nodeToAdd.Position = savedPosition ?? new NodePosition();
+                    nodeToAdd.Position = savedPosition ?? null;
                 }
                 catch (JsonException ex)
                 {
-                    nodeToAdd.Position = new NodePosition();
+                    nodeToAdd.Position = null;
                     logger.LogWarning("Invalid position JSON: {Position}, error: {Error}", position, ex.Message);
                 }
             }
