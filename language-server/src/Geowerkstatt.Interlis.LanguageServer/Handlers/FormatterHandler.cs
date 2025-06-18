@@ -26,7 +26,7 @@ public class FormatterHandler : DocumentFormattingHandlerBase
         };
     }
 
-    public override Task<TextEditContainer> Handle(DocumentFormattingParams request, CancellationToken cancellationToken)
+    public override Task<TextEditContainer?> Handle(DocumentFormattingParams request, CancellationToken cancellationToken)
     {
         var inputText = fileContentCache.GetBuffer(request.TextDocument.Uri);
 
@@ -52,6 +52,6 @@ public class FormatterHandler : DocumentFormattingHandlerBase
             NewText = formattedOutput + Environment.NewLine,
         };
 
-        return Task.FromResult(new TextEditContainer(edit));
+        return Task.FromResult<TextEditContainer?>(new TextEditContainer(edit));
     }
 }
