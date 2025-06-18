@@ -80,6 +80,17 @@ public class FormatterVisitorTest
               Property2: text*50;
               END ClassName;
             TOPIC TopicName =
+                        BASKET OID AS INTERLIS.UUIDOID;
+            OID AS INTERLIS.UUIDOID;
+            DOMAIN
+              Grundstuecksart = (
+                Liegenschaft,
+                SelbstaendigesDauerndesRecht,
+                Bergwerk);
+              Mutationsart = (
+            	  Normal, 
+            	  Projektmutation, 
+            	  AbschlussProjektmutation);
               CLASS TopicClassName =
                 PropertyA : MANDATORY BOOLEAN;
               END TopicClassName;

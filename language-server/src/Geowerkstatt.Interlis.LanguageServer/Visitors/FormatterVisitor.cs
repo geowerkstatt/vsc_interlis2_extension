@@ -253,6 +253,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         var startIndex = context.Start.TokenIndex;
         var equalSignIndex = context.EQUAL_SIGN().Symbol.TokenIndex;
         var extendsIndex = context.EXTENDS()?.Symbol.TokenIndex ?? -1;
+        var contentStartIndex = context.topicContents().FirstOrDefault()?.Start.TokenIndex;
         var endIndex = context.END().Symbol.TokenIndex;
         var stopIndex = context.Stop.TokenIndex;
 
@@ -271,6 +272,29 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<string>
         indentationSteps += 1;
         using (var scope = new Scope(() => indentationSteps -= 1))
         {
+            var optionalProps = new List<int>();
+            if (context.BASKET() != null)
+            {
+                optionalProps.Add(context.BASKET().Symbol.TokenIndex);
+            }
+
+            if (context.OID() != null)
+            {
+                optionalProps.Add(context.OID()[optionalProps.Count].Symbol.TokenIndex);
+            }
+
+            if (optionalProps.Count > 0 && contentStartIndex != null)
+            {
+                for (int i = 0; i < optionalProps.Count; i++)
+                {
+                    int start = optionalProps[i];
+                    int stop = (i < optionalProps.Count - 1) ? optionalProps[i + 1] - 1 : contentStartIndex.Value - 1;
+                    sb.Append(GetSpacesNormalizedString(start, stop));
+                    sb.Append(Environment.NewLine);
+                }
+                sb.Append(Environment.NewLine);
+            }
+
             var contents = context.topicContents();
             sb.Append(string.Concat(context.topicContents()
                 .Select(Visit)
