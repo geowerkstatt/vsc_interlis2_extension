@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,6 +16,9 @@
 
   <ItemGroup>
     <Content Update="C:\Users\dburger\.nuget\packages\geowerkstatt.interlis.repositorycrawler\2.0.30\contentFiles\any\net8.0\appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="C:\Users\pluethi\.nuget\packages\geowerkstatt.interlis.repositorycrawler\2.0.30\contentFiles\any\net8.0\appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
