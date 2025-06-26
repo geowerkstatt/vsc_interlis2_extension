@@ -8,7 +8,7 @@ public record ReferenceDefinition(
     Uri OccurenceFile,
     Position OccurenceStart,
     Position OccurenceEnd,
-    Uri? TargetFile,
+    Uri TargetFile,
     IInterlisDefinition Target
 );
 
