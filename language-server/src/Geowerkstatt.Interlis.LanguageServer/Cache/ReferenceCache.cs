@@ -32,14 +32,14 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
     }
 
     /// <inheritdoc />
-    public List<ReferenceDefinition> Get(DocumentUri uri)
+    public async ValueTask<List<ReferenceDefinition>> GetAsync(DocumentUri uri)
     {
         if (referenceCache.TryGetValue(uri.ToUnencodedString(), out var cachedDefinitions))
         {
             return cachedDefinitions;
         }
 
-        var environment = environmentCache.Get(uri);
+        var environment = await environmentCache.GetAsync(uri);
         AddReferencesFromEnvironment(environment);
 
         return referenceCache[uri.ToUnencodedString()];
@@ -47,11 +47,11 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 
     private void AddReferencesFromEnvironment(InterlisEnvironment environment)
     {
-        var definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
-        var groupedDefinitions = definitions.GroupBy(d => d.OccurenceFile);
-        foreach (var fileDefinitions in groupedDefinitions)
+        var references = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
+        var groupedReferences = references.GroupBy(d => d.OccurenceFile);
+        foreach (var fileReferences in groupedReferences)
         {
-            referenceCache[fileDefinitions.Key.ToString()] = fileDefinitions.ToList(); ;
+            referenceCache[fileReferences.Key.ToString()] = fileReferences.ToList();
         }
     }
 }

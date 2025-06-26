@@ -12,25 +12,25 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 internal class DefinitionHandler(ILogger<DefinitionHandler> logger, ReferenceCache referenceCache, TextDocumentSelector textDocumentSelector) : DefinitionHandlerBase
 {
     /// <inheritdoc />
-    public override Task<LocationOrLocationLinks?> Handle(DefinitionParams request, CancellationToken cancellationToken)
+    public override async Task<LocationOrLocationLinks?> Handle(DefinitionParams request, CancellationToken cancellationToken)
     {
         logger.LogTrace("Resolving Definition Request: {Request}", request);
 
         var uri = request.TextDocument.Uri;
         var location = request.Position;
 
-        var references = referenceCache
-            .Get(uri)
+        var allReferencesInFile = await referenceCache.GetAsync(uri);
+        var references = allReferencesInFile
             .Where(r => r.OccurenceStart <= location && r.OccurenceEnd >= location && r.Target.NameLocations.Count != 0)
             .Select(r => new Location
             {
                 Uri = r.TargetFile,
                 Range = r.Target.NameLocations.First().ToOmnisharpRange(),
             })
-            .Select(location => new LocationOrLocationLink(location));
+            .Select(location => new LocationOrLocationLink(location))
+            .ToList();
 
-
-        return Task.FromResult<LocationOrLocationLinks?>(new LocationOrLocationLinks(references.ToList()));
+        return new LocationOrLocationLinks(references);
     }
 
     /// <inheritdoc />

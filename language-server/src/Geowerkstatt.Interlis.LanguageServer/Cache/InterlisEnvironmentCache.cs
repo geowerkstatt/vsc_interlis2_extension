@@ -32,14 +32,14 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     }
 
     /// <inheritdoc />
-    public InterlisEnvironment Get(DocumentUri uri)
+    public async ValueTask<InterlisEnvironment> GetAsync(DocumentUri uri)
     {
         if (environmentCache.TryGetValue(uri.ToString(), out var ast))
         {
             return ast;
         }
 
-        var source = fileContentCache.Get(uri);
+        var source = await fileContentCache.GetAsync(uri);
         if (string.IsNullOrEmpty(source))
         {
             return new InterlisEnvironment();

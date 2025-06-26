@@ -29,9 +29,10 @@ public sealed class FileContentCache : ICache<string>
     /// </summary>
     /// <param name="uri">A <see cref="DocumentUri"/> to identify the file.</param>
     /// <returns>The file content if the file exists, or an empty string otherwise.</returns>
-    public string Get(DocumentUri uri)
+    public ValueTask<string> GetAsync(DocumentUri uri)
     {
-        return buffers.TryGetValue(uri.ToString(), out var buffer) ? buffer : string.Empty;
+        var content = buffers.TryGetValue(uri.ToString(), out var buffer) ? buffer : string.Empty;
+        return new ValueTask<string>(content);
     }
 
     /// <summary>

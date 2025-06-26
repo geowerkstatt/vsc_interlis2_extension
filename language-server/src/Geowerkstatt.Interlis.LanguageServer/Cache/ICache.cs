@@ -17,5 +17,5 @@ internal interface ICache<T> where T : class
     /// </summary>
     /// <param name="uri">The document URI.</param>
     /// <returns>The computed or cached value for the given document URI.</returns>
-    public T Get(DocumentUri uri);
+    public ValueTask<T> GetAsync(DocumentUri uri);
 }

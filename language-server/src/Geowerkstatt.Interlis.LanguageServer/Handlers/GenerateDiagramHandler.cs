@@ -35,20 +35,20 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
     /// <param name="options">The requested options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
     /// <returns>The generated diagram document, or <c>null</c> if the INTERLIS file was not found.</returns>
-    public override Task<string?> Handle(GenerateDiagramOptions options, CancellationToken cancellationToken)
+    public override async Task<string?> Handle(GenerateDiagramOptions options, CancellationToken cancellationToken)
     {
         if (options == null)
         {
             logger.LogWarning("generateDiagram invoked without arguments");
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
         var uri = options.Uri;
         var orientation = options.Orientation;
-        var fileContent = uri == null ? null : fileContentCache.Get(uri);
+        var fileContent = uri == null ? null : await fileContentCache.GetAsync(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
         logger.LogInformation("Generate diagram for {0}", uri);
@@ -57,7 +57,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         var interlisFile = interlisReader.ReadFile(stringReader);
         var diagram = GenerateDiagram(interlisFile, orientation);
 
-        return Task.FromResult<string?>(diagram);
+        return diagram;
     }
 
     private string GenerateDiagram(InterlisEnvironment interlisFile, String orientation)
