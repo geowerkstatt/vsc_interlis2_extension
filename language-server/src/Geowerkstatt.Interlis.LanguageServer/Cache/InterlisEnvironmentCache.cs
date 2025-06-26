@@ -1,23 +1,24 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
-using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Concurrent;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 
-public sealed class InterlisEnvironmentCache: ICache<InterlisEnvironment>
+/// <summary>
+/// Stores the INTERLIS environment for each opened document in memory.
+/// </summary>
+public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
 {
-    private readonly ILogger<InterlisEnvironmentCache> logger;
-    private readonly FileContentCache fileContentCache;
-    private readonly InterlisReader interlisReader;
-    private readonly ConcurrentDictionary<string, InterlisEnvironment> environmentCache = new ConcurrentDictionary<string, InterlisEnvironment>();
-
+    /// <inheritdoc />
     public event Action<DocumentUri>? DocumentInvalidated;
 
-    public InterlisEnvironmentCache(ILogger<InterlisEnvironmentCache> logger, FileContentCache fileContentCache, InterlisReader interlisReader)
+    private readonly FileContentCache fileContentCache;
+    private readonly InterlisReader interlisReader;
+    private readonly ConcurrentDictionary<string, InterlisEnvironment> environmentCache = new();
+
+    public InterlisEnvironmentCache(FileContentCache fileContentCache, InterlisReader interlisReader)
     {
-        this.logger = logger;
         this.fileContentCache = fileContentCache;
         this.interlisReader = interlisReader;
 
@@ -30,6 +31,7 @@ public sealed class InterlisEnvironmentCache: ICache<InterlisEnvironment>
         DocumentInvalidated?.Invoke(uri);
     }
 
+    /// <inheritdoc />
     public InterlisEnvironment Get(DocumentUri uri)
     {
         if (environmentCache.TryGetValue(uri.ToString(), out var ast))

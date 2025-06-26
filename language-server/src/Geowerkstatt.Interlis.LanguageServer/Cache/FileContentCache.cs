@@ -8,9 +8,10 @@ namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 /// </summary>
 public sealed class FileContentCache : ICache<string>
 {
-    private readonly ConcurrentDictionary<string, string> buffers = new ConcurrentDictionary<string, string>();
-
+    /// <inheritdoc />
     public event Action<DocumentUri>? DocumentInvalidated;
+
+    private readonly ConcurrentDictionary<string, string> buffers = new();
 
     /// <summary>
     /// Update the buffer for the given document.

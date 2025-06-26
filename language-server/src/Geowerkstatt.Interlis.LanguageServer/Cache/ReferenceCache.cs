@@ -1,26 +1,23 @@
-using Geowerkstatt.Interlis.Compiler;
-using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
-using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Concurrent;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 
+/// <summary>
+/// Stores the reference definitions for each INTERLIS environment created by a document in memory.
+/// </summary>
 public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
 {
-    private readonly ILogger<ReferenceCache> logger;
-    private readonly InterlisEnvironmentCache environmentCache;
-    private readonly InterlisReader interlisReader;
-    private readonly ConcurrentDictionary<string, List<ReferenceDefinition>> referenceCache = new ConcurrentDictionary<string, List<ReferenceDefinition>>();
-
+    /// <inheritdoc />
     public event Action<DocumentUri>? DocumentInvalidated;
 
-    public ReferenceCache(ILogger<ReferenceCache> logger, InterlisEnvironmentCache environmentCache, InterlisReader interlisReader)
+    private readonly InterlisEnvironmentCache environmentCache;
+    private readonly ConcurrentDictionary<string, List<ReferenceDefinition>> referenceCache = new();
+
+    public ReferenceCache(InterlisEnvironmentCache environmentCache)
     {
-        this.logger = logger;
         this.environmentCache = environmentCache;
-        this.interlisReader = interlisReader;
 
         this.environmentCache.DocumentInvalidated += InvalidateCache;
     }
@@ -31,17 +28,17 @@ public sealed class ReferenceCache : ICache<List<ReferenceDefinition>>
         DocumentInvalidated?.Invoke(uri);
     }
 
+    /// <inheritdoc />
     public List<ReferenceDefinition> Get(DocumentUri uri)
     {
-        List<ReferenceDefinition>? definitions;
-        if (referenceCache.TryGetValue(uri.ToString(), out definitions))
+        if (referenceCache.TryGetValue(uri.ToString(), out var cachedDefinitions))
         {
-            return definitions;
+            return cachedDefinitions;
         }
 
         var environment = environmentCache.Get(uri);
         var referenceCollector = new ReferenceCollectorVisitor();
-        definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
+        var definitions = referenceCollector.VisitInterlisEnvironment(environment) ?? new List<ReferenceDefinition>();
 
         referenceCache[uri.ToString()] = definitions;
         return definitions;
