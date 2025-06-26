@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.Compiler.AST.Types;
+using Geowerkstatt.Interlis.Compiler.CreateAST;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -29,6 +30,14 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         mermaidScript.AppendLine("---");
         mermaidScript.AppendLine("classDiagram");
         mermaidScript.AppendLine("direction " + orientation);
+    }
+
+    public override object? VisitModelDef([NotNull] ModelDef modelDef)
+    {
+        if (modelDef == InternalModel.Interlis)
+            return null;
+
+        return base.VisitModelDef(modelDef);
     }
 
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)

@@ -44,8 +44,11 @@ public class ReferenceCollectorVisitorTest
     private const string TestModelImports = """
         INTERLIS 2.4;
 
+        MODEL ImportedModel (de) AT "http://models.geow.cloud" VERSION "1" =
+        END ImportedModel.
+
         MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
-            IMPORTS GeometryCHLV95_V1;
+            IMPORTS ImportedModel;
 
             TOPIC TestTopic =
                 CLASS ClassA =
@@ -75,7 +78,7 @@ public class ReferenceCollectorVisitorTest
 
         Assert.IsNotNull(references);
         Assert.AreEqual(3, references.Count);
-        Assert.AreEqual("GeometryCHLV95_V1", references[0].Target.Name);
+        Assert.AreEqual("ImportedModel", references[0].Target.Name);
         Assert.AreEqual("ClassA", references[1].Target.Name);
         Assert.AreEqual("ClassB", references[2].Target.Name);
     }

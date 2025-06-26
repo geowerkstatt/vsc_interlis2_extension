@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.Compiler.AST.Types;
+using Geowerkstatt.Interlis.Compiler.CreateAST;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -19,6 +20,9 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     /// <param name="modelDef">The INTERLIS model.</param>
     public override object? VisitModelDef([NotNull] ModelDef modelDef)
     {
+        if (modelDef == InternalModel.Interlis)
+            return null;
+
         documentation.AppendLine($"# {modelDef.Name}");
         return base.VisitModelDef(modelDef);
     }
