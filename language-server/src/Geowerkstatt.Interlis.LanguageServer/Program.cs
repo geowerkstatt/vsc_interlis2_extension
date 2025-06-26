@@ -30,10 +30,13 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<ReferenceCache>();
 
             services.AddSingleton<ExternalImportFileService>();
+            services.AddTransient<ImportResolveService>();
             services.AddSingleton<RepositorySearcher>();
             services.AddSingleton<IRepositoryCrawler, RepositoryCrawler>();
             services.AddTransient<InterlisReader>();
+
             services.AddTransient<ReferenceCollectorVisitor>();
+            services.AddTransient<ModelImportVisitor>();
 
             services.AddSingleton(TextDocumentSelector.ForLanguage(ServerConstants.InterlisLanguageName));
         })
