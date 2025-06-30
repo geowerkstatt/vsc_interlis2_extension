@@ -5,6 +5,7 @@ using Geowerkstatt.Interlis.LanguageServer.Handlers;
 using Geowerkstatt.Interlis.LanguageServer.Services;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Geowerkstatt.Interlis.RepositoryCrawler;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -16,6 +17,13 @@ var server = await LanguageServer.From(options =>
     options
         .WithInput(Console.OpenStandardInput())
         .WithOutput(Console.OpenStandardOutput())
+        .ConfigureConfiguration(options =>
+        {
+            options.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "RepositoryCrawler:RootRepositoryUri", ServerConstants.DefaultRootRepositoryUri },
+            });
+        })
         .ConfigureLogging(options =>
         {
             options
@@ -31,9 +39,14 @@ var server = await LanguageServer.From(options =>
 
             services.AddSingleton<ExternalImportFileService>();
             services.AddTransient<ImportResolveService>();
-            services.AddSingleton<RepositorySearcher>();
+            services.AddSingleton(provider => new RepositorySearcher(
+                provider.GetRequiredService<IRepositoryCrawler>(),
+                provider.GetRequiredService<IConfiguration>(),
+                provider.GetRequiredService<ILoggerFactory>()
+            ));
             services.AddSingleton<IRepositoryCrawler, RepositoryCrawler>();
             services.AddTransient<InterlisReader>();
+            services.AddHttpClient();
 
             services.AddTransient<ReferenceCollectorVisitor>();
             services.AddTransient<ModelImportVisitor>();
