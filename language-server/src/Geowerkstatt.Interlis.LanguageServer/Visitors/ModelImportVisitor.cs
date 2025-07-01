@@ -1,4 +1,3 @@
-using Geowerkstatt.Interlis.Common;
 using Geowerkstatt.Interlis.Compiler.AST;
 using System.Diagnostics.CodeAnalysis;
 
@@ -14,7 +13,7 @@ public class ModelImportVisitor : Interlis24AstBaseVisitor<ISet<string>>
         if (aggregate == null) return nextResult;
         if (nextResult == null) return aggregate;
 
-        aggregate.Add(nextResult);
+        aggregate.UnionWith(nextResult);
         return aggregate;
     }
 
