@@ -8,6 +8,7 @@ using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
@@ -19,10 +20,7 @@ var server = await LanguageServer.From(options =>
         .WithOutput(Console.OpenStandardOutput())
         .ConfigureConfiguration(options =>
         {
-            options.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "RepositoryCrawler:RootRepositoryUri", ServerConstants.DefaultRootRepositoryUri },
-            });
+            options.AddJsonFile("appsettings.json");
         })
         .ConfigureLogging(options =>
         {
@@ -33,6 +31,10 @@ var server = await LanguageServer.From(options =>
         })
         .WithServices(services =>
         {
+            services
+                .AddOptions<ServerOptions>()
+                .BindConfiguration(ServerOptions.ConfigSection);
+
             services.AddSingleton<FileContentCache>();
             services.AddSingleton<InterlisEnvironmentCache>();
             services.AddSingleton<ReferenceCache>();
@@ -51,7 +53,11 @@ var server = await LanguageServer.From(options =>
             services.AddTransient<ReferenceCollectorVisitor>();
             services.AddTransient<ModelImportVisitor>();
 
-            services.AddSingleton(TextDocumentSelector.ForLanguage(ServerConstants.InterlisLanguageName));
+            services.AddSingleton(provider =>
+            {
+                var serverOptions = provider.GetRequiredService<IOptions<ServerOptions>>().Value;
+                return TextDocumentSelector.ForLanguage(serverOptions.LanguageName);
+            });
         })
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<GenerateMarkdownHandler>()

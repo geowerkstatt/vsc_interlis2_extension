@@ -1,14 +1,15 @@
 using Geowerkstatt.Interlis.RepositoryCrawler.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
 /// <summary>
 /// Service to handle imported INTERLIS files.
 /// </summary>
-public sealed class ExternalImportFileService(ILogger<ExternalImportFileService> logger) : IDisposable
+public sealed class ExternalImportFileService(ILogger<ExternalImportFileService> logger, IOptions<ServerOptions> serverOptions) : IDisposable
 {
-    private static readonly string TempDirectory = Path.Combine(Path.GetTempPath(), ServerConstants.TempFolder);
+    private readonly string tempDirectory = Path.Combine(Path.GetTempPath(), serverOptions.Value.TempFolderName);
 
     /// <summary>
     /// Gets the URI of the INTERLIS file containing the given <see cref="Model"/>.
@@ -26,7 +27,7 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
             if (File.Exists(fileCacheLocation))
                 return new Uri(fileCacheLocation);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(fileCacheLocation) ?? TempDirectory);
+            Directory.CreateDirectory(Path.GetDirectoryName(fileCacheLocation) ?? tempDirectory);
             await File.WriteAllTextAsync(fileCacheLocation, model.FileContent?.Content);
             File.SetAttributes(fileCacheLocation, FileAttributes.ReadOnly);
 
@@ -39,17 +40,17 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
         }
     }
 
-    private static string GetTempLocalFilePath(Model modelDeclaration)
+    private string GetTempLocalFilePath(Model modelDeclaration)
     {
         var host = modelDeclaration.ModelRepository?.Uri.Host ?? string.Empty;
         var paths = modelDeclaration.ModelRepository?.Uri.AbsolutePath.Split('/') ?? Array.Empty<string>();
         var filePaths = modelDeclaration.File.Split('/') ?? Array.Empty<string>();
 
-        return Path.Combine([TempDirectory, host, .. paths, .. filePaths]);
+        return Path.Combine([tempDirectory, host, .. paths, .. filePaths]);
     }
 
     public void Dispose()
     {
-        Directory.Delete(TempDirectory, true);
+        Directory.Delete(tempDirectory, true);
     }
 }

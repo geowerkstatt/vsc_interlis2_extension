@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using MediatR;
+using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -11,12 +12,12 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 /// <summary>
 /// Handler to synchronize the text document contents between the client and this server.
 /// </summary>
-internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDocumentSelector textDocumentSelector) : TextDocumentSyncHandlerBase
+internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDocumentSelector textDocumentSelector, IOptions<ServerOptions> serverOptions) : TextDocumentSyncHandlerBase
 {
     public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
 
     /// <inheritdoc />
-    public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri) => new TextDocumentAttributes(uri, ServerConstants.InterlisLanguageName);
+    public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri) => new TextDocumentAttributes(uri, serverOptions.Value.LanguageName);
 
     /// <inheritdoc />
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
