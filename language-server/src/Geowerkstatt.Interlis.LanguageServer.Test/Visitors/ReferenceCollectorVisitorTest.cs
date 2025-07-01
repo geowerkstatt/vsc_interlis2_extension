@@ -36,9 +36,7 @@ public class ReferenceCollectorVisitorTest
         var references = visitor.VisitInterlisEnvironment(interlisFile);
 
         Assert.IsNotNull(references);
-        Assert.AreEqual(2, references.Count);
-        Assert.AreEqual("ClassA", references[0].Target.Name);
-        Assert.AreEqual("ClassB", references[1].Target.Name);
+        CollectionAssert.AreEqual(new[] { "ClassA", "ClassB" }, references.Select(r => r.Target.Name).ToList());
     }
 
     private const string TestModelImports = """
@@ -77,9 +75,6 @@ public class ReferenceCollectorVisitorTest
         var references = visitor.VisitInterlisEnvironment(interlisFile);
 
         Assert.IsNotNull(references);
-        Assert.AreEqual(3, references.Count);
-        Assert.AreEqual("ImportedModel", references[0].Target.Name);
-        Assert.AreEqual("ClassA", references[1].Target.Name);
-        Assert.AreEqual("ClassB", references[2].Target.Name);
+        CollectionAssert.AreEqual(new[] { "ImportedModel", "ClassA", "ClassB" }, references.Select(r => r.Target.Name).ToList());
     }
 }
