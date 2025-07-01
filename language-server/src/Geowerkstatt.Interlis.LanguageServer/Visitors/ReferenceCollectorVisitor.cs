@@ -30,7 +30,7 @@ public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<Reference
     {
         base.VisitReference(reference);
 
-        var occurenceUri = GetFileUriFromEnvironment(reference);
+        var occurenceUri = GetRootUriForTarget(reference.Source);
         var occurenceLocation = reference.ReferenceLocation;
 
         var target = reference.Target;
@@ -53,9 +53,6 @@ public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<Reference
                 target)
         };
     }
-
-    private static Uri? GetFileUriFromEnvironment<T>(Reference<T> reference) where T : class, IInterlisDefinition
-        => GetRootUriForTarget(reference.Source);
 
     private static Uri? GetRootUriForTarget(IInterlisDefinition? target)
     {
