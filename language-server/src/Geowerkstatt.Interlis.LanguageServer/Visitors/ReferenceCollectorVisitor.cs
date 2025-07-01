@@ -40,7 +40,9 @@ public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<Reference
             || occurenceLocation is null
             || target is null
             || targetUri is null)
+        {
             return new List<ReferenceDefinition>();
+        }
 
         return new List<ReferenceDefinition> {
             new ReferenceDefinition(

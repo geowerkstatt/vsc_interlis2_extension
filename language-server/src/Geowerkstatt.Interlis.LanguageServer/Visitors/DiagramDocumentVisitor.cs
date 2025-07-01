@@ -35,7 +35,9 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitModelDef([NotNull] ModelDef modelDef)
     {
         if (modelDef == InternalModel.Interlis)
+        {
             return null;
+        }
 
         return base.VisitModelDef(modelDef);
     }

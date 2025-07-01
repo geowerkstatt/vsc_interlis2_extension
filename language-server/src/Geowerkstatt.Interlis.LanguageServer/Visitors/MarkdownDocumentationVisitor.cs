@@ -21,7 +21,9 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     public override object? VisitModelDef([NotNull] ModelDef modelDef)
     {
         if (modelDef == InternalModel.Interlis)
+        {
             return null;
+        }
 
         documentation.AppendLine($"# {modelDef.Name}");
         return base.VisitModelDef(modelDef);
