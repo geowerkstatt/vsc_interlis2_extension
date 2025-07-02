@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Geowerkstatt.Interlis.Compiler" Version="2.0.30" />
-    <PackageReference Include="Geowerkstatt.Interlis.RepositoryCrawler" Version="2.0.30" />
+    <PackageReference Include="Geowerkstatt.Interlis.Compiler" Version="2.0.31" />
+    <PackageReference Include="Geowerkstatt.Interlis.RepositoryCrawler" Version="2.0.31" />
     <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
   </ItemGroup>
 
