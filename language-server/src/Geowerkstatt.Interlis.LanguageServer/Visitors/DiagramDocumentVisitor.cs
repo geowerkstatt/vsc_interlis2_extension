@@ -31,6 +31,16 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         mermaidScript.AppendLine("direction " + orientation);
     }
 
+    public override object? VisitModelDef([NotNull] ModelDef modelDef)
+    {
+        if (modelDef == InternalModel.Interlis)
+        {
+            return null;
+        }
+
+        return base.VisitModelDef(modelDef);
+    }
+
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
         int headerStart = mermaidScript.Length;

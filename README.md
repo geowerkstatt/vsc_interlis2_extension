@@ -35,6 +35,11 @@ The extension provides interactive snippets for commonly used INTERLIS 2 blocks.
 
 Supported snippets include: `MODEL`, `TOPIC`, `CLASS`, `STRUCTURE`, `ASSOCIATION` and `Role`
 
+### Code navigation (Go To Definition)
+The extension provides code navigation to referenced symbols such as classes, structures and imported models using the _Go To Definition_ functionality (default hotkey `F12` or `Ctrl + left mouse click`).
+
+Imported models from the model repositories are downloaded automatically to enable navigation to external models.
+
 ### File associations
 
 To make VS Code treat other file extensions than the default `.ili` as INTERLIS2 files, add the following to the user settings:

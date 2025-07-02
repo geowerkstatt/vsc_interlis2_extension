@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
+using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
@@ -32,19 +33,19 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
     /// <param name="options">The requested options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the asynchronous operation.</param>
     /// <returns>The generated markdown documentation, or <c>null</c> if the INTERLIS file was not found.</returns>
-    public override Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
+    public override async Task<string?> Handle(GenerateMarkdownOptions options, CancellationToken cancellationToken)
     {
         if (options == null)
         {
             logger.LogWarning("generateMarkdown invoked without arguments");
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
         var uri = options.Uri;
-        var fileContent = uri == null ? null : fileContentCache.GetBuffer(uri);
+        var fileContent = uri == null ? null : await fileContentCache.GetAsync(uri);
         if (string.IsNullOrEmpty(fileContent))
         {
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
         logger.LogInformation("Generate markdown for {0}", uri);
@@ -53,7 +54,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         var interlisFile = interlisReader.ReadFile(stringReader);
         var markdown = GenerateMarkdown(interlisFile);
 
-        return Task.FromResult<string?>(markdown);
+        return markdown;
     }
 
     private static string GenerateMarkdown(InterlisEnvironment interlisFile)
