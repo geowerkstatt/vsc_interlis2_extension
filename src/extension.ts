@@ -3,16 +3,10 @@ import { TextEditor } from "vscode";
 import { getLanguageClient, startLanguageServer, stopLanguageServer } from "./languageServer";
 import { initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
 import { generateMarkdown } from "./markdown";
-import { ModelImplementationProvider } from "./ModelImplementationProvider";
 
 export async function activate(context: vscode.ExtensionContext) {
   await startLanguageServer(context);
   initializeDiagramPanel(context);
-
-  const implementationProvider = vscode.languages.registerImplementationProvider(
-    "INTERLIS2",
-    new ModelImplementationProvider()
-  );
 
   const markdownCommand = vscode.commands.registerTextEditorCommand(
     "interlis.generateMarkdown",
@@ -29,7 +23,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(markdownCommand);
   context.subscriptions.push(showDiagramCommand);
-  context.subscriptions.push(implementationProvider);
 }
 
 export async function deactivate() {
