@@ -5,8 +5,10 @@ import { initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
 import { generateMarkdown } from "./markdown";
 
 export async function activate(context: vscode.ExtensionContext) {
+  const configuration = vscode.workspace.getConfiguration("interlis2");
+
   await startLanguageServer(context);
-  initializeDiagramPanel(context);
+  initializeDiagramPanel(context, configuration);
 
   const markdownCommand = vscode.commands.registerTextEditorCommand(
     "interlis.generateMarkdown",

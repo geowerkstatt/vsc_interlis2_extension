@@ -85,6 +85,17 @@
           "group": "navigation@1"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "INTERLIS 2",
+      "properties": {
+        "interlis2.autoOpenDiagramView": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically show the diagram view for the current INTERLIS file."
+        }
+      }
     }
   },
   "scripts": {
