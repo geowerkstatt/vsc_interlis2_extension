@@ -9,7 +9,7 @@ interface Debounced<T extends any[]> {
 }
 
 let diagramPanel: vscode.WebviewPanel | undefined;
-let hasUserClosedPanel = false;
+let isAutoOpening = false;
 let isAutoClosing = false;
 let closeTimer: NodeJS.Timeout | undefined;
 let lastSentMermaidDsl: string | undefined;
@@ -38,7 +38,7 @@ async function requestDiagram(uri: string): Promise<string> {
 }
 
 export function showDiagramPanel(context: vscode.ExtensionContext) {
-  hasUserClosedPanel = false;
+  isAutoOpening = true;
   revealDiagramPanelInternal(context);
 }
 
@@ -102,7 +102,7 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
     () => {
       diagramPanel = undefined;
       if (!isAutoClosing) {
-        hasUserClosedPanel = true;
+        isAutoOpening = false;
       }
     },
     null,
@@ -177,13 +177,14 @@ export function updateDiagramVisibility(context: vscode.ExtensionContext) {
     debouncedAutoClosePanel.cancel();
     closeTimer = undefined;
 
-    if (!diagramPanel && !hasUserClosedPanel) {
+    if (!diagramPanel && isAutoOpening) {
       revealDiagramPanelInternal(context);
     }
   }
 }
 
-export function initializeDiagramPanel(context: vscode.ExtensionContext) {
+export function initializeDiagramPanel(context: vscode.ExtensionContext, configuration: vscode.WorkspaceConfiguration) {
+  isAutoOpening = configuration.get("autoOpenDiagramView", false);
   updateDiagramVisibility(context);
 
   context.subscriptions.push(
