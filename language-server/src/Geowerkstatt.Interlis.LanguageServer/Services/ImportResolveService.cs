@@ -22,6 +22,26 @@ public sealed class ImportResolveService(
     private readonly ILogger<ImportResolveService> logger = loggerFactory.CreateLogger<ImportResolveService>();
 
     /// <summary>
+    /// Compiles the INTERLIS source code into an <see cref="InterlisEnvironment"/> without resolving references.
+    /// </summary>
+    /// <param name="source">The INTERLIS source code.</param>
+    /// <param name="uri">The URI of the INTERLIS file.</param>
+    /// <returns>The <see cref="InterlisEnvironment"/> containing the compiled file.</returns>
+    public InterlisEnvironment CompileWithoutReferenceResolve(TextReader source, string? uri)
+    {
+        var environment = interlisReader.ReadRule(source, (parser, visitor) => visitor.VisitInterlis(parser.interlis()));
+        foreach (var model in environment.Content.Values)
+        {
+            if (model != InternalModel.Interlis)
+            {
+                model.SourceUri = uri;
+            }
+        }
+
+        return environment;
+    }
+
+    /// <summary>
     /// Resolves the imports and adds the models to the INTERLIS environment.
     /// </summary>
     /// <param name="environment">The environment to resolve.</param>
@@ -75,7 +95,7 @@ public sealed class ImportResolveService(
         try
         {
             var localUri = await externalImportFileService.GetModelUriAsync(importedModel);
-            var importedEnvironment = interlisReader.ReadFile(new StringReader(importedModel.FileContent?.Content ?? ""), localUri?.ToString());
+            var importedEnvironment = CompileWithoutReferenceResolve(new StringReader(importedModel.FileContent?.Content ?? ""), localUri?.ToString());
             if (importedEnvironment.Version == environment.Version)
             {
                 AddEnvironmentContent(environment, importedEnvironment);

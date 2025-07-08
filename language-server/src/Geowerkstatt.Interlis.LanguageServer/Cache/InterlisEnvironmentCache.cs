@@ -1,4 +1,3 @@
-using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Services;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -15,14 +14,12 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     public event Action<DocumentUri>? DocumentInvalidated;
 
     private readonly FileContentCache fileContentCache;
-    private readonly InterlisReader interlisReader;
     private readonly ImportResolveService importResolveService;
     private readonly ConcurrentDictionary<string, InterlisEnvironment> environmentCache = new();
 
-    public InterlisEnvironmentCache(FileContentCache fileContentCache, InterlisReader interlisReader, ImportResolveService importResolveService)
+    public InterlisEnvironmentCache(FileContentCache fileContentCache, ImportResolveService importResolveService)
     {
         this.fileContentCache = fileContentCache;
-        this.interlisReader = interlisReader;
         this.importResolveService = importResolveService;
 
         this.fileContentCache.DocumentInvalidated += InvalidateCache;
@@ -48,7 +45,7 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
             return new InterlisEnvironment();
         }
 
-        var environment = interlisReader.ReadFile(new StringReader(source), uri.ToString());
+        var environment = importResolveService.CompileWithoutReferenceResolve(new StringReader(source), uri.ToString());
         await importResolveService.ResolveImportsAsync(environment);
         environmentCache[uri.ToString()] = environment;
         return environment;
