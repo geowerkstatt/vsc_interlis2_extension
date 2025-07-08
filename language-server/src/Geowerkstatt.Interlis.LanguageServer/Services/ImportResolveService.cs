@@ -5,6 +5,8 @@ using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Geowerkstatt.Interlis.RepositoryCrawler;
 using Geowerkstatt.Interlis.RepositoryCrawler.Models;
 using Microsoft.Extensions.Logging;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
@@ -16,7 +18,8 @@ public sealed class ImportResolveService(
     RepositorySearcher repositorySearcher,
     ILoggerFactory loggerFactory,
     ModelImportVisitor modelImportVisitor,
-    ExternalImportFileService externalImportFileService
+    ExternalImportFileService externalImportFileService,
+    ILanguageServerFacade languageServer
 )
 {
     private readonly ILogger<ImportResolveService> logger = loggerFactory.CreateLogger<ImportResolveService>();
@@ -108,6 +111,7 @@ public sealed class ImportResolveService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to compile imported model '{ImportedModel}' from {Uri}.", importedModel.Name, importedModel.Uri);
+            languageServer.Window.ShowError($"Failed to compile imported model '{importedModel.Name}'.");
         }
     }
 

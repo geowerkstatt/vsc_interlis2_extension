@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Show an error message when an imported model failed to compile.
 
 ### 0.4.0 - 2025-07-04
 
