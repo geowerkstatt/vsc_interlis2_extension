@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 0.4.1 - 2025-07-14
+
 * Improved model imports in updated INTERLIS compiler.
 * Show an error message when an imported model failed to compile.
 
