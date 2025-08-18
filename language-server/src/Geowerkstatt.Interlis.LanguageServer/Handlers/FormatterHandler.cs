@@ -13,17 +13,19 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 public class FormatterHandler : DocumentFormattingHandlerBase
 {
     private readonly FileContentCache fileContentCache;
+    private readonly TextDocumentSelector documentSelector;
 
-    public FormatterHandler(FileContentCache fileContentCache)
+    public FormatterHandler(FileContentCache fileContentCache, TextDocumentSelector documentSelector)
     {
         this.fileContentCache = fileContentCache;
+        this.documentSelector = documentSelector;
     }
 
     protected override DocumentFormattingRegistrationOptions CreateRegistrationOptions(DocumentFormattingCapability capability, ClientCapabilities clientCapabilities)
     {
         return new DocumentFormattingRegistrationOptions
         {
-            DocumentSelector = TextDocumentSelector.ForPattern("**/*.ili")
+            DocumentSelector = documentSelector,
         };
     }
 
