@@ -44,6 +44,14 @@ public class FormatterVisitorTest
     [DataTestMethod]
     [DataRow(
         """
+
+
+        """,
+        "",
+        DisplayName = "Empty input"
+    )]
+    [DataRow(
+        """
         INTERLIS 2.4;
 
         """,

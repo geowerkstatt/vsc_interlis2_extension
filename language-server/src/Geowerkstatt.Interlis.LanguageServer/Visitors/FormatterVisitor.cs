@@ -281,43 +281,46 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
     /// <summary>
     /// Format the <paramref name="children"/> of a context with the default rules and apply custom <paramref name="rules"/> between children.
     /// </summary>
-    private Part FormatChildren(IList<IParseTree> children, IList<Rule> rules)
+    private Part FormatChildren(IList<IParseTree>? children, IList<Rule> rules)
     {
         using var scope = new CaptureValue<int>(indentationSteps, v => indentationSteps = v);
 
         Part accu = Part.Empty;
 
         IParseTree? previous = null;
-        foreach (var child in children)
+        if (children != null)
         {
-            var specialRules = rules.Where(rule =>
-                previous != null &&
-                (
-                    (rule.RelativeLocation == RelativeLocation.Before && rule.Node.Invoke(child))
-                    || (rule.RelativeLocation == RelativeLocation.After && rule.Node.Invoke(previous))
-                )
-            ).ToList();
-
-            if (specialRules.Any())
+            foreach (var child in children)
             {
-                var sb = new StringBuilder();
-                sb.Append(accu.Content);
-                specialRules.ForEach(r => r.OtherAction?.Invoke());
-                var next = Visit(child);
-                if (accu.StopToken != null && next.StartToken != null)
+                var specialRules = rules.Where(rule =>
+                    previous != null &&
+                    (
+                        (rule.RelativeLocation == RelativeLocation.Before && rule.Node.Invoke(child))
+                        || (rule.RelativeLocation == RelativeLocation.After && rule.Node.Invoke(previous))
+                    )
+                ).ToList();
+
+                if (specialRules.Any())
                 {
-                    specialRules.First().InsertAction.Invoke(sb, accu.StopToken, next.StartToken);
+                    var sb = new StringBuilder();
+                    sb.Append(accu.Content);
+                    specialRules.ForEach(r => r.OtherAction?.Invoke());
+                    var next = Visit(child);
+                    if (accu.StopToken != null && next.StartToken != null)
+                    {
+                        specialRules.First().InsertAction.Invoke(sb, accu.StopToken, next.StartToken);
+                    }
+
+                    sb.Append(next.Content);
+                    accu = new Part(sb.ToString(), accu.StartToken, next.StopToken);
+                }
+                else
+                {
+                    accu = AggregateResult(accu, Visit(child));
                 }
 
-                sb.Append(next.Content);
-                accu = new Part(sb.ToString(), accu.StartToken, next.StopToken);
+                previous = child;
             }
-            else
-            {
-                accu = AggregateResult(accu, Visit(child));
-            }
-
-            previous = child;
         }
 
         return accu;
