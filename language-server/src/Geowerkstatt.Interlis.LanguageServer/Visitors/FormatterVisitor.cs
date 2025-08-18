@@ -304,7 +304,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
                 {
                     var sb = new StringBuilder();
                     sb.Append(accu.Content);
-                    specialRules.ForEach(r => r.OtherAction?.Invoke());
+                    specialRules.ForEach(r => r.BeforeAction?.Invoke());
                     var next = Visit(child);
                     if (accu.StopToken != null && next.StartToken != null)
                     {
@@ -576,6 +576,6 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
     /// <param name="RelativeLocation">Where this rule is applied relative to <paramref name="Node"/>.</param>
     /// <param name="Node">Return <see langword="true"/> if this rule applies to the <see cref="IParseTree"/> node.</param>
     /// <param name="InsertAction">The action that inserts custom spaces etc.</param>
-    /// <param name="OtherAction">Optional action to perform before the insert action, e.g. to change the indentation level.</param>
-    private record Rule(RelativeLocation RelativeLocation, Predicate<IParseTree> Node, Action<StringBuilder, IToken, IToken> InsertAction, Action? OtherAction = null);
+    /// <param name="BeforeAction">Optional action to perform before the insert action, e.g. to change the indentation level.</param>
+    private record Rule(RelativeLocation RelativeLocation, Predicate<IParseTree> Node, Action<StringBuilder, IToken, IToken> InsertAction, Action? BeforeAction = null);
 }
