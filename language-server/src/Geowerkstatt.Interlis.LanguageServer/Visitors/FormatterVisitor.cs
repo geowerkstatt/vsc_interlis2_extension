@@ -72,7 +72,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
         Interlis24Lexer.META_COMMENT_CLOSE,
     ]);
 
-     public FormatterVisitor(CommonTokenStream tokenStream)
+    public FormatterVisitor(CommonTokenStream tokenStream)
     {
         this.tokenStream = tokenStream;
     }
