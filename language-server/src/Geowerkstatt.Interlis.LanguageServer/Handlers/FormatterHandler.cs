@@ -1,4 +1,3 @@
-using Geowerkstatt.Interlis.Compiler.CreateAST;
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -7,6 +6,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Position = OmniSharp.Extensions.LanguageServer.Protocol.Models.Position;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
+using Geowerkstatt.Interlis.LanguageServer.Visitors;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
@@ -41,7 +41,7 @@ public class FormatterHandler : DocumentFormattingHandlerBase
         var interlisParser = reader.GetParser(tokenStream);
         var parseTree = interlisParser.interlis();
 
-        var formatter = new FormatterVisitor(loggerFactory, tokenStream);
+        var formatter = new FormatterVisitor(tokenStream);
         var formattedOutput = formatter.VisitInterlis(parseTree);
 
         var lastToken = tokenStream.GetTokens().Last();
