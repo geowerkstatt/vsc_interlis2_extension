@@ -61,6 +61,7 @@ var server = await LanguageServer.From(options =>
         })
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<GenerateMarkdownHandler>()
+        .WithHandler<FormatterHandler>()
         .WithHandler<DefinitionHandler>()
         .WithHandler<GenerateDiagramHandler>();
 }).ConfigureAwait(false);
