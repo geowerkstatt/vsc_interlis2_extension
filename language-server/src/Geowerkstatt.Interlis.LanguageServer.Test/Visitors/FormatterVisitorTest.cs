@@ -21,7 +21,12 @@ public class FormatterVisitorTest
                , a,        list     ;
               END   ModelName.
             """;
-        var expected = "INTERLIS 2.4; MODEL ModelName AT \"foo.test\" VERSION \"123\" =\r\n/* Don't care   about syntax */\r\n(lolo) [lala] {lulu} Tis, is, a, list; END ModelName.";
+
+        var expected = """
+            INTERLIS 2.4; MODEL ModelName AT "foo.test" VERSION "123" =
+            /* Don't care   about syntax */
+            (lolo) [lala] {lulu} Tis, is, a, list; END ModelName.
+            """;
 
         var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
         var reader = new InterlisReader(loggerFactory);
