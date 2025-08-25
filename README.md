@@ -56,3 +56,6 @@ The extension provides the command "Generate markdown documentation" to create m
 
 ### Live Diagram View
 Watch your ILI models come to life in real time. As you type, the diagram automatically updates so you can instantly see your model’s structure, spot inconsistencies, and keep everything aligned—no extra clicks required. Export the diagram as .SVG to embed in your webpages, or copy the mermaid code directly to your clipboard.
+
+### Format Document
+The Format Document command automatically formats your entire INTERLIS file. It adjusts indentation and spacing to make the code more readable and consistent, while carefully preserving all existing comments. You can invoke this command by right-clicking in an INTERLIS editor and selecting "Format Document" from the context menu.
