@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 0.4.2 - 2025-08-26
+
 * Add _Format Document_ to language server.
 
 ### 0.4.1 - 2025-07-14
