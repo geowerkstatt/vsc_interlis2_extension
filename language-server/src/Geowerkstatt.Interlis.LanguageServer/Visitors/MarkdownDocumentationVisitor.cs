@@ -11,7 +11,13 @@ namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 {
     private readonly StringBuilder documentation = new StringBuilder();
+    private readonly DocumentationOptions config;
     private bool useHtml;
+
+    public MarkdownDocumentationVisitor(DocumentationOptions? config = null)
+    {
+        this.config = config ?? new DocumentationOptions();
+    }
 
     /// <summary>
     /// Generates markdown documentation for the given model.
@@ -47,6 +53,17 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         void VisitTableBody()
         {
+            // If inline mode, add inherited attributes first
+            if (config.AbstractClassAttributes == "inline")
+            {
+                var inheritedAttributes = CollectInheritedAttributes(classDef);
+                foreach (var attr in inheritedAttributes)
+                {
+                    VisitInheritedAttributeDef(attr);
+                }
+            }
+
+            // Then visit this class's own attributes
             base.VisitClassDef(classDef);
             VisitRelatedAssociations(classDef);
         }
@@ -61,7 +78,10 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         }
         else
         {
-            documentation.AppendLine($"### {classDef.Name}");
+            var className = classDef.Properties.Contains(Property.Abstract)
+                ? $"*{classDef.Name}*"
+                : classDef.Name;
+            documentation.AppendLine($"### {className}");
             documentation.AppendLine("| Attributname | Kardinalität | Typ |");
             documentation.AppendLine("| --- | --- | --- |");
             VisitTableBody();
@@ -69,6 +89,54 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Collects all attributes from abstract parent classes.
+    /// </summary>
+    private List<AttributeDef> CollectInheritedAttributes(ClassDef classDef)
+    {
+        var inherited = new List<AttributeDef>();
+        var current = classDef.Extends?.Target;
+
+        while (current != null)
+        {
+            if (current.Properties.Contains(Property.Abstract))
+            {
+                var attrs = current.Content.Values
+                    .OfType<AttributeDef>()
+                    .Reverse()
+                    .ToList();
+
+                inherited.InsertRange(0, attrs);
+            }
+
+            current = current.Extends?.Target;
+        }
+
+        return inherited;
+    }
+
+    /// <summary>
+    /// Generates a markdown table row for an inherited attribute.
+    /// Adds "(inherited)" marker to the attribute name.
+    /// </summary>
+    private void VisitInheritedAttributeDef(AttributeDef attributeDef)
+    {
+        var cardinality = CalculateCardinality(attributeDef.TypeDef.Cardinality);
+
+        if (useHtml)
+        {
+            documentation.Append($"<tr><td>{attributeDef.Name} <em>(inherited)</em></td><td>{cardinality}</td><td>");
+            VisitTypeName(attributeDef.TypeDef);
+            documentation.Append("</td></tr>");
+        }
+        else
+        {
+            documentation.Append($"| {attributeDef.Name} *(inherited)* | {cardinality} | ");
+            VisitTypeName(attributeDef.TypeDef);
+            documentation.AppendLine(" |");
+        }
     }
 
     private void VisitRelatedAssociations(ClassDef classDef)
@@ -132,11 +200,10 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         if (cardinality != null)
         {
-            var min = cardinality.Min?.ToString() ?? "n";
-            var max = cardinality.Max?.ToString() ?? "n";
+            var min = cardinality.Min?.ToString() ?? "*";
+            var max = cardinality.Max?.ToString() ?? "*";
             return min == max ? min : $"{min}..{max}";
         }
-
         return "";
     }
 
@@ -171,7 +238,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         var (formatStart, formatEnd) = depth switch
         {
-            0 => ("<b>", "</b>"),
+            0 => ("", ""),
             1 => ("", ""),
             _ => ("<i>", "</i>"),
         };
