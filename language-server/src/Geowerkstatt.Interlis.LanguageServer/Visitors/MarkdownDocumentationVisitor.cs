@@ -78,7 +78,10 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         }
         else
         {
-            documentation.AppendLine($"### {classDef.Name}");
+            var className = classDef.Properties.Contains(Property.Abstract)
+                ? $"*{classDef.Name}*"
+                : classDef.Name;
+            documentation.AppendLine($"### {className}");
             documentation.AppendLine("| Attributname | Kardinalität | Typ |");
             documentation.AppendLine("| --- | --- | --- |");
             VisitTableBody();
