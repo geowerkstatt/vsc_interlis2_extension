@@ -94,6 +94,12 @@
           "type": "boolean",
           "default": false,
           "description": "Automatically show the diagram view for the current INTERLIS file."
+        },
+        "interlis.documentation.abstractClassAttributes": {
+          "type": "string",
+          "enum": ["separate", "inline"],
+          "default": "separate",
+          "description": "How to display attributes of abstract classes"
         }
       }
     }
