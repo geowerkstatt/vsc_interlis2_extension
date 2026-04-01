@@ -64,13 +64,40 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
-        mermaidScript.AppendLine($"  class {classDef.Name}");
+        var stereotypes = new List<string>();
+
+        if (classDef.Properties.Contains(Property.Abstract))
+        {
+            stereotypes.Add("<<abstract>>");
+        }
+
+        if (classDef.IsStructure)
+        {
+            stereotypes.Add("<<structure>>");
+        }
+
+        if (classDef.Properties.Contains(Property.External))
+            stereotypes.Add("<<external>>");
+
+        // If we have stereotypes, use the nested syntax
+        if (stereotypes.Any())
+        {
+            mermaidScript.AppendLine($"  class {classDef.Name}{{");
+            foreach (var stereotype in stereotypes)
+            {
+                mermaidScript.AppendLine($"    {stereotype}");
+            }
+            mermaidScript.AppendLine("  }");
+        }
+        else
+        {
+            mermaidScript.AppendLine($"  class {classDef.Name}");
+        }
 
         if (classDef.IsStructure)
             structures.Add(classDef);
         else
             classes.Add(classDef);
-
         return DefaultResult;
     }
 
@@ -87,18 +114,19 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         if (card != null)
         {
             var min = card.Min ?? 0;
-            var max = card.Max ?? 0;
-            if (min == 1 && max == 1)
+            var maxStr = card.Max?.ToString() ?? "*";
+
+            if (card.Min == 1 && card.Max == 1)
             {
                 bracket = "";
             }
-            else if (min == max)
+            else if (card.Min == card.Max)
             {
                 bracket = $"[{min}]";
             }
             else
             {
-                bracket = $"[{min}..{max}]";
+                bracket = $"[{min}..{maxStr}]";
             }
         }
 
@@ -279,9 +307,6 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             {
                 mermaidScript.AppendLine($"style {type.Name} fill:{color},color:black,stroke:black");
             }
-
-            var stereo = type.IsStructure ? MermaidConstants.StructureStereotype : MermaidConstants.ClassStereotype;
-            mermaidScript.AppendLine($"{type.Name}: {stereo}");
 
             foreach (var attr in type.Content.Values.OfType<AttributeDef>())
                 AppendAttributeDetailsToScript(type, attr);
