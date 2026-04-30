@@ -12,6 +12,11 @@ on:
 env:
   VERSION_TAG: ${{ github.event.inputs.TAG_NAME || github.event.release.tag_name }}
 
+permissions:
+  contents: write
+  packages: read
+  pull-requests: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
