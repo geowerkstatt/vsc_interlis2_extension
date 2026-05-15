@@ -144,7 +144,7 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attrB | 0..1 | 10..20 |
-            | AssocA | 0..n | ClassA |
+            | AssocA | 0..* | ClassA |
 
 
             """;
@@ -168,7 +168,7 @@ public class MarkdownDocumentationVisitorTest
             ### TestClass
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
-            | attr1 | 0..1 | (<b>topValue1</b>, <b>topValue2</b> (subValue1, subValue2, subValue3 (<i>subSubValue1</i>, <i>subSubValue2</i>)), <b>topValue3</b>) |
+            | attr1 | 0..1 | (topValue1, topValue2 (subValue1, subValue2, subValue3 (<i>subSubValue1</i>, <i>subSubValue2</i>)), topValue3) |
 
 
             """;
@@ -193,7 +193,7 @@ public class MarkdownDocumentationVisitorTest
             "</thead>" +
             "<tbody>" +
             "<tr><td>attr1</td><td>0..1</td><td>Text [10]</td></tr>" +
-            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(value1, value2)</td></tr>" +
             "</tbody>" +
             "</table>";
 
@@ -210,7 +210,7 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attr1 | 0..1 | Text [10] |
-            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+            | attr2 | 1 | (value1, value2) |
 
 
             """;
@@ -246,7 +246,7 @@ public class MarkdownDocumentationVisitorTest
             "</thead>" +
             "<tbody>" +
             "<tr><td>attr1</td><td>0..1</td><td>TestStructLevel2<br/>" + structLevel2InlineTable + "</td></tr>" +
-            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(value1, value2)</td></tr>" +
             "</tbody>" +
             "</table>";
 
@@ -257,7 +257,7 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attr1 | 0..1 | TestStructLevel2<br/>{structLevel2InlineTable} |
-            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+            | attr2 | 1 | (value1, value2) |
 
             ### TestStructLevel2
             | Attributname | Kardinalität | Typ |

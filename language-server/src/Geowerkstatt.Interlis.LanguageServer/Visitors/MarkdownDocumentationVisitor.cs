@@ -68,13 +68,25 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             VisitRelatedAssociations(classDef);
         }
 
+        const string EmptyClassPlaceholder = "_keine Attribute in dieser Klasse_";
+
         if (useHtml)
         {
+            var headerStart = documentation.Length;
             documentation.Append("<table>");
-            documentation.Append("<thead><tr><th>Attributname</th><th>Kardinalität</th><th>Typ</th></tr></thead>");
+            documentation.Append($"<thead><tr><th>{config.AttributeNameHeader}</th><th>{config.CardinalityHeader}</th><th>{config.TypeHeader}</th></tr></thead>");
             documentation.Append("<tbody>");
+            var bodyStart = documentation.Length;
             VisitTableBody();
-            documentation.Append("</tbody></table>");
+            if (documentation.Length == bodyStart)
+            {
+                documentation.Length = headerStart;
+                documentation.Append("<p><em>keine Attribute in dieser Klasse</em></p>");
+            }
+            else
+            {
+                documentation.Append("</tbody></table>");
+            }
         }
         else
         {
@@ -82,9 +94,16 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
                 ? $"*{classDef.Name}*"
                 : classDef.Name;
             documentation.AppendLine($"### {className}");
-            documentation.AppendLine("| Attributname | Kardinalität | Typ |");
+            var headerStart = documentation.Length;
+            documentation.AppendLine($"| {config.AttributeNameHeader} | {config.CardinalityHeader} | {config.TypeHeader} |");
             documentation.AppendLine("| --- | --- | --- |");
+            var bodyStart = documentation.Length;
             VisitTableBody();
+            if (documentation.Length == bodyStart)
+            {
+                documentation.Length = headerStart;
+                documentation.AppendLine(EmptyClassPlaceholder);
+            }
             documentation.AppendLine();
         }
 
@@ -227,11 +246,66 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
                 _ => "Blackbox",
             },
             EnumerationType enumerationType => FormatEnumerationValues(enumerationType.Values),
+            EnumerationAllOfType allOfType => FormatQualifiedPath(allOfType.TargetEnumeration?.Path),
+            FormattedType formattedType => FormatFormattedType(formattedType),
+            SurfaceType surfaceType => FormatGeometryName(surfaceType),
+            PolyLineType polyLineType => FormatPolyLineName(polyLineType),
+            CoordType coordType => FormatCoordName(coordType),
             TypeRef typeRef => typeRef.Extends?.Path.Last(),
             RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value?.Path.Last()).Where(target => target is not null)),
             _ => type?.ToString(),
         };
         documentation.Append(typeName);
+    }
+
+    private static string FormatGeometryName(SurfaceType surface)
+    {
+        var prefix = surface.IsMultiGeometry ? "Multi" : "";
+        var kind = surface.IsCoverage ? "Area" : "Surface";
+        return prefix + kind;
+    }
+
+    private static string FormatPolyLineName(PolyLineType polyLine)
+    {
+        var prefix = polyLine.IsMultiGeometry ? "Multi" : "";
+        return prefix + "Polyline";
+    }
+
+    private static string FormatCoordName(CoordType coord)
+    {
+        var prefix = coord.IsMultiGeometry ? "Multi" : "";
+        return prefix + "Coord";
+    }
+
+    private static string FormatFormattedType(FormattedType formattedType)
+    {
+        // Grammar (Interlis24Parser.g4):
+        //   formattedType
+        //     : BASED ON basedOn=definitionRef formatDef (min=string '..' max=string)?
+        //     | domainRef=definitionRef min=string '..' max=string
+        // The second alternative (e.g. `FORMAT INTERLIS.XMLDate "..." .. "..."`) populates
+        // FormatBaseType, not BasedOn — we need to read both.
+        var name = FormatQualifiedPath(formattedType.BasedOn?.Path);
+        if (name == "?")
+        {
+            name = FormatQualifiedPath(formattedType.FormatBaseType?.Path);
+        }
+        if (name == "?")
+        {
+            name = "Format";
+        }
+        if (!string.IsNullOrEmpty(formattedType.Min) && !string.IsNullOrEmpty(formattedType.Max))
+        {
+            return $"{name} \"{formattedType.Min}\"..\"{formattedType.Max}\"";
+        }
+        return name;
+    }
+
+    private static string FormatQualifiedPath(IEnumerable<string>? path)
+    {
+        if (path == null) return "?";
+        var joined = string.Join(".", path);
+        return string.IsNullOrEmpty(joined) ? "?" : joined;
     }
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues, int depth = 0)

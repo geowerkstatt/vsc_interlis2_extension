@@ -59,3 +59,24 @@ Watch your ILI models come to life in real time. As you type, the diagram automa
 
 ### Format Document
 The Format Document command automatically formats your entire INTERLIS file. It adjusts indentation and spacing to make the code more readable and consistent, while carefully preserving all existing comments. You can invoke this command by right-clicking in an INTERLIS editor and selecting "Format Document" from the context menu.
+
+## Troubleshooting
+
+### `spawn UNKNOWN` when opening an `.ili` file
+
+If activating the extension fails with an error like:
+
+```
+INTERLIS2 Language Server client: couldn't create connection to server.
+Error: spawn UNKNOWN
+```
+
+the language server executable cannot be launched, typically because the default extensions directory (`%USERPROFILE%\.vscode\extensions` on Windows) is on a volume that does not grant execute permission to the current user. Common in locked-down corporate setups.
+
+Workaround: launch VS Code with an extensions directory you can execute from, e.g.
+
+```
+code --extensions-dir "C:\LegacySW\vscode\extensions"
+```
+
+Re-install the extension into that directory and reopen the file.

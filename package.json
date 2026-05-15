@@ -100,6 +100,21 @@
           "enum": ["separate", "inline"],
           "default": "separate",
           "description": "How to display attributes of abstract classes"
+        },
+        "interlis.documentation.attributeNameHeader": {
+          "type": "string",
+          "default": "Attributname",
+          "description": "Header for the attribute-name column in generated markdown documentation."
+        },
+        "interlis.documentation.cardinalityHeader": {
+          "type": "string",
+          "default": "Kardinalität",
+          "description": "Header for the cardinality column in generated markdown documentation."
+        },
+        "interlis.documentation.typeHeader": {
+          "type": "string",
+          "default": "Typ",
+          "description": "Header for the type column in generated markdown documentation."
         }
       }
     }

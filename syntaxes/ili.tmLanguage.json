@@ -63,7 +63,11 @@
       "patterns": [
         {
           "name": "constant.numeric.ili",
-          "match": "\\b(\\+|-)?([1-9]\\d*\\.?|0\\.)\\d*([E|e][+|-]?[1-9]\\d*)?\\b"
+          "match": "\\b(\\+|-)?\\d+(\\.\\d*)?([Ee][+-]?\\d+)?\\b"
+        },
+        {
+          "name": "constant.numeric.ili",
+          "match": "(?<=[{.\\s])\\*(?=[}\\s;,])"
         },
         {
           "name": "constant.operator.association.ili",
