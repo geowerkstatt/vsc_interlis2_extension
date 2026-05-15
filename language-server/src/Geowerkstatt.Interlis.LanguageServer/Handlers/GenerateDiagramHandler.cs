@@ -53,11 +53,22 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
         logger.LogInformation("Generate diagram for {0}", uri);
 
-        using var stringReader = new StringReader(fileContent);
-        var interlisFile = interlisReader.ReadFile(stringReader);
-        var diagram = GenerateDiagram(interlisFile, orientation);
-
-        return diagram;
+        try
+        {
+            using var stringReader = new StringReader(fileContent);
+            var interlisFile = interlisReader.ReadFile(stringReader);
+            return GenerateDiagram(interlisFile, orientation);
+        }
+        catch (Exception ex)
+        {
+            // File content comes from the editor and may be syntactically invalid;
+            // the compiler can throw on malformed input. A failed diagram request
+            // must degrade to the webview's "Could not load diagram." message,
+            // never crash the language server. The exception is logged (not swallowed)
+            // so it stays diagnosable in the Output channel.
+            logger.LogError(ex, "Failed to generate diagram for {Uri}", uri);
+            return null;
+        }
     }
 
     private string GenerateDiagram(InterlisEnvironment interlisFile, String orientation)

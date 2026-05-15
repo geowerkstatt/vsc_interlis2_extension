@@ -62,11 +62,22 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
 
         var config = await GetDocumentationConfigAsync(cancellationToken);
 
-        using var stringReader = new StringReader(fileContent);
-        var interlisFile = interlisReader.ReadFile(stringReader);
-        var markdown = GenerateMarkdown(interlisFile, config);
-
-        return markdown;
+        try
+        {
+            using var stringReader = new StringReader(fileContent);
+            var interlisFile = interlisReader.ReadFile(stringReader);
+            return GenerateMarkdown(interlisFile, config);
+        }
+        catch (Exception ex)
+        {
+            // File content comes from the editor and may be syntactically invalid;
+            // the compiler can throw on malformed input. A failed documentation
+            // request must degrade to the client's "please re-open the file" message,
+            // never crash the language server. The exception is logged (not swallowed)
+            // so it stays diagnosable in the Output channel.
+            logger.LogError(ex, "Failed to generate markdown for {Uri}", uri);
+            return null;
+        }
     }
 
     private async Task<DocumentationOptions> GetDocumentationConfigAsync(CancellationToken cancellationToken)
@@ -86,12 +97,16 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
 
             var response = await languageServer.Workspace.RequestConfiguration(configRequest, cancellationToken);
 
-            if (response != null && response.Any())
+            if (response.Any())
             {
                 var configToken = response.First();
+                var defaults = new DocumentationOptions();
                 return new DocumentationOptions
                 {
-                    AbstractClassAttributes = configToken?["abstractClassAttributes"]?.ToString() ?? "separate"
+                    AbstractClassAttributes = configToken?["abstractClassAttributes"]?.ToString() ?? defaults.AbstractClassAttributes,
+                    AttributeNameHeader = configToken?["attributeNameHeader"]?.ToString() ?? defaults.AttributeNameHeader,
+                    CardinalityHeader = configToken?["cardinalityHeader"]?.ToString() ?? defaults.CardinalityHeader,
+                    TypeHeader = configToken?["typeHeader"]?.ToString() ?? defaults.TypeHeader,
                 };
             }
         }
