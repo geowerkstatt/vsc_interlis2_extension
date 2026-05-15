@@ -29,7 +29,7 @@ public class DiagramDocumentVisitorTests
             END M.");
 
         StringAssert.Contains(diagram, "namespace Topic_T {");
-        StringAssert.Contains(diagram, "class A");
+        StringAssert.Contains(diagram, "class M_T_A[\"A\"]");
     }
 
     [TestMethod]
@@ -83,7 +83,7 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "Derived --|> Base");
+        StringAssert.Contains(diagram, "M_T_Base <|-- M_T_Derived");
     }
 
     // ─── associations ──────────────────────────────────────────────────────────
@@ -129,8 +129,9 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "class S");
-        StringAssert.Contains(diagram, "style S fill:,stroke-dasharray:10 10");
+        StringAssert.Contains(diagram, "class M_T_S[\"S\"]");
+        StringAssert.Contains(diagram, "<<structure>>");
+        StringAssert.Contains(diagram, "style M_T_S fill:,stroke-dasharray:10 10");
     }
 
     // ─── meta-attribute driven colour ──────────────────────────────────────────
@@ -146,6 +147,6 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "style C fill:#ffcc00,color:black,stroke:black");
+        StringAssert.Contains(diagram, "style M_T_C fill:#ffcc00,color:black,stroke:black");
     }
 }

@@ -46,7 +46,9 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         int headerStart = mermaidScript.Length;
         mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
         int afterHeader = mermaidScript.Length;
+
         base.VisitTopicDef(topicDef);
+
         bool hasContent = mermaidScript.Length > afterHeader;
 
         if (hasContent)
@@ -79,10 +81,13 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         if (classDef.Properties.Contains(Property.External))
             stereotypes.Add("<<external>>");
 
+        var id = GetMermaidClassId(classDef);
+        var declaration = $"  class {id}[\"{classDef.Name}\"]";
+
         // If we have stereotypes, use the nested syntax
         if (stereotypes.Any())
         {
-            mermaidScript.AppendLine($"  class {classDef.Name}{{");
+            mermaidScript.AppendLine($"{declaration}{{");
             foreach (var stereotype in stereotypes)
             {
                 mermaidScript.AppendLine($"    {stereotype}");
@@ -91,7 +96,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
         else
         {
-            mermaidScript.AppendLine($"  class {classDef.Name}");
+            mermaidScript.AppendLine(declaration);
         }
 
         if (classDef.IsStructure)
@@ -99,6 +104,34 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         else
             classes.Add(classDef);
         return DefaultResult;
+    }
+
+    /// <summary>
+    /// Builds a Mermaid identifier that disambiguates classes sharing a simple
+    /// name across topics/models. The user-visible label remains the simple
+    /// <see cref="ClassDef.Name"/>; only the diagram-internal id is qualified.
+    /// </summary>
+    private static string GetMermaidClassId(ClassDef classDef)
+    {
+        var parts = new List<string>();
+        IInterlisDefinition? current = classDef;
+        while (current is not null)
+        {
+            switch (current)
+            {
+                case ClassDef cd: parts.Insert(0, cd.Name); break;
+                case TopicDef td: parts.Insert(0, td.Name); break;
+                case ModelDef md: parts.Insert(0, md.Name); break;
+            }
+            current = current.Parent;
+        }
+        return SanitizeMermaidId(string.Join("_", parts));
+    }
+
+    private static string SanitizeMermaidId(string id)
+    {
+        var chars = id.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray();
+        return new string(chars);
     }
 
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
@@ -113,26 +146,26 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var card = attributeDef.TypeDef?.Cardinality;
         if (card != null)
         {
-            var min = card.Min ?? 0;
+            var minStr = card.Min?.ToString() ?? "*";
             var maxStr = card.Max?.ToString() ?? "*";
 
             if (card.Min == 1 && card.Max == 1)
             {
                 bracket = "";
             }
-            else if (card.Min == card.Max)
+            else if (card.Min is not null && card.Min == card.Max)
             {
-                bracket = $"[{min}]";
+                bracket = $"[{minStr}]";
             }
             else
             {
-                bracket = $"[{min}..{maxStr}]";
+                bracket = $"[{minStr}..{maxStr}]";
             }
         }
 
         var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
         mermaidScript.AppendLine(
-            $"{parentClass.Name}: {attributeDef.Name}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
+            $"{GetMermaidClassId(parentClass)}: {attributeDef.Name}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
         );
     }
 
@@ -201,7 +234,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             : associationDef.Name;
 
         mermaidScript.AppendLine(
-            $"{left.classDef.Name} {left.cardinalityString} {symbol} {right.cardinalityString}{right.classDef.Name} : {label}"
+            $"{GetMermaidClassId(left.classDef)} {left.cardinalityString} {symbol} {right.cardinalityString}{GetMermaidClassId(right.classDef)} : {label}"
         );
     }
 
@@ -243,6 +276,13 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             },
             EnumerationType et =>
                 $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
+            EnumerationAllOfType allOf => allOf.TargetEnumeration?.Path.LastOrDefault() ?? "?",
+            FormattedType formatted => formatted.BasedOn?.Path.LastOrDefault()
+                                       ?? formatted.FormatBaseType?.Path.LastOrDefault()
+                                       ?? "Format",
+            SurfaceType surface => (surface.IsMultiGeometry ? "Multi" : "") + (surface.IsCoverage ? "Area" : "Surface"),
+            PolyLineType polyLine => (polyLine.IsMultiGeometry ? "Multi" : "") + "Polyline",
+            CoordType coord => (coord.IsMultiGeometry ? "Multi" : "") + "Coord",
             TypeRef tr => tr.Extends?.Path.Last() ?? "?",
             RoleType => "Role",
             _ => type.GetType().Name
@@ -294,18 +334,23 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     {
         foreach (var type in classes.Concat(structures))
         {
+            var typeId = GetMermaidClassId(type);
+
             if (type.Extends is { } extRef && extRef.Path.Any())
             {
-                string parentSimple = extRef.Path.Last();
-                string parentLabel =
-                    extRef.Target != null ? parentSimple : $"`{parentSimple} #60;#60;EXTERNAL#62;#62;`";
+                string parentLabel = extRef.Target is ClassDef parentClass
+                    ? GetMermaidClassId(parentClass)
+                    : $"`{extRef.Path.Last()} #60;#60;EXTERNAL#62;#62;`";
 
-                mermaidScript.AppendLine($"{type.Name} --|> {parentLabel}");
+                // `Parent <|-- Child` renders the same generalization arrow as
+                // `Child --|> Parent`, but Mermaid's layout ranks the edge source
+                // first, so the parent sits above the subclass in TB orientation.
+                mermaidScript.AppendLine($"{parentLabel} <|-- {typeId}");
             }
 
             if (type.MetaAttributes.TryGetValue("geow.uml.color", out var color) && !string.IsNullOrWhiteSpace(color))
             {
-                mermaidScript.AppendLine($"style {type.Name} fill:{color},color:black,stroke:black");
+                mermaidScript.AppendLine($"style {typeId} fill:{color},color:black,stroke:black");
             }
 
             foreach (var attr in type.Content.Values.OfType<AttributeDef>())
@@ -320,7 +365,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         mermaidScript.AppendLine();
 
         foreach (var structure in structures)
-            mermaidScript.AppendLine($"style {structure.Name} fill:,stroke-dasharray:10 10");
+            mermaidScript.AppendLine($"style {GetMermaidClassId(structure)} fill:,stroke-dasharray:10 10");
 
         return mermaidScript.ToString();
     }
