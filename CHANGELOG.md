@@ -1,6 +1,23 @@
 # Change Log
 ### vNext
 
+* Markdown documentation:
+  * Use UML notation `0..*` instead of `0..n` for unbounded multiplicities.
+  * Drop `<b>` emphasis on top-level enumeration values.
+  * Render abstract class names in italics.
+  * New setting `interlis.documentation.abstractClassAttributes` (`separate` | `inline`); `inline` repeats abstract-parent attributes inside each subclass table.
+  * New settings `interlis.documentation.attributeNameHeader`, `cardinalityHeader`, `typeHeader` to override the German default column headers.
+  * Empty classes render `_keine Attribute in dieser Klasse_` instead of an empty table.
+  * Render `FORMAT INTERLIS.XMLDate "..".."..."`, `ALL OF Domain`, and `SURFACE` / `AREA` / `POLYLINE` / `COORD` types instead of leaking the AST class name.
+* Diagram preview:
+  * Drop the `«class»` stereotype; use per-class `«abstract»` / `«structure»` / `«external»` instead.
+  * Disambiguate classes that share a simple name across topics or models (label still shows the simple name).
+  * Show abstract classes above their subclasses in TB orientation.
+  * Render geometry types and formatted/all-of types instead of AST class names.
+  * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
+* Stability: a syntactically invalid INTERLIS file no longer crashes the language server when generating markdown or the diagram; a clear failure message is shown instead.
+* Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
+* Documentation: README troubleshooting note for `spawn UNKNOWN` when the extension folder lacks execute permission.
 
 ### 0.4.2 - 2025-08-26
 
