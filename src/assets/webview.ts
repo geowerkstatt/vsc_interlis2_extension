@@ -21,6 +21,8 @@ interface WebviewMessage {
 declare const acquireVsCodeApi: () => VSCodeApi;
 
 const directions = ["LR", "TB"] as const;
+// Mermaid renders this namespaced classDiagram with its direction token inverted: the "LR" token produces a vertical layout.
+const layoutLabelForToken = { LR: "TB", TB: "LR" } as const;
 
 (() => {
   const vscode = acquireVsCodeApi();
@@ -40,6 +42,7 @@ const directions = ["LR", "TB"] as const;
   const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
   const copyButton = document.getElementById("copy-code") as HTMLButtonElement;
   const orientButton = document.getElementById("orientation-button") as HTMLButtonElement;
+  const orientCurrent = document.getElementById("orientation-current") as HTMLSpanElement;
   const helpOverlay = document.getElementById("help-overlay") as HTMLDivElement;
   const helpButton = document.getElementById("help-button") as HTMLButtonElement;
   const closeHelpButton = document.getElementById("close-help") as HTMLButtonElement;
@@ -89,7 +92,14 @@ const directions = ["LR", "TB"] as const;
     mermaid.initialize({
       startOnLoad: false,
       theme: "neutral",
-      themeCSS: ".classGroup .methods { display: none; }",
+      // INTERLIS classes never have operations, so Mermaid always reserves an
+      // empty methods compartment under the attributes. Mermaid 11 offers no
+      // config to suppress it (hideEmptyMembersBox only applies to classes with
+      // *no* members either). The renderer emits a second `.divider` line for
+      // that empty compartment; this hides only that trailing divider per node.
+      // The reserved vertical space itself stays — it is baked into the SVG
+      // geometry that edge routing depends on and cannot be removed safely.
+      themeCSS: ".node .divider ~ .divider { display: none; }",
       flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
       securityLevel: "strict",
     });
@@ -279,7 +289,7 @@ const directions = ["LR", "TB"] as const;
 
   function handleOrientationChange(): void {
     directionIndex = (directionIndex + 1) % directions.length;
-    orientButton.textContent = "Orientation: " + directions[directionIndex];
+    orientCurrent.textContent = `(Current: ${layoutLabelForToken[directions[directionIndex]]})`;
     vscode.postMessage({ type: "orientation", orientation: directions[directionIndex] });
   }
 
@@ -300,6 +310,7 @@ const directions = ["LR", "TB"] as const;
   function init(): void {
     attachEvents();
     initMermaid();
+    orientCurrent.textContent = `(Current: ${layoutLabelForToken[directions[directionIndex]]})`;
     postWebviewLoaded();
   }
 
