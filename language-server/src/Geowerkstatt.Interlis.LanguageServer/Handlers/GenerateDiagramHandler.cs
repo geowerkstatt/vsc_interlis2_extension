@@ -51,7 +51,8 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
             return null;
         }
 
-        logger.LogInformation("Generate diagram for {0}", uri);
+        var uriForLog = uri?.ToString()?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+        logger.LogInformation("Generate diagram for {Uri}", uriForLog);
 
         try
         {
@@ -66,7 +67,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
             // must degrade to the webview's "Could not load diagram." message,
             // never crash the language server. The exception is logged (not swallowed)
             // so it stays diagnosable in the Output channel.
-            logger.LogError(ex, "Failed to generate diagram for {Uri}", uri);
+            logger.LogError(ex, "Failed to generate diagram for {Uri}", uriForLog);
             return null;
         }
     }

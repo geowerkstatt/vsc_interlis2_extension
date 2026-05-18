@@ -58,7 +58,8 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             return null;
         }
 
-        logger.LogInformation("Generate markdown for {0}", uri);
+        var uriForLog = uri?.ToString()?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+        logger.LogInformation("Generate markdown for {Uri}", uriForLog);
 
         var config = await GetDocumentationConfigAsync(cancellationToken);
 
@@ -75,7 +76,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             // request must degrade to the client's "please re-open the file" message,
             // never crash the language server. The exception is logged (not swallowed)
             // so it stays diagnosable in the Output channel.
-            logger.LogError(ex, "Failed to generate markdown for {Uri}", uri);
+            logger.LogError(ex, "Failed to generate markdown for {Uri}", uriForLog);
             return null;
         }
     }
