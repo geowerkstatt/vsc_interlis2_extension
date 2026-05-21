@@ -20,6 +20,30 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     }
 
     /// <summary>
+    /// Escapes a leaf value for the output context currently being written.
+    /// Class/attribute names come from the user's .ili file and the column
+    /// headers from workspace settings; neither is trusted to be free of
+    /// HTML or Markdown metacharacters.
+    /// </summary>
+    private string EscapeText(string? value) => useHtml ? HtmlEscape(value) : MarkdownEscape(value);
+
+    private static string HtmlEscape(string? value) =>
+        (value ?? string.Empty)
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&#39;");
+
+    private static string MarkdownEscape(string? value) =>
+        (value ?? string.Empty)
+            .Replace("\\", "\\\\")
+            .Replace("|", "\\|")
+            .Replace("`", "\\`")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;");
+
+    /// <summary>
     /// Generates markdown documentation for the given model.
     /// </summary>
     /// <param name="modelDef">The INTERLIS model.</param>
@@ -74,7 +98,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         {
             var headerStart = documentation.Length;
             documentation.Append("<table>");
-            documentation.Append($"<thead><tr><th>{config.AttributeNameHeader}</th><th>{config.CardinalityHeader}</th><th>{config.TypeHeader}</th></tr></thead>");
+            documentation.Append($"<thead><tr><th>{EscapeText(config.AttributeNameHeader)}</th><th>{EscapeText(config.CardinalityHeader)}</th><th>{EscapeText(config.TypeHeader)}</th></tr></thead>");
             documentation.Append("<tbody>");
             var bodyStart = documentation.Length;
             VisitTableBody();
@@ -90,12 +114,13 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         }
         else
         {
+            var escapedName = EscapeText(classDef.Name);
             var className = classDef.Properties.Contains(Property.Abstract)
-                ? $"*{classDef.Name}*"
-                : classDef.Name;
+                ? $"*{escapedName}*"
+                : escapedName;
             documentation.AppendLine($"### {className}");
             var headerStart = documentation.Length;
-            documentation.AppendLine($"| {config.AttributeNameHeader} | {config.CardinalityHeader} | {config.TypeHeader} |");
+            documentation.AppendLine($"| {EscapeText(config.AttributeNameHeader)} | {EscapeText(config.CardinalityHeader)} | {EscapeText(config.TypeHeader)} |");
             documentation.AppendLine("| --- | --- | --- |");
             var bodyStart = documentation.Length;
             VisitTableBody();
@@ -146,13 +171,13 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 
         if (useHtml)
         {
-            documentation.Append($"<tr><td>{attributeDef.Name} <em>(inherited)</em></td><td>{cardinality}</td><td>");
+            documentation.Append($"<tr><td>{EscapeText(attributeDef.Name)} <em>(inherited)</em></td><td>{cardinality}</td><td>");
             VisitTypeName(attributeDef.TypeDef);
             documentation.Append("</td></tr>");
         }
         else
         {
-            documentation.Append($"| {attributeDef.Name} *(inherited)* | {cardinality} | ");
+            documentation.Append($"| {EscapeText(attributeDef.Name)} *(inherited)* | {cardinality} | ");
             VisitTypeName(attributeDef.TypeDef);
             documentation.AppendLine(" |");
         }
@@ -195,13 +220,13 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 
         if (useHtml)
         {
-            documentation.Append($"<tr><td>{attributeDef.Name}</td><td>{cardinality}</td><td>");
+            documentation.Append($"<tr><td>{EscapeText(attributeDef.Name)}</td><td>{cardinality}</td><td>");
             VisitTypeName(attributeDef.TypeDef);
             documentation.Append("</td></tr>");
         }
         else
         {
-            documentation.Append($"| {attributeDef.Name} | {cardinality} | ");
+            documentation.Append($"| {EscapeText(attributeDef.Name)} | {cardinality} | ");
             VisitTypeName(attributeDef.TypeDef);
             documentation.AppendLine(" |");
         }
@@ -255,7 +280,20 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value?.Path.Last()).Where(target => target is not null)),
             _ => type?.ToString(),
         };
-        documentation.Append(typeName);
+
+        // Enumeration formatting deliberately emits its own nested <i></i>
+        // markup and its values are grammar-constrained identifiers, so it is
+        // written verbatim. Every other branch yields leaf data (type names,
+        // qualified paths, FORMAT min/max literals) that must be escaped for
+        // the current output context.
+        if (type is EnumerationType)
+        {
+            documentation.Append(typeName);
+        }
+        else
+        {
+            documentation.Append(EscapeText(typeName));
+        }
     }
 
     private static string FormatGeometryName(SurfaceType surface)
@@ -329,7 +367,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         var reference = referenceType.Target.Value;
         var typeName = reference?.Path.Last();
-        documentation.Append(typeName);
+        documentation.Append(EscapeText(typeName));
 
         if (reference?.Target is ClassDef classDef && classDef.IsStructure)
         {

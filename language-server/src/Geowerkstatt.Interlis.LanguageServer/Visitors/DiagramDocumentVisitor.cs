@@ -3,6 +3,7 @@ using Geowerkstatt.Interlis.Compiler.AST.Types;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
@@ -82,7 +83,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             stereotypes.Add("<<external>>");
 
         var id = GetMermaidClassId(classDef);
-        var declaration = $"  class {id}[\"{classDef.Name}\"]";
+        var declaration = $"  class {id}[\"{EscapeMermaidText(classDef.Name)}\"]";
 
         // If we have stereotypes, use the nested syntax
         if (stereotypes.Any())
@@ -134,6 +135,29 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         return new string(chars);
     }
 
+    /// <summary>
+    /// Neutralizes characters that would let user-authored text break out of a
+    /// Mermaid label or inject extra DSL tokens. Mermaid decodes the same
+    /// "#NN;" entity form already used elsewhere in this visitor.
+    /// </summary>
+    private static string EscapeMermaidText(string? value) =>
+        (value ?? string.Empty)
+            .Replace("\r", "")
+            .Replace("\n", " ")
+            .Replace("#", "#35;")
+            .Replace("\"", "#quot;")
+            .Replace("<", "#60;")
+            .Replace(">", "#62;")
+            .Replace("`", "#96;");
+
+    /// <summary>
+    /// Allows only a hex literal or a plain color name through to the Mermaid
+    /// "style ... fill:" directive, so a crafted geow.uml.color meta-attribute
+    /// cannot inject additional style or statement content.
+    /// </summary>
+    private static bool IsSafeColor(string color) =>
+        Regex.IsMatch(color, "^#[0-9A-Fa-f]{3,8}$") || Regex.IsMatch(color, "^[A-Za-z]{1,32}$");
+
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
     {
         associations.Add(associationDef);
@@ -163,9 +187,9 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             }
         }
 
-        var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
+        var typeName = EscapeMermaidText(VisitTypeDefInternal(attributeDef.TypeDef));
         mermaidScript.AppendLine(
-            $"{GetMermaidClassId(parentClass)}: {attributeDef.Name}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
+            $"{GetMermaidClassId(parentClass)}: {EscapeMermaidText(attributeDef.Name)}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
         );
     }
 
@@ -230,8 +254,8 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             .Select(a => a.Name);
 
         var label = extras.Any()
-            ? $"{associationDef.Name} ({string.Join(",", extras)})"
-            : associationDef.Name;
+            ? $"{EscapeMermaidText(associationDef.Name)} ({string.Join(",", extras.Select(EscapeMermaidText))})"
+            : EscapeMermaidText(associationDef.Name);
 
         mermaidScript.AppendLine(
             $"{GetMermaidClassId(left.classDef)} {left.cardinalityString} {symbol} {right.cardinalityString}{GetMermaidClassId(right.classDef)} : {label}"
@@ -291,7 +315,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues)
     {
-        return string.Join(", ", enumerationValues.Select(v => v.Name));
+        return string.Join(", ", enumerationValues.Select(v => EscapeMermaidText(v.Name)));
     }
 
     private static string FormatCardinality(Cardinality? cardinality)
@@ -340,7 +364,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             {
                 string parentLabel = extRef.Target is ClassDef parentClass
                     ? GetMermaidClassId(parentClass)
-                    : $"`{extRef.Path.Last()} #60;#60;EXTERNAL#62;#62;`";
+                    : $"`{EscapeMermaidText(extRef.Path.Last())} #60;#60;EXTERNAL#62;#62;`";
 
                 // `Parent <|-- Child` renders the same generalization arrow as
                 // `Child --|> Parent`, but Mermaid's layout ranks the edge source
@@ -350,7 +374,14 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
             if (type.MetaAttributes.TryGetValue("geow.uml.color", out var color) && !string.IsNullOrWhiteSpace(color))
             {
-                mermaidScript.AppendLine($"style {typeId} fill:{color},color:black,stroke:black");
+                if (IsSafeColor(color))
+                {
+                    mermaidScript.AppendLine($"style {typeId} fill:{color},color:black,stroke:black");
+                }
+                else
+                {
+                    logger.LogWarning("Ignoring unsafe geow.uml.color value on {TypeId}", typeId);
+                }
             }
 
             foreach (var attr in type.Content.Values.OfType<AttributeDef>())

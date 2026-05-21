@@ -1,4 +1,4 @@
-# Change Log
+1# Change Log
 ### vNext
 
 * Markdown documentation:
@@ -16,6 +16,7 @@
   * Render geometry types and formatted/all-of types instead of AST class names.
   * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
 * Stability: a syntactically invalid INTERLIS file no longer crashes the language server when generating markdown or the diagram; a clear failure message is shown instead.
+* Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
 * Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
 * Documentation: README troubleshooting note for `spawn UNKNOWN` when the extension folder lacks execute permission.
 
