@@ -5,7 +5,7 @@
   * Use UML notation `0..*` instead of `0..n` for unbounded multiplicities.
   * Drop `<b>` emphasis on top-level enumeration values.
   * Render abstract class names in italics.
-  * New setting `interlis.documentation.abstractClassAttributes` (`separate` | `inline`); `inline` repeats abstract-parent attributes inside each subclass table.
+  * New setting `interlis.documentation.abstractClassAttributes` (`separate` | `inline` | `inlineAbstractOnly`); `inline` repeats inherited attributes from every ancestor in each subclass table, `inlineAbstractOnly` does the same but only for abstract ancestors.
   * New settings `interlis.documentation.attributeNameHeader`, `cardinalityHeader`, `typeHeader` to override the German default column headers.
   * Empty classes render `_keine Attribute in dieser Klasse_` instead of an empty table.
   * Render `FORMAT INTERLIS.XMLDate "..".."..."`, `ALL OF Domain`, and `SURFACE` / `AREA` / `POLYLINE` / `COORD` types instead of leaking the AST class name.

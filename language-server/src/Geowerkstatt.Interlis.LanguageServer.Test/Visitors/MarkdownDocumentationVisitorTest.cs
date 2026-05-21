@@ -235,6 +235,22 @@ public class MarkdownDocumentationVisitorTest
         END TestModel.
         """;
 
+    private const string TestModelConcreteInheritance = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS Parent =
+                    concreteAttr: TEXT*10;
+                END Parent;
+
+                CLASS Child EXTENDS Parent =
+                    ownAttr: 1..9;
+                END Child;
+            END TestTopic;
+        END TestModel.
+        """;
+
     [TestMethod]
     public void TestInheritedAttributes_InlineMode_PreservesSourceOrder()
     {
@@ -259,6 +275,51 @@ public class MarkdownDocumentationVisitorTest
         Assert.IsTrue(
             parent1Index < parent2Index,
             "Inherited attributes must appear in source-declaration order (parentAttr1 before parentAttr2)");
+    }
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineMode_IncludesConcreteParent()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelConcreteInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var childSectionStart = documentation.IndexOf("### Child", StringComparison.Ordinal);
+        Assert.IsTrue(childSectionStart >= 0, "Child class section is missing");
+        var childSection = documentation[childSectionStart..];
+
+        StringAssert.Contains(
+            childSection,
+            "concreteAttr",
+            "Inline mode must include attributes from concrete (non-abstract) parents.");
+    }
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineAbstractOnlyMode_SkipsConcreteParent()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelConcreteInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInlineAbstractOnly,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var childSectionStart = documentation.IndexOf("### Child", StringComparison.Ordinal);
+        Assert.IsTrue(childSectionStart >= 0, "Child class section is missing");
+        var childSection = documentation[childSectionStart..];
+
+        Assert.IsFalse(
+            childSection.Contains("concreteAttr"),
+            "inlineAbstractOnly mode must NOT include attributes from concrete (non-abstract) parents.");
     }
 
     [TestMethod]

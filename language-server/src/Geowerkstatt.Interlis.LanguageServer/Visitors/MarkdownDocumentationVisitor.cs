@@ -77,10 +77,12 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         void VisitTableBody()
         {
-            // If inline mode, add inherited attributes first
-            if (config.AbstractClassAttributes == DocumentationOptions.AbstractClassAttributesInline)
+            var mode = config.AbstractClassAttributes;
+            if (mode == DocumentationOptions.AbstractClassAttributesInline
+                || mode == DocumentationOptions.AbstractClassAttributesInlineAbstractOnly)
             {
-                var inheritedAttributes = CollectInheritedAttributes(classDef);
+                var abstractOnly = mode == DocumentationOptions.AbstractClassAttributesInlineAbstractOnly;
+                var inheritedAttributes = CollectInheritedAttributes(classDef, abstractOnly);
                 foreach (var attr in inheritedAttributes)
                 {
                     VisitInheritedAttributeDef(attr);
@@ -136,16 +138,19 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     }
 
     /// <summary>
-    /// Collects all attributes from abstract parent classes.
+    /// Collects attributes inherited from ancestor classes, walking the full
+    /// <c>EXTENDS</c> chain so transitive ancestors contribute too. When
+    /// <paramref name="abstractParentsOnly"/> is <c>true</c>, only ancestors
+    /// marked <see cref="Property.Abstract"/> contribute.
     /// </summary>
-    private List<AttributeDef> CollectInheritedAttributes(ClassDef classDef)
+    private List<AttributeDef> CollectInheritedAttributes(ClassDef classDef, bool abstractParentsOnly)
     {
         var inherited = new List<AttributeDef>();
         var current = classDef.Extends?.Target;
 
         while (current != null)
         {
-            if (current.Properties.Contains(Property.Abstract))
+            if (!abstractParentsOnly || current.Properties.Contains(Property.Abstract))
             {
                 var attrs = current.Content.Values
                     .OfType<AttributeDef>()

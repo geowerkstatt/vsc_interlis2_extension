@@ -5,21 +5,30 @@ public class DocumentationOptions
     public const string ConfigSection = "interlis.documentation";
 
     /// <summary>
-    /// <see cref="AbstractClassAttributes"/> value: inherited attributes from
-    /// abstract parents are shown only inside the abstract class section.
+    /// <see cref="AbstractClassAttributes"/> value: inherited attributes are
+    /// shown only inside the parent class section, not repeated in subclasses.
     /// </summary>
     public const string AbstractClassAttributesSeparate = "separate";
 
     /// <summary>
     /// <see cref="AbstractClassAttributes"/> value: inherited attributes from
-    /// abstract parents are repeated inline inside each concrete subclass.
+    /// every ancestor (abstract or concrete) are repeated inline inside each
+    /// subclass table.
     /// </summary>
     public const string AbstractClassAttributesInline = "inline";
 
     /// <summary>
-    /// How to display attributes of abstract classes. One of
-    /// <see cref="AbstractClassAttributesSeparate"/> or
-    /// <see cref="AbstractClassAttributesInline"/>.
+    /// <see cref="AbstractClassAttributes"/> value: inherited attributes are
+    /// repeated inline inside each subclass, but only when they were declared
+    /// on an abstract ancestor.
+    /// </summary>
+    public const string AbstractClassAttributesInlineAbstractOnly = "inlineAbstractOnly";
+
+    /// <summary>
+    /// How to display inherited attributes. One of
+    /// <see cref="AbstractClassAttributesSeparate"/>,
+    /// <see cref="AbstractClassAttributesInline"/>, or
+    /// <see cref="AbstractClassAttributesInlineAbstractOnly"/>.
     /// </summary>
     public string AbstractClassAttributes { get; set; } = AbstractClassAttributesSeparate;
 

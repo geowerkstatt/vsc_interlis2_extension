@@ -97,9 +97,14 @@
         },
         "interlis.documentation.abstractClassAttributes": {
           "type": "string",
-          "enum": ["separate", "inline"],
+          "enum": ["separate", "inline", "inlineAbstractOnly"],
+          "enumDescriptions": [
+            "Inherited attributes are shown only in the parent class section, never repeated in subclasses.",
+            "Inherited attributes from every ancestor (abstract or concrete) are repeated inline in each subclass table.",
+            "Inherited attributes are repeated inline in each subclass, but only when they were declared on an abstract ancestor."
+          ],
           "default": "separate",
-          "description": "How to display attributes of abstract classes"
+          "description": "How to display inherited attributes in the generated markdown documentation."
         },
         "interlis.documentation.attributeNameHeader": {
           "type": "string",
