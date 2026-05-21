@@ -28,7 +28,7 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "namespace M_T[\"T\"] {");
+        StringAssert.Contains(diagram, "namespace M.T {");
         StringAssert.Contains(diagram, "class M_T_A[\"A\"]");
     }
 

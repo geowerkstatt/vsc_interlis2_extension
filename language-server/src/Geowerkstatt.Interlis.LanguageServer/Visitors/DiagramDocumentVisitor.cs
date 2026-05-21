@@ -47,8 +47,8 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
         int headerStart = mermaidScript.Length;
-        var namespaceId = SanitizeMermaidId(((IInterlisDefinition)topicDef).FullyQualifiedName);
-        mermaidScript.AppendLine($"namespace {namespaceId}[\"{EscapeMermaidText(topicDef.Name)}\"] {{");
+        var namespacePath = ((IInterlisDefinition)topicDef).FullyQualifiedName;
+        mermaidScript.AppendLine($"namespace {namespacePath} {{");
         int afterHeader = mermaidScript.Length;
 
         base.VisitTopicDef(topicDef);

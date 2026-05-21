@@ -12,6 +12,7 @@
 * Diagram preview:
   * Drop the `«class»` stereotype; use per-class `«abstract»` / `«structure»` / `«external»` instead.
   * Disambiguate classes that share a simple name across topics or models (label still shows the simple name).
+  * Group topics under an outer model frame using nested namespaces so the Mermaid code is portable to external renderers (Mermaid Live, etc.); the inner banner shows just the topic name.
   * Show abstract classes above their subclasses in TB orientation.
   * Render geometry types and formatted/all-of types instead of AST class names.
   * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
