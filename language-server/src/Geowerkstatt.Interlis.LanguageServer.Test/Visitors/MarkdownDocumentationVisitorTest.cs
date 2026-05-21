@@ -218,6 +218,49 @@ public class MarkdownDocumentationVisitorTest
         Assert.AreEqual(expected.ReplaceLineEndings(), documentation.ReplaceLineEndings());
     }
 
+    private const string TestModelInheritance = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS Base (ABSTRACT) =
+                    parentAttr1: TEXT*10;
+                    parentAttr2: MANDATORY BOOLEAN;
+                END Base;
+
+                CLASS Derived EXTENDS Base =
+                    ownAttr: 1..9;
+                END Derived;
+            END TestTopic;
+        END TestModel.
+        """;
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineMode_PreservesSourceOrder()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var derivedTableStart = documentation.IndexOf("### Derived", StringComparison.Ordinal);
+        Assert.IsTrue(derivedTableStart >= 0, "Derived class section is missing");
+        var derivedSection = documentation[derivedTableStart..];
+
+        var parent1Index = derivedSection.IndexOf("parentAttr1", StringComparison.Ordinal);
+        var parent2Index = derivedSection.IndexOf("parentAttr2", StringComparison.Ordinal);
+
+        Assert.IsTrue(parent1Index >= 0 && parent2Index >= 0, "Inherited attributes missing from Derived section");
+        Assert.IsTrue(
+            parent1Index < parent2Index,
+            "Inherited attributes must appear in source-declaration order (parentAttr1 before parentAttr2)");
+    }
+
     [TestMethod]
     public void TestInterlisFileDoubleNestedStruct()
     {

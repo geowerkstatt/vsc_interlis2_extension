@@ -1,4 +1,4 @@
-the# Change Log
+# Change Log
 ### vNext
 
 * Markdown documentation:

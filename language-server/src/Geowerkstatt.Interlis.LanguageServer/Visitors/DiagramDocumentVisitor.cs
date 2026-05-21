@@ -115,19 +115,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     /// </summary>
     private static string GetMermaidClassId(ClassDef classDef)
     {
-        var parts = new List<string>();
-        IInterlisDefinition? current = classDef;
-        while (current is not null)
-        {
-            switch (current)
-            {
-                case ClassDef cd: parts.Insert(0, cd.Name); break;
-                case TopicDef td: parts.Insert(0, td.Name); break;
-                case ModelDef md: parts.Insert(0, md.Name); break;
-            }
-            current = current.Parent;
-        }
-        return SanitizeMermaidId(string.Join("_", parts));
+        return SanitizeMermaidId(((IInterlisDefinition)classDef).FullyQualifiedName);
     }
 
     private static string SanitizeMermaidId(string id)

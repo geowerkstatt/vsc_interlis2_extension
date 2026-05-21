@@ -115,6 +115,11 @@
           "type": "string",
           "default": "Typ",
           "description": "Header for the type column in generated markdown documentation."
+        },
+        "interlis.documentation.emptyClassPlaceholder": {
+          "type": "string",
+          "default": "keine Attribute in dieser Klasse",
+          "description": "Placeholder text shown in place of an attribute table for classes that have no attributes."
         }
       }
     }

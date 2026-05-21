@@ -108,6 +108,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
                     AttributeNameHeader = configToken?["attributeNameHeader"]?.ToString() ?? defaults.AttributeNameHeader,
                     CardinalityHeader = configToken?["cardinalityHeader"]?.ToString() ?? defaults.CardinalityHeader,
                     TypeHeader = configToken?["typeHeader"]?.ToString() ?? defaults.TypeHeader,
+                    EmptyClassPlaceholder = configToken?["emptyClassPlaceholder"]?.ToString() ?? defaults.EmptyClassPlaceholder,
                 };
             }
         }

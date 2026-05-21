@@ -78,7 +78,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         void VisitTableBody()
         {
             // If inline mode, add inherited attributes first
-            if (config.AbstractClassAttributes == "inline")
+            if (config.AbstractClassAttributes == DocumentationOptions.AbstractClassAttributesInline)
             {
                 var inheritedAttributes = CollectInheritedAttributes(classDef);
                 foreach (var attr in inheritedAttributes)
@@ -92,7 +92,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             VisitRelatedAssociations(classDef);
         }
 
-        const string EmptyClassPlaceholder = "_keine Attribute in dieser Klasse_";
+        var emptyPlaceholder = EscapeText(config.EmptyClassPlaceholder);
 
         if (useHtml)
         {
@@ -105,7 +105,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             if (documentation.Length == bodyStart)
             {
                 documentation.Length = headerStart;
-                documentation.Append("<p><em>keine Attribute in dieser Klasse</em></p>");
+                documentation.Append($"<p><em>{emptyPlaceholder}</em></p>");
             }
             else
             {
@@ -127,7 +127,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             if (documentation.Length == bodyStart)
             {
                 documentation.Length = headerStart;
-                documentation.AppendLine(EmptyClassPlaceholder);
+                documentation.AppendLine($"_{emptyPlaceholder}_");
             }
             documentation.AppendLine();
         }
@@ -149,7 +149,6 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             {
                 var attrs = current.Content.Values
                     .OfType<AttributeDef>()
-                    .Reverse()
                     .ToList();
 
                 inherited.InsertRange(0, attrs);
@@ -322,15 +321,15 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         //     : BASED ON basedOn=definitionRef formatDef (min=string '..' max=string)?
         //     | domainRef=definitionRef min=string '..' max=string
         // The second alternative (e.g. `FORMAT INTERLIS.XMLDate "..." .. "..."`) populates
-        // FormatBaseType, not BasedOn — we need to read both.
-        var name = FormatQualifiedPath(formattedType.BasedOn?.Path);
-        if (name == "?")
+        // FormatBaseType, not BasedOn, so we have to read both.
+        var name = "Format";
+        if (formattedType.BasedOn != null)
         {
-            name = FormatQualifiedPath(formattedType.FormatBaseType?.Path);
+            name = FormatQualifiedPath(formattedType.BasedOn.Path);
         }
-        if (name == "?")
+        else if (formattedType.FormatBaseType != null)
         {
-            name = "Format";
+            name = FormatQualifiedPath(formattedType.FormatBaseType.Path);
         }
         if (!string.IsNullOrEmpty(formattedType.Min) && !string.IsNullOrEmpty(formattedType.Max))
         {
