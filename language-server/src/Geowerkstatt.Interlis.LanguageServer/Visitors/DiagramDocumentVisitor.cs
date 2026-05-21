@@ -45,7 +45,8 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
         int headerStart = mermaidScript.Length;
-        mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        var namespaceId = SanitizeMermaidId(((IInterlisDefinition)topicDef).FullyQualifiedName);
+        mermaidScript.AppendLine($"namespace {namespaceId}[\"{EscapeMermaidText(topicDef.Name)}\"] {{");
         int afterHeader = mermaidScript.Length;
 
         base.VisitTopicDef(topicDef);
@@ -187,7 +188,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             }
         }
 
-        var typeName = EscapeMermaidText(VisitTypeDefInternal(attributeDef.TypeDef));
+        var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
         mermaidScript.AppendLine(
             $"{GetMermaidClassId(parentClass)}: {EscapeMermaidText(attributeDef.Name)}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
         );
@@ -278,36 +279,42 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
         var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault();
         if (!string.IsNullOrEmpty(unitName))
-            text += $" [{unitName}]";
+            text += $" [{EscapeMermaidText(unitName)}]";
 
         return text;
     }
 
+    /// <summary>
+    /// Returns Mermaid-safe encoded text for the given type. User-supplied
+    /// names are escaped at the leaf so the result can be embedded into a
+    /// class attribute line without further escaping. Re-escaping the result
+    /// would mangle pre-encoded entities such as <see cref="MermaidConstants.LeftParenthesis"/>.
+    /// </summary>
     private string VisitTypeDefInternal(TypeDef? type)
     {
         if (type == null) return "?";
         return type switch
         {
-            ReferenceType rt => rt.Target.Value?.Path.Last() ?? "?",
+            ReferenceType rt => EscapeMermaidText(rt.Target.Value?.Path.Last() ?? "?"),
             TextType tt => tt.Length is { } len ? $"Text[{len}]" : "Text",
             NumericType nt => FormatNumericType(nt),
             BooleanType => "Boolean",
             BlackboxType bt => bt.Kind switch
             {
-                BlackboxType.BlackboxTypeKind.Binary => "Blackbox(Binary)",
-                BlackboxType.BlackboxTypeKind.Xml => "Blackbox(XML)",
+                BlackboxType.BlackboxTypeKind.Binary => $"Blackbox{MermaidConstants.LeftParenthesis}Binary{MermaidConstants.RightParenthesis}",
+                BlackboxType.BlackboxTypeKind.Xml => $"Blackbox{MermaidConstants.LeftParenthesis}XML{MermaidConstants.RightParenthesis}",
                 _ => "Blackbox"
             },
             EnumerationType et =>
                 $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
-            EnumerationAllOfType allOf => allOf.TargetEnumeration?.Path.LastOrDefault() ?? "?",
-            FormattedType formatted => formatted.BasedOn?.Path.LastOrDefault()
+            EnumerationAllOfType allOf => EscapeMermaidText(allOf.TargetEnumeration?.Path.LastOrDefault() ?? "?"),
+            FormattedType formatted => EscapeMermaidText(formatted.BasedOn?.Path.LastOrDefault()
                                        ?? formatted.FormatBaseType?.Path.LastOrDefault()
-                                       ?? "Format",
+                                       ?? "Format"),
             SurfaceType surface => (surface.IsMultiGeometry ? "Multi" : "") + (surface.IsCoverage ? "Area" : "Surface"),
             PolyLineType polyLine => (polyLine.IsMultiGeometry ? "Multi" : "") + "Polyline",
             CoordType coord => (coord.IsMultiGeometry ? "Multi" : "") + "Coord",
-            TypeRef tr => tr.Extends?.Path.Last() ?? "?",
+            TypeRef tr => EscapeMermaidText(tr.Extends?.Path.Last() ?? "?"),
             RoleType => "Role",
             _ => type.GetType().Name
         };
