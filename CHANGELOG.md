@@ -6,8 +6,8 @@
   * Drop `<b>` emphasis on top-level enumeration values.
   * Render abstract class names in italics.
   * New setting `interlis.documentation.abstractClassAttributes` (`separate` | `inline` | `inlineAbstractOnly`); `inline` repeats inherited attributes from every ancestor in each subclass table, `inlineAbstractOnly` does the same but only for abstract ancestors.
-  * New settings `interlis.documentation.attributeNameHeader`, `cardinalityHeader`, `typeHeader` to override the German default column headers.
-  * Empty classes render `_keine Attribute in dieser Klasse_` instead of an empty table.
+  * New setting `interlis.documentation.language` (`auto` | `de` | `fr` | `it` | `en`) localizes generated labels; `auto` follows the VS Code UI language.
+  * Settings `interlis.documentation.attributeNameHeader`, `cardinalityHeader`, `typeHeader`, `emptyClassPlaceholder` now default to empty and fall back to `interlis.documentation.language`.
   * Render `FORMAT INTERLIS.XMLDate "..".."..."`, `ALL OF Domain`, and `SURFACE` / `AREA` / `POLYLINE` / `COORD` types instead of leaking the AST class name.
 * Diagram preview:
   * Drop the `«class»` stereotype; use per-class `«abstract»` / `«structure»` / `«external»` instead.
@@ -15,6 +15,7 @@
   * Show abstract classes above their subclasses in TB orientation.
   * Render geometry types and formatted/all-of types instead of AST class names.
   * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
+  * Localize the `Numeric` fallback and `Blackbox(Binary/XML)` suffixes via `interlis.documentation.language`.
 * Stability: a syntactically invalid INTERLIS file no longer crashes the language server when generating markdown or the diagram; a clear failure message is shown instead.
 * Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
 * Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.

@@ -3,6 +3,7 @@ using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
@@ -22,12 +23,14 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
     private readonly InterlisReader interlisReader;
     private readonly FileContentCache fileContentCache;
     private readonly ILanguageServerFacade languageServer;
+    private readonly UiLanguageContext uiLanguageContext;
 
     public GenerateMarkdownHandler(
         ILogger<GenerateMarkdownHandler> logger,
         InterlisReader interlisReader,
         FileContentCache fileContentCache,
         ILanguageServerFacade languageServer,
+        UiLanguageContext uiLanguageContext,
         ISerializer serializer)
         : base(Command, serializer)
     {
@@ -35,6 +38,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         this.interlisReader = interlisReader;
         this.fileContentCache = fileContentCache;
         this.languageServer = languageServer;
+        this.uiLanguageContext = uiLanguageContext;
     }
 
     /// <summary>
@@ -61,7 +65,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         var uriForLog = uri?.ToString()?.Replace("\r", string.Empty).Replace("\n", string.Empty);
         logger.LogInformation("Generate markdown for {Uri}", uriForLog);
 
-        var config = await GetDocumentationConfigAsync(cancellationToken);
+        var config = await GetDocumentationConfigAsync(options.Language, cancellationToken);
 
         try
         {
@@ -81,7 +85,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         }
     }
 
-    private async Task<DocumentationOptions> GetDocumentationConfigAsync(CancellationToken cancellationToken)
+    private async Task<DocumentationOptions> GetDocumentationConfigAsync(string? requestLanguage, CancellationToken cancellationToken)
     {
         try
         {
@@ -102,13 +106,19 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             {
                 var configToken = response.First();
                 var defaults = new DocumentationOptions();
+                var rawLanguageSetting = string.IsNullOrEmpty(requestLanguage)
+                    ? configToken?["language"]?.ToString()
+                    : requestLanguage;
+                var language = uiLanguageContext.Resolve(rawLanguageSetting);
+                var localeDefaults = DocumentationLocalization.For(language);
                 return new DocumentationOptions
                 {
+                    Language = language,
                     AbstractClassAttributes = configToken?["abstractClassAttributes"]?.ToString() ?? defaults.AbstractClassAttributes,
-                    AttributeNameHeader = configToken?["attributeNameHeader"]?.ToString() ?? defaults.AttributeNameHeader,
-                    CardinalityHeader = configToken?["cardinalityHeader"]?.ToString() ?? defaults.CardinalityHeader,
-                    TypeHeader = configToken?["typeHeader"]?.ToString() ?? defaults.TypeHeader,
-                    EmptyClassPlaceholder = configToken?["emptyClassPlaceholder"]?.ToString() ?? defaults.EmptyClassPlaceholder,
+                    AttributeNameHeader = OverrideOrLocale(configToken, "attributeNameHeader", localeDefaults.AttributeNameHeader),
+                    CardinalityHeader = OverrideOrLocale(configToken, "cardinalityHeader", localeDefaults.CardinalityHeader),
+                    TypeHeader = OverrideOrLocale(configToken, "typeHeader", localeDefaults.TypeHeader),
+                    EmptyClassPlaceholder = OverrideOrLocale(configToken, "emptyClassPlaceholder", localeDefaults.EmptyClassPlaceholder),
                 };
             }
         }
@@ -117,7 +127,16 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             logger.LogWarning(ex, "Failed to retrieve configuration, using defaults");
         }
 
-        return new DocumentationOptions();
+        var fallbackLanguage = uiLanguageContext.Resolve(requestLanguage);
+        var fallbackLocale = DocumentationLocalization.For(fallbackLanguage);
+        return new DocumentationOptions
+        {
+            Language = fallbackLanguage,
+            AttributeNameHeader = fallbackLocale.AttributeNameHeader,
+            CardinalityHeader = fallbackLocale.CardinalityHeader,
+            TypeHeader = fallbackLocale.TypeHeader,
+            EmptyClassPlaceholder = fallbackLocale.EmptyClassPlaceholder,
+        };
     }
 
     private static string GenerateMarkdown(InterlisEnvironment interlisFile, DocumentationOptions config)
@@ -125,5 +144,11 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         var visitor = new MarkdownDocumentationVisitor(config);
         visitor.VisitInterlisEnvironment(interlisFile);
         return visitor.GetDocumentation();
+    }
+
+    private static string OverrideOrLocale(JToken? configToken, string property, string localeDefault)
+    {
+        var value = configToken?[property]?.ToString();
+        return string.IsNullOrEmpty(value) ? localeDefault : value;
     }
 }

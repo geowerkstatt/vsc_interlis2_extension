@@ -4,6 +4,13 @@ import * as vscode from "vscode";
 
 let client: LanguageClient;
 
+type SupportedUiLanguage = "de" | "fr" | "it" | "en";
+
+function normalizeUiLanguage(lang: string | undefined): SupportedUiLanguage {
+  const tag = (lang ?? "").toLowerCase().split("-")[0];
+  return tag === "de" || tag === "fr" || tag === "it" || tag === "en" ? tag : "de";
+}
+
 export async function startLanguageServer(context: vscode.ExtensionContext) {
   cleanupTempDir();
 
@@ -16,6 +23,9 @@ export async function startLanguageServer(context: vscode.ExtensionContext) {
     documentSelector: [{ scheme: "file", language: "INTERLIS2" }],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.ili"),
+    },
+    initializationOptions: {
+      uiLanguage: normalizeUiLanguage(vscode.env.language),
     },
   };
 

@@ -252,6 +252,60 @@ public class MarkdownDocumentationVisitorTest
         """;
 
     [TestMethod]
+    public void TestLocalization_French_RendersFrenchInheritedSuffix()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            Language = DocumentationLocalization.French,
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, "*(hérité)*");
+    }
+
+    [TestMethod]
+    public void TestLocalization_English_RendersEnglishInheritedSuffix()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            Language = DocumentationLocalization.English,
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var derivedTableStart = documentation.IndexOf("### Derived", StringComparison.Ordinal);
+        Assert.IsTrue(derivedTableStart >= 0, "Derived class section is missing");
+        var derivedSection = documentation[derivedTableStart..];
+
+        StringAssert.Contains(derivedSection, "*(inherited)*");
+    }
+
+    [TestMethod]
+    public void TestLocalization_German_RendersGermanInheritedSuffixByDefault()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, "*(geerbt)*");
+    }
+
+    [TestMethod]
     public void TestInheritedAttributes_InlineMode_PreservesSourceOrder()
     {
         var reader = new InterlisReader();

@@ -12,11 +12,13 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
 {
     private readonly StringBuilder documentation = new StringBuilder();
     private readonly DocumentationOptions config;
+    private readonly DocumentationLocalization locale;
     private bool useHtml;
 
     public MarkdownDocumentationVisitor(DocumentationOptions? config = null)
     {
         this.config = config ?? new DocumentationOptions();
+        this.locale = DocumentationLocalization.For(this.config.Language);
     }
 
     /// <summary>
@@ -172,16 +174,17 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     private void VisitInheritedAttributeDef(AttributeDef attributeDef)
     {
         var cardinality = CalculateCardinality(attributeDef.TypeDef.Cardinality);
+        var inheritedSuffix = EscapeText(locale.InheritedSuffix);
 
         if (useHtml)
         {
-            documentation.Append($"<tr><td>{EscapeText(attributeDef.Name)} <em>(inherited)</em></td><td>{cardinality}</td><td>");
+            documentation.Append($"<tr><td>{EscapeText(attributeDef.Name)} <em>{inheritedSuffix}</em></td><td>{cardinality}</td><td>");
             VisitTypeName(attributeDef.TypeDef);
             documentation.Append("</td></tr>");
         }
         else
         {
-            documentation.Append($"| {EscapeText(attributeDef.Name)} *(inherited)* | {cardinality} | ");
+            documentation.Append($"| {EscapeText(attributeDef.Name)} *{inheritedSuffix}* | {cardinality} | ");
             VisitTypeName(attributeDef.TypeDef);
             documentation.AppendLine(" |");
         }
@@ -266,12 +269,12 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         var typeName = type switch
         {
             TextType textType => textType.Length == null ? "Text" : $"Text [{textType.Length}]",
-            NumericType numericType => numericType.Min != null && numericType.Max != null ? $"{numericType.Min}..{numericType.Max}" : "Numerisch",
+            NumericType numericType => numericType.Min != null && numericType.Max != null ? $"{numericType.Min}..{numericType.Max}" : locale.NumericLabel,
             BooleanType => "Boolean",
             BlackboxType blackboxType => blackboxType.Kind switch
             {
-                BlackboxType.BlackboxTypeKind.Binary => "Blackbox (Binär)",
-                BlackboxType.BlackboxTypeKind.Xml => "Blackbox (XML)",
+                BlackboxType.BlackboxTypeKind.Binary => $"Blackbox ({locale.BlackboxBinarySuffix})",
+                BlackboxType.BlackboxTypeKind.Xml => $"Blackbox ({locale.BlackboxXmlSuffix})",
                 _ => "Blackbox",
             },
             EnumerationType enumerationType => FormatEnumerationValues(enumerationType.Values),

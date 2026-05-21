@@ -95,6 +95,19 @@
           "default": false,
           "description": "Automatically show the diagram view for the current INTERLIS file."
         },
+        "interlis.documentation.language": {
+          "type": "string",
+          "enum": ["auto", "de", "fr", "it", "en"],
+          "enumDescriptions": [
+            "Match the VS Code UI language (de, fr, it, en); falls back to German for any other UI language.",
+            "German",
+            "French",
+            "Italian",
+            "English"
+          ],
+          "default": "auto",
+          "description": "Language used for generated markdown documentation and Mermaid diagrams. Affects column headers, placeholder text, the inherited-attribute suffix, and labels like the 'Numeric' fallback. User-defined INTERLIS identifiers in your .ili file are never translated. The per-string settings below override individual labels."
+        },
         "interlis.documentation.abstractClassAttributes": {
           "type": "string",
           "enum": ["separate", "inline", "inlineAbstractOnly"],
@@ -108,23 +121,23 @@
         },
         "interlis.documentation.attributeNameHeader": {
           "type": "string",
-          "default": "Attributname",
-          "description": "Header for the attribute-name column in generated markdown documentation."
+          "default": "",
+          "description": "Header for the attribute-name column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
         },
         "interlis.documentation.cardinalityHeader": {
           "type": "string",
-          "default": "Kardinalität",
-          "description": "Header for the cardinality column in generated markdown documentation."
+          "default": "",
+          "description": "Header for the cardinality column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
         },
         "interlis.documentation.typeHeader": {
           "type": "string",
-          "default": "Typ",
-          "description": "Header for the type column in generated markdown documentation."
+          "default": "",
+          "description": "Header for the type column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
         },
         "interlis.documentation.emptyClassPlaceholder": {
           "type": "string",
-          "default": "keine Attribute in dieser Klasse",
-          "description": "Placeholder text shown in place of an attribute table for classes that have no attributes."
+          "default": "",
+          "description": "Placeholder text shown in place of an attribute table for classes that have no attributes. Leave empty to use the label from interlis.documentation.language."
         }
       }
     }

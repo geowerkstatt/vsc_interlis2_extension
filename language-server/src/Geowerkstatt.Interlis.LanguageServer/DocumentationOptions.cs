@@ -5,6 +5,13 @@ public class DocumentationOptions
     public const string ConfigSection = "interlis.documentation";
 
     /// <summary>
+    /// Language code (<c>de</c>, <c>fr</c>, <c>it</c>, <c>en</c>) used to pick
+    /// default labels for the generated markdown and diagram output. Per-string
+    /// settings still override individual labels.
+    /// </summary>
+    public string Language { get; set; } = DocumentationLocalization.German;
+
+    /// <summary>
     /// <see cref="AbstractClassAttributes"/> value: inherited attributes are
     /// shown only inside the parent class section, not repeated in subclasses.
     /// </summary>

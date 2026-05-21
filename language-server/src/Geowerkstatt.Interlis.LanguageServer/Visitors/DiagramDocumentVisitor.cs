@@ -19,10 +19,12 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     private readonly StringBuilder mermaidScript = new();
 
     private readonly ILogger<DiagramDocumentVisitor> logger;
+    private readonly DocumentationLocalization locale;
 
-    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger, String orientation)
+    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger, String orientation, DocumentationLocalization? locale = null)
     {
         this.logger = logger;
+        this.locale = locale ?? DocumentationLocalization.For(DocumentationLocalization.German);
         mermaidScript.AppendLine("---");
         mermaidScript.AppendLine("  config:");
         mermaidScript.AppendLine("    class:");
@@ -251,7 +253,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         );
     }
 
-    private static string FormatNumericType(NumericType numericType)
+    private string FormatNumericType(NumericType numericType)
     {
         string text;
         if (numericType.Min != null && numericType.Max != null)
@@ -262,7 +264,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
         else
         {
-            text = "Numeric";
+            text = locale.NumericLabel;
         }
 
         var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault();
@@ -289,8 +291,8 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             BooleanType => "Boolean",
             BlackboxType bt => bt.Kind switch
             {
-                BlackboxType.BlackboxTypeKind.Binary => $"Blackbox{MermaidConstants.LeftParenthesis}Binary{MermaidConstants.RightParenthesis}",
-                BlackboxType.BlackboxTypeKind.Xml => $"Blackbox{MermaidConstants.LeftParenthesis}XML{MermaidConstants.RightParenthesis}",
+                BlackboxType.BlackboxTypeKind.Binary => $"Blackbox{MermaidConstants.LeftParenthesis}{EscapeMermaidText(locale.BlackboxBinarySuffix)}{MermaidConstants.RightParenthesis}",
+                BlackboxType.BlackboxTypeKind.Xml => $"Blackbox{MermaidConstants.LeftParenthesis}{EscapeMermaidText(locale.BlackboxXmlSuffix)}{MermaidConstants.RightParenthesis}",
                 _ => "Blackbox"
             },
             EnumerationType et =>
