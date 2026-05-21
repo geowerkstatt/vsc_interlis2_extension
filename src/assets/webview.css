@@ -58,14 +58,6 @@ body {
     visibility: hidden;
 }
 
-.actions {
-    display: flex;
-    padding: 1rem 1rem 0 1rem;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-}
-
 .help-content {
     display: flex;
     flex-direction: column;
@@ -115,7 +107,71 @@ body {
 
 .help-button:hover {
     background-color: var(--vscode-button-hoverBackground);
-    border-color:var(--vscode-button-hoverBackground);
+    border-color: var(--vscode-button-hoverBackground);
+}
+
+/* Toolbar */
+
+.actions {
+    display: flex;
+    gap: 1.25rem;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0.75rem 1rem 1rem 1rem;
+    flex-wrap: wrap;
+}
+
+.cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cluster-heading {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.55));
+    padding-left: 0.15rem;
+}
+
+.cluster-controls {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.cluster-separator {
+    width: 1px;
+    align-self: stretch;
+    background: var(--vscode-widget-border, rgba(255, 255, 255, 0.18));
+    /* Align with the controls row, not the cluster heading. */
+    margin: 1.25rem 0 0.25rem 0;
+}
+
+/* When the panel is too narrow to fit both clusters side-by-side, stack
+   them vertically inside a content-width container with a border-left
+   anchor on the left. The container is centered in the panel; the
+   clusters inside are left-aligned against the border. */
+@media (max-width: 900px) {
+    .actions {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: flex-start;
+
+        width: max-content;
+        max-width: calc(100% - 2rem);
+        margin: 0.75rem auto 1rem;
+        padding: 0 0 0 1rem;
+
+        border-left: 2px solid var(--vscode-widget-border, rgba(255, 255, 255, 0.18));
+    }
+
+    .cluster-separator {
+        display: none;
+    }
 }
 
 .button {
@@ -126,31 +182,20 @@ body {
     color: var(--vscode-button-foreground);
     cursor: pointer;
     font-family: Graphik, -apple-system, system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.15;
-    overflow: visible;
-    padding: 0 16px;
-    height: 44px;
+    height: 38px;
+    padding: 0 14px;
+    min-width: 11rem;
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
     text-align: center;
     text-transform: none;
-    transition: all 80ms ease-in-out;
+    transition: background-color 80ms ease-in-out, border-color 80ms ease-in-out;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 12rem;
-}
-
-.button-subtitle {
-    display: block;
-    font-size: 11px;
-    font-weight: normal;
-    opacity: .75;
-    margin-top: 2px;
 }
 
 .button:disabled {
@@ -161,12 +206,110 @@ body {
     outline: 0;
 }
 
-.button:hover {
+.button:hover,
+.button:active {
     background-color: var(--vscode-button-hoverBackground);
     border-color: var(--vscode-button-hoverBackground);
 }
 
-.button:active {
+/* Split button: main action on the left, caret on the right opens a menu. */
+.split {
+    display: inline-flex;
+    position: relative;
+}
+
+.split .button {
+    min-width: 10rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.split .caret {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: 1px solid var(--vscode-button-background);
+    border-left: none;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    width: 30px;
+    height: 38px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: background-color 80ms ease-in-out, border-color 80ms ease-in-out;
+}
+
+.split .caret:hover {
     background-color: var(--vscode-button-hoverBackground);
     border-color: var(--vscode-button-hoverBackground);
+}
+
+.split .menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 12rem;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border, var(--vscode-dropdown-background));
+    border-radius: 4px;
+    padding: 0.25rem 0;
+    display: none;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.split.open .menu {
+    display: block;
+}
+
+.split .menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.4rem 0.75rem;
+    background: transparent;
+    color: var(--vscode-dropdown-foreground);
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.split .menu button:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
+}
+
+/* Labeled select field */
+.field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.65));
+    font-size: 13px;
+}
+
+.field select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--vscode-dropdown-background);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23ccc' d='M2 4l4 4 4-4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 10px;
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border, var(--vscode-dropdown-background));
+    border-radius: 4px;
+    height: 30px;
+    padding: 0 1.75rem 0 0.6rem;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 8rem;
+}
+
+.field select:focus {
+    outline: 1px solid var(--vscode-focusBorder, transparent);
+    outline-offset: -1px;
 }

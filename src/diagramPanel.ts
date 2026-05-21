@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { getWebviewHTML } from "./contentProvider";
 import { getLanguageClient } from "./languageServer";
+import { generateMarkdown } from "./markdown";
 import { ExecuteCommandRequest } from "vscode-languageclient/node";
 
 interface Debounced<T extends any[]> {
@@ -8,12 +9,15 @@ interface Debounced<T extends any[]> {
   cancel: () => void;
 }
 
+const AUTO_LANGUAGE = "auto";
+
 let diagramPanel: vscode.WebviewPanel | undefined;
 let isAutoOpening = false;
 let isAutoClosing = false;
 let closeTimer: NodeJS.Timeout | undefined;
 let lastSentMermaidDsl: string | undefined;
 let orientation = "LR";
+let currentLanguage = AUTO_LANGUAGE;
 let currentIliUri: string | undefined;
 
 function autoClosePanel() {
@@ -24,17 +28,33 @@ function autoClosePanel() {
   }
 }
 
+function readConfiguredLanguage(): string {
+  const value = vscode.workspace.getConfiguration("interlis.documentation").get<string>("language");
+  return value && value.length > 0 ? value : AUTO_LANGUAGE;
+}
+
 async function requestDiagram(uri: string): Promise<string> {
   try {
     const result = await getLanguageClient().sendRequest(ExecuteCommandRequest.type, {
       command: "generateDiagram",
-      arguments: [{ uri, orientation }],
+      arguments: [{ uri, orientation, language: currentLanguage }],
     });
     return result ?? "";
   } catch (err) {
     console.error("Failed to generate diagram:", err);
     return "";
   }
+}
+
+function refreshDiagram(resetZoom: boolean) {
+  if (!currentIliUri) {
+    return;
+  }
+  const uri = currentIliUri;
+  requestDiagram(uri).then((mermaidDsl) => {
+    lastSentMermaidDsl = mermaidDsl;
+    diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom });
+  });
 }
 
 export function showDiagramPanel(context: vscode.ExtensionContext) {
@@ -50,9 +70,11 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
     return;
   }
 
+  currentLanguage = readConfiguredLanguage();
+
   diagramPanel = vscode.window.createWebviewPanel(
     "INTERLISDiagramPanel",
-    "INTERLIS Diagram Panel",
+    "INTERLIS Panel",
     {
       viewColumn: column,
       preserveFocus: true,
@@ -78,18 +100,23 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
 
         if (editor?.document.languageId === "INTERLIS2") {
           currentIliUri = editor.document.uri.toString();
-          orientation = message.orientation || "LR";
-          requestDiagram(currentIliUri).then((mermaidDsl) => {
-            lastSentMermaidDsl = mermaidDsl;
-            diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
-          });
         }
-      } else if (message.type === "orientation" && currentIliUri) {
+        diagramPanel?.webview.postMessage({ type: "init", language: currentLanguage, orientation });
+        refreshDiagram(true);
+      } else if (message.type === "orientation") {
         orientation = message.orientation || "LR";
-        requestDiagram(currentIliUri).then((mermaidDsl) => {
-          lastSentMermaidDsl = mermaidDsl;
-          diagramPanel?.webview.postMessage({ type: "update", text: mermaidDsl, resetZoom: true });
-        });
+        refreshDiagram(true);
+      } else if (message.type === "language") {
+        currentLanguage = message.language || AUTO_LANGUAGE;
+        refreshDiagram(false);
+      } else if (message.type === "generateMarkdown") {
+        if (!currentIliUri) {
+          return;
+        }
+        const uri = currentIliUri;
+        vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress) =>
+          generateMarkdown(progress, uri, getLanguageClient(), currentLanguage)
+        );
       } else {
         console.warn(`Ignoring unknown message type from webview: ${message.type}`);
       }
@@ -118,14 +145,6 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
     null,
     context.subscriptions
   );
-}
-
-function postMessage(type: string, text: string, resetZoom: boolean) {
-  diagramPanel?.webview.postMessage({
-    type: type,
-    text: text,
-    resetZoom: resetZoom,
-  });
 }
 
 function handleTextChange(e: vscode.TextDocumentChangeEvent) {
@@ -197,7 +216,11 @@ export function initializeDiagramPanel(context: vscode.ExtensionContext, configu
 
       currentIliUri = editor.document.uri.toString();
       const mermaidDsl = await requestDiagram(currentIliUri);
-      postMessage("update", mermaidDsl, mermaidDsl !== lastSentMermaidDsl);
+      diagramPanel?.webview.postMessage({
+        type: "update",
+        text: mermaidDsl,
+        resetZoom: mermaidDsl !== lastSentMermaidDsl,
+      });
       lastSentMermaidDsl = mermaidDsl;
     }),
     vscode.workspace.onDidCloseTextDocument(() => updateDiagramVisibility(context)),

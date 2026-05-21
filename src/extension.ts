@@ -14,7 +14,7 @@ export async function activate(context: vscode.ExtensionContext) {
     "interlis.generateMarkdown",
     (textEditor: TextEditor) => {
       vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (progress) =>
-        generateMarkdown(progress, textEditor, getLanguageClient())
+        generateMarkdown(progress, textEditor.document.uri.toString(), getLanguageClient())
       );
     }
   );

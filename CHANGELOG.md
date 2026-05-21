@@ -15,7 +15,9 @@
   * Show abstract classes above their subclasses in TB orientation.
   * Render geometry types and formatted/all-of types instead of AST class names.
   * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
+  * Fix: inline enumeration attributes (e.g. `Status: (active, inactive)`) no longer cause the diagram to fail rendering.
   * Localize the `Numeric` fallback and `Blackbox(Binary/XML)` suffixes via `interlis.documentation.language`.
+  * Toolbar redesigned into a `Diagram` cluster (Copy Mermaid Code split with Download SVG, Orientation dropdown) and a `Markdown` cluster (Generate Markdown button, Language dropdown).
 * Stability: a syntactically invalid INTERLIS file no longer crashes the language server when generating markdown or the diagram; a clear failure message is shown instead.
 * Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
 * Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
