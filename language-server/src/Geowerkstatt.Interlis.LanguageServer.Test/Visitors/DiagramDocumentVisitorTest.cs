@@ -28,8 +28,8 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "namespace Topic_T {");
-        StringAssert.Contains(diagram, "class A");
+        StringAssert.Contains(diagram, "namespace M.T {");
+        StringAssert.Contains(diagram, "class M_T_A[\"A\"]");
     }
 
     [TestMethod]
@@ -83,7 +83,7 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "Derived --|> Base");
+        StringAssert.Contains(diagram, "M_T_Base <|-- M_T_Derived");
     }
 
     // ─── associations ──────────────────────────────────────────────────────────
@@ -129,8 +129,29 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "class S");
-        StringAssert.Contains(diagram, "style S fill:,stroke-dasharray:10 10");
+        StringAssert.Contains(diagram, "class M_T_S[\"S\"]");
+        StringAssert.Contains(diagram, "<<structure>>");
+        StringAssert.Contains(diagram, "style M_T_S fill:,stroke-dasharray:10 10");
+    }
+
+    // ─── inline enum attribute ─────────────────────────────────────────────────
+    [TestMethod]
+    public void InlineEnumAttribute_EmitsParenEntitiesIntact()
+    {
+        var diagram = BuildDiagram(@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS C =
+                  Status : MANDATORY (active, inactive, removed);
+                END C;
+              END T;
+            END M.");
+
+        StringAssert.Contains(diagram, "**Enum#40;active, inactive, removed#41;**");
+        Assert.IsFalse(
+            diagram.Contains("#35;40;"),
+            "Parenthesis entity must not be double-escaped (would break Mermaid lexer).");
     }
 
     // ─── meta-attribute driven colour ──────────────────────────────────────────
@@ -146,6 +167,6 @@ public class DiagramDocumentVisitorTests
               END T;
             END M.");
 
-        StringAssert.Contains(diagram, "style C fill:#ffcc00,color:black,stroke:black");
+        StringAssert.Contains(diagram, "style M_T_C fill:#ffcc00,color:black,stroke:black");
     }
 }

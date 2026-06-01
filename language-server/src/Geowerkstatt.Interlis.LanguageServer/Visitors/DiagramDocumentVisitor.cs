@@ -3,6 +3,7 @@ using Geowerkstatt.Interlis.Compiler.AST.Types;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Visitors;
 
@@ -18,10 +19,12 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     private readonly StringBuilder mermaidScript = new();
 
     private readonly ILogger<DiagramDocumentVisitor> logger;
+    private readonly DocumentationLocalization locale;
 
-    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger, String orientation)
+    public DiagramDocumentVisitor(ILogger<DiagramDocumentVisitor> logger, String orientation, DocumentationLocalization? locale = null)
     {
         this.logger = logger;
+        this.locale = locale ?? DocumentationLocalization.For(DocumentationLocalization.German);
         mermaidScript.AppendLine("---");
         mermaidScript.AppendLine("  config:");
         mermaidScript.AppendLine("    class:");
@@ -44,9 +47,12 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     public override object? VisitTopicDef([NotNull] TopicDef topicDef)
     {
         int headerStart = mermaidScript.Length;
-        mermaidScript.AppendLine($"namespace Topic_{topicDef.Name} {{");
+        var namespacePath = ((IInterlisDefinition)topicDef).FullyQualifiedName;
+        mermaidScript.AppendLine($"namespace {namespacePath} {{");
         int afterHeader = mermaidScript.Length;
+
         base.VisitTopicDef(topicDef);
+
         bool hasContent = mermaidScript.Length > afterHeader;
 
         if (hasContent)
@@ -64,15 +70,84 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     public override object? VisitClassDef([NotNull] ClassDef classDef)
     {
-        mermaidScript.AppendLine($"  class {classDef.Name}");
+        var stereotypes = new List<string>();
+
+        if (classDef.Properties.Contains(Property.Abstract))
+        {
+            stereotypes.Add("<<abstract>>");
+        }
+
+        if (classDef.IsStructure)
+        {
+            stereotypes.Add("<<structure>>");
+        }
+
+        if (classDef.Properties.Contains(Property.External))
+            stereotypes.Add("<<external>>");
+
+        var id = GetMermaidClassId(classDef);
+        var declaration = $"  class {id}[\"{EscapeMermaidText(classDef.Name)}\"]";
+
+        // If we have stereotypes, use the nested syntax
+        if (stereotypes.Any())
+        {
+            mermaidScript.AppendLine($"{declaration}{{");
+            foreach (var stereotype in stereotypes)
+            {
+                mermaidScript.AppendLine($"    {stereotype}");
+            }
+            mermaidScript.AppendLine("  }");
+        }
+        else
+        {
+            mermaidScript.AppendLine(declaration);
+        }
 
         if (classDef.IsStructure)
             structures.Add(classDef);
         else
             classes.Add(classDef);
-
         return DefaultResult;
     }
+
+    /// <summary>
+    /// Builds a Mermaid identifier that disambiguates classes sharing a simple
+    /// name across topics/models. The user-visible label remains the simple
+    /// <see cref="ClassDef.Name"/>; only the diagram-internal id is qualified.
+    /// </summary>
+    private static string GetMermaidClassId(ClassDef classDef)
+    {
+        return SanitizeMermaidId(((IInterlisDefinition)classDef).FullyQualifiedName);
+    }
+
+    private static string SanitizeMermaidId(string id)
+    {
+        var chars = id.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray();
+        return new string(chars);
+    }
+
+    /// <summary>
+    /// Neutralizes characters that would let user-authored text break out of a
+    /// Mermaid label or inject extra DSL tokens. Mermaid decodes the same
+    /// "#NN;" entity form already used elsewhere in this visitor.
+    /// </summary>
+    private static string EscapeMermaidText(string? value) =>
+        (value ?? string.Empty)
+            .Replace("\r", "")
+            .Replace("\n", " ")
+            .Replace("#", "#35;")
+            .Replace("\"", "#quot;")
+            .Replace("<", "#60;")
+            .Replace(">", "#62;")
+            .Replace("`", "#96;");
+
+    /// <summary>
+    /// Allows only a hex literal or a plain color name through to the Mermaid
+    /// "style ... fill:" directive, so a crafted geow.uml.color meta-attribute
+    /// cannot inject additional style or statement content.
+    /// </summary>
+    private static bool IsSafeColor(string color) =>
+        Regex.IsMatch(color, "^#[0-9A-Fa-f]{3,8}$") || Regex.IsMatch(color, "^[A-Za-z]{1,32}$");
 
     public override object? VisitAssociationDef([NotNull] AssociationDef associationDef)
     {
@@ -86,25 +161,26 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var card = attributeDef.TypeDef?.Cardinality;
         if (card != null)
         {
-            var min = card.Min ?? 0;
-            var max = card.Max ?? 0;
-            if (min == 1 && max == 1)
+            var minStr = card.Min?.ToString() ?? "*";
+            var maxStr = card.Max?.ToString() ?? "*";
+
+            if (card.Min == 1 && card.Max == 1)
             {
                 bracket = "";
             }
-            else if (min == max)
+            else if (card.Min is not null && card.Min == card.Max)
             {
-                bracket = $"[{min}]";
+                bracket = $"[{minStr}]";
             }
             else
             {
-                bracket = $"[{min}..{max}]";
+                bracket = $"[{minStr}..{maxStr}]";
             }
         }
 
         var typeName = VisitTypeDefInternal(attributeDef.TypeDef);
         mermaidScript.AppendLine(
-            $"{parentClass.Name}: {attributeDef.Name}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
+            $"{GetMermaidClassId(parentClass)}: {EscapeMermaidText(attributeDef.Name)}{bracket} {MermaidConstants.Colon} **{typeName}**#8203;"
         );
     }
 
@@ -169,15 +245,15 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             .Select(a => a.Name);
 
         var label = extras.Any()
-            ? $"{associationDef.Name} ({string.Join(",", extras)})"
-            : associationDef.Name;
+            ? $"{EscapeMermaidText(associationDef.Name)} ({string.Join(",", extras.Select(EscapeMermaidText))})"
+            : EscapeMermaidText(associationDef.Name);
 
         mermaidScript.AppendLine(
-            $"{left.classDef.Name} {left.cardinalityString} {symbol} {right.cardinalityString}{right.classDef.Name} : {label}"
+            $"{GetMermaidClassId(left.classDef)} {left.cardinalityString} {symbol} {right.cardinalityString}{GetMermaidClassId(right.classDef)} : {label}"
         );
     }
 
-    private static string FormatNumericType(NumericType numericType)
+    private string FormatNumericType(NumericType numericType)
     {
         string text;
         if (numericType.Min != null && numericType.Max != null)
@@ -188,34 +264,47 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
         else
         {
-            text = "Numeric";
+            text = locale.NumericLabel;
         }
 
         var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault();
         if (!string.IsNullOrEmpty(unitName))
-            text += $" [{unitName}]";
+            text += $" [{EscapeMermaidText(unitName)}]";
 
         return text;
     }
 
+    /// <summary>
+    /// Returns Mermaid-safe encoded text for the given type. User-supplied
+    /// names are escaped at the leaf so the result can be embedded into a
+    /// class attribute line without further escaping. Re-escaping the result
+    /// would mangle pre-encoded entities such as <see cref="MermaidConstants.LeftParenthesis"/>.
+    /// </summary>
     private string VisitTypeDefInternal(TypeDef? type)
     {
         if (type == null) return "?";
         return type switch
         {
-            ReferenceType rt => rt.Target.Value?.Path.Last() ?? "?",
+            ReferenceType rt => EscapeMermaidText(rt.Target.Value?.Path.Last() ?? "?"),
             TextType tt => tt.Length is { } len ? $"Text[{len}]" : "Text",
             NumericType nt => FormatNumericType(nt),
             BooleanType => "Boolean",
             BlackboxType bt => bt.Kind switch
             {
-                BlackboxType.BlackboxTypeKind.Binary => "Blackbox(Binary)",
-                BlackboxType.BlackboxTypeKind.Xml => "Blackbox(XML)",
+                BlackboxType.BlackboxTypeKind.Binary => $"Blackbox{MermaidConstants.LeftParenthesis}{EscapeMermaidText(locale.BlackboxBinarySuffix)}{MermaidConstants.RightParenthesis}",
+                BlackboxType.BlackboxTypeKind.Xml => $"Blackbox{MermaidConstants.LeftParenthesis}{EscapeMermaidText(locale.BlackboxXmlSuffix)}{MermaidConstants.RightParenthesis}",
                 _ => "Blackbox"
             },
             EnumerationType et =>
                 $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
-            TypeRef tr => tr.Extends?.Path.Last() ?? "?",
+            EnumerationAllOfType allOf => EscapeMermaidText(allOf.TargetEnumeration?.Path.LastOrDefault() ?? "?"),
+            FormattedType formatted => EscapeMermaidText(formatted.BasedOn?.Path.LastOrDefault()
+                                       ?? formatted.FormatBaseType?.Path.LastOrDefault()
+                                       ?? "Format"),
+            SurfaceType surface => (surface.IsMultiGeometry ? "Multi" : "") + (surface.IsCoverage ? "Area" : "Surface"),
+            PolyLineType polyLine => (polyLine.IsMultiGeometry ? "Multi" : "") + "Polyline",
+            CoordType coord => (coord.IsMultiGeometry ? "Multi" : "") + "Coord",
+            TypeRef tr => EscapeMermaidText(tr.Extends?.Path.Last() ?? "?"),
             RoleType => "Role",
             _ => type.GetType().Name
         };
@@ -223,7 +312,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues)
     {
-        return string.Join(", ", enumerationValues.Select(v => v.Name));
+        return string.Join(", ", enumerationValues.Select(v => EscapeMermaidText(v.Name)));
     }
 
     private static string FormatCardinality(Cardinality? cardinality)
@@ -266,22 +355,31 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
     {
         foreach (var type in classes.Concat(structures))
         {
+            var typeId = GetMermaidClassId(type);
+
             if (type.Extends is { } extRef && extRef.Path.Any())
             {
-                string parentSimple = extRef.Path.Last();
-                string parentLabel =
-                    extRef.Target != null ? parentSimple : $"`{parentSimple} #60;#60;EXTERNAL#62;#62;`";
+                string parentLabel = extRef.Target is ClassDef parentClass
+                    ? GetMermaidClassId(parentClass)
+                    : $"`{EscapeMermaidText(extRef.Path.Last())} #60;#60;EXTERNAL#62;#62;`";
 
-                mermaidScript.AppendLine($"{type.Name} --|> {parentLabel}");
+                // `Parent <|-- Child` renders the same generalization arrow as
+                // `Child --|> Parent`, but Mermaid's layout ranks the edge source
+                // first, so the parent sits above the subclass in TB orientation.
+                mermaidScript.AppendLine($"{parentLabel} <|-- {typeId}");
             }
 
             if (type.MetaAttributes.TryGetValue("geow.uml.color", out var color) && !string.IsNullOrWhiteSpace(color))
             {
-                mermaidScript.AppendLine($"style {type.Name} fill:{color},color:black,stroke:black");
+                if (IsSafeColor(color))
+                {
+                    mermaidScript.AppendLine($"style {typeId} fill:{color},color:black,stroke:black");
+                }
+                else
+                {
+                    logger.LogWarning("Ignoring unsafe geow.uml.color value on {TypeId}", typeId);
+                }
             }
-
-            var stereo = type.IsStructure ? MermaidConstants.StructureStereotype : MermaidConstants.ClassStereotype;
-            mermaidScript.AppendLine($"{type.Name}: {stereo}");
 
             foreach (var attr in type.Content.Values.OfType<AttributeDef>())
                 AppendAttributeDetailsToScript(type, attr);
@@ -295,7 +393,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         mermaidScript.AppendLine();
 
         foreach (var structure in structures)
-            mermaidScript.AppendLine($"style {structure.Name} fill:,stroke-dasharray:10 10");
+            mermaidScript.AppendLine($"style {GetMermaidClassId(structure)} fill:,stroke-dasharray:10 10");
 
         return mermaidScript.ToString();
     }

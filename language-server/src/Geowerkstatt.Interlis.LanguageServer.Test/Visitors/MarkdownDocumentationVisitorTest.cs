@@ -144,7 +144,7 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attrB | 0..1 | 10..20 |
-            | AssocA | 0..n | ClassA |
+            | AssocA | 0..* | ClassA |
 
 
             """;
@@ -168,7 +168,7 @@ public class MarkdownDocumentationVisitorTest
             ### TestClass
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
-            | attr1 | 0..1 | (<b>topValue1</b>, <b>topValue2</b> (subValue1, subValue2, subValue3 (<i>subSubValue1</i>, <i>subSubValue2</i>)), <b>topValue3</b>) |
+            | attr1 | 0..1 | (topValue1, topValue2 (subValue1, subValue2, subValue3 (<i>subSubValue1</i>, <i>subSubValue2</i>)), topValue3) |
 
 
             """;
@@ -193,7 +193,7 @@ public class MarkdownDocumentationVisitorTest
             "</thead>" +
             "<tbody>" +
             "<tr><td>attr1</td><td>0..1</td><td>Text [10]</td></tr>" +
-            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(value1, value2)</td></tr>" +
             "</tbody>" +
             "</table>";
 
@@ -210,12 +210,170 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attr1 | 0..1 | Text [10] |
-            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+            | attr2 | 1 | (value1, value2) |
 
 
             """;
 
         Assert.AreEqual(expected.ReplaceLineEndings(), documentation.ReplaceLineEndings());
+    }
+
+    private const string TestModelInheritance = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS Base (ABSTRACT) =
+                    parentAttr1: TEXT*10;
+                    parentAttr2: MANDATORY BOOLEAN;
+                END Base;
+
+                CLASS Derived EXTENDS Base =
+                    ownAttr: 1..9;
+                END Derived;
+            END TestTopic;
+        END TestModel.
+        """;
+
+    private const string TestModelConcreteInheritance = """
+        INTERLIS 2.4;
+
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS Parent =
+                    concreteAttr: TEXT*10;
+                END Parent;
+
+                CLASS Child EXTENDS Parent =
+                    ownAttr: 1..9;
+                END Child;
+            END TestTopic;
+        END TestModel.
+        """;
+
+    [TestMethod]
+    public void TestLocalization_French_RendersFrenchInheritedSuffix()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            Language = DocumentationLocalization.French,
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, "*(hérité)*");
+    }
+
+    [TestMethod]
+    public void TestLocalization_English_RendersEnglishInheritedSuffix()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            Language = DocumentationLocalization.English,
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var derivedTableStart = documentation.IndexOf("### Derived", StringComparison.Ordinal);
+        Assert.IsTrue(derivedTableStart >= 0, "Derived class section is missing");
+        var derivedSection = documentation[derivedTableStart..];
+
+        StringAssert.Contains(derivedSection, "*(inherited)*");
+    }
+
+    [TestMethod]
+    public void TestLocalization_German_RendersGermanInheritedSuffixByDefault()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, "*(geerbt)*");
+    }
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineMode_PreservesSourceOrder()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var derivedTableStart = documentation.IndexOf("### Derived", StringComparison.Ordinal);
+        Assert.IsTrue(derivedTableStart >= 0, "Derived class section is missing");
+        var derivedSection = documentation[derivedTableStart..];
+
+        var parent1Index = derivedSection.IndexOf("parentAttr1", StringComparison.Ordinal);
+        var parent2Index = derivedSection.IndexOf("parentAttr2", StringComparison.Ordinal);
+
+        Assert.IsTrue(parent1Index >= 0 && parent2Index >= 0, "Inherited attributes missing from Derived section");
+        Assert.IsTrue(
+            parent1Index < parent2Index,
+            "Inherited attributes must appear in source-declaration order (parentAttr1 before parentAttr2)");
+    }
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineMode_IncludesConcreteParent()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelConcreteInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInline,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var childSectionStart = documentation.IndexOf("### Child", StringComparison.Ordinal);
+        Assert.IsTrue(childSectionStart >= 0, "Child class section is missing");
+        var childSection = documentation[childSectionStart..];
+
+        StringAssert.Contains(
+            childSection,
+            "concreteAttr",
+            "Inline mode must include attributes from concrete (non-abstract) parents.");
+    }
+
+    [TestMethod]
+    public void TestInheritedAttributes_InlineAbstractOnlyMode_SkipsConcreteParent()
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader(TestModelConcreteInheritance));
+
+        var visitor = new MarkdownDocumentationVisitor(new DocumentationOptions
+        {
+            AbstractClassAttributes = DocumentationOptions.AbstractClassAttributesInlineAbstractOnly,
+        });
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        var childSectionStart = documentation.IndexOf("### Child", StringComparison.Ordinal);
+        Assert.IsTrue(childSectionStart >= 0, "Child class section is missing");
+        var childSection = documentation[childSectionStart..];
+
+        Assert.IsFalse(
+            childSection.Contains("concreteAttr"),
+            "inlineAbstractOnly mode must NOT include attributes from concrete (non-abstract) parents.");
     }
 
     [TestMethod]
@@ -246,7 +404,7 @@ public class MarkdownDocumentationVisitorTest
             "</thead>" +
             "<tbody>" +
             "<tr><td>attr1</td><td>0..1</td><td>TestStructLevel2<br/>" + structLevel2InlineTable + "</td></tr>" +
-            "<tr><td>attr2</td><td>1</td><td>(<b>value1</b>, <b>value2</b>)</td></tr>" +
+            "<tr><td>attr2</td><td>1</td><td>(value1, value2)</td></tr>" +
             "</tbody>" +
             "</table>";
 
@@ -257,7 +415,7 @@ public class MarkdownDocumentationVisitorTest
             | Attributname | Kardinalität | Typ |
             | --- | --- | --- |
             | attr1 | 0..1 | TestStructLevel2<br/>{structLevel2InlineTable} |
-            | attr2 | 1 | (<b>value1</b>, <b>value2</b>) |
+            | attr2 | 1 | (value1, value2) |
 
             ### TestStructLevel2
             | Attributname | Kardinalität | Typ |

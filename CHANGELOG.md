@@ -1,6 +1,28 @@
 # Change Log
 ### vNext
 
+* Markdown documentation:
+  * Use UML notation `0..*` instead of `0..n` for unbounded multiplicities.
+  * Drop `<b>` emphasis on top-level enumeration values.
+  * Render abstract class names in italics.
+  * New setting `interlis.documentation.abstractClassAttributes` (`separate` | `inline` | `inlineAbstractOnly`); `inline` repeats inherited attributes from every ancestor in each subclass table, `inlineAbstractOnly` does the same but only for abstract ancestors.
+  * New setting `interlis.documentation.language` (`auto` | `de` | `fr` | `it` | `en`) localizes generated labels; `auto` follows the VS Code UI language.
+  * Settings `interlis.documentation.attributeNameHeader`, `cardinalityHeader`, `typeHeader`, `emptyClassPlaceholder` now default to empty and fall back to `interlis.documentation.language`.
+  * Render `FORMAT INTERLIS.XMLDate "..".."..."`, `ALL OF Domain`, and `SURFACE` / `AREA` / `POLYLINE` / `COORD` types instead of leaking the AST class name.
+* Diagram preview:
+  * Drop the `«class»` stereotype; use per-class `«abstract»` / `«structure»` / `«external»` instead.
+  * Disambiguate classes that share a simple name across topics or models (label still shows the simple name).
+  * Group topics under an outer model frame using nested namespaces so the Mermaid code is portable to external renderers (Mermaid Live, etc.); the inner banner shows just the topic name.
+  * Show abstract classes above their subclasses in TB orientation.
+  * Render geometry types and formatted/all-of types instead of AST class names.
+  * Hide the divider line of the empty operations compartment on class boxes (Mermaid still reserves the space; the line is no longer drawn).
+  * Fix: inline enumeration attributes (e.g. `Status: (active, inactive)`) no longer cause the diagram to fail rendering.
+  * Localize the `Numeric` fallback and `Blackbox(Binary/XML)` suffixes via `interlis.documentation.language`.
+  * Toolbar redesigned into a `Diagram` cluster (Copy Mermaid Code split with Download SVG, Orientation dropdown) and a `Markdown` cluster (Generate Markdown button, Language dropdown).
+* Stability: a syntactically invalid INTERLIS file no longer crashes the language server when generating markdown or the diagram; a clear failure message is shown instead.
+* Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
+* Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
+* Documentation: README troubleshooting note for `spawn UNKNOWN` when the extension folder lacks execute permission.
 
 ### 0.4.2 - 2025-08-26
 

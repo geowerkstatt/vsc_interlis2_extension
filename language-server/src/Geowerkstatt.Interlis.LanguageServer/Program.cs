@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
@@ -38,6 +39,7 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<FileContentCache>();
             services.AddSingleton<InterlisEnvironmentCache>();
             services.AddSingleton<ReferenceCache>();
+            services.AddSingleton<UiLanguageContext>();
 
             services.AddSingleton<ExternalImportFileService>();
             services.AddTransient<ImportResolveService>();
@@ -59,11 +61,24 @@ var server = await LanguageServer.From(options =>
                 return TextDocumentSelector.ForLanguage(serverOptions.LanguageName);
             });
         })
+        .WithConfigurationSection(DocumentationOptions.ConfigSection)
         .WithHandler<TextDocumentSyncHandler>()
         .WithHandler<GenerateMarkdownHandler>()
         .WithHandler<FormatterHandler>()
         .WithHandler<DefinitionHandler>()
-        .WithHandler<GenerateDiagramHandler>();
+        .WithHandler<GenerateDiagramHandler>()
+        .OnInitialize((server, request, _) =>
+        {
+            // Client reports its UI language (e.g. "de", "fr") so that output
+            // defaults match the user's environment when the workspace setting
+            // is "auto". Unknown values fall through to the German bundle.
+            var uiLang = (request.InitializationOptions as JToken)?["uiLanguage"]?.ToString();
+            if (!string.IsNullOrEmpty(uiLang))
+            {
+                server.Services.GetRequiredService<UiLanguageContext>().Language = uiLang;
+            }
+            return Task.CompletedTask;
+        });
 }).ConfigureAwait(false);
 
 server.LogInfo("Starting INTERLIS language server...");

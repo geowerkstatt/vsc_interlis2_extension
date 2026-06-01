@@ -8,19 +8,14 @@ interface ViewBox {
 }
 
 interface VSCodeApi {
-  postMessage(message: any): void;
+  postMessage(message: unknown): void;
 }
 
-interface WebviewMessage {
-  type: "update";
-  text: string;
-  resetZoom: boolean;
-  orientation: string;
-}
+type IncomingMessage =
+  | { type: "init"; language: string; orientation: string }
+  | { type: "update"; text: string; resetZoom: boolean };
 
 declare const acquireVsCodeApi: () => VSCodeApi;
-
-const directions = ["LR", "TB"] as const;
 
 (() => {
   const vscode = acquireVsCodeApi();
@@ -33,13 +28,16 @@ const directions = ["LR", "TB"] as const;
   let zoomLevel = 1;
   let isPanning = false;
   let panStart = { x: 0, y: 0 };
-  let directionIndex = 0;
 
   // ---- DOM Elements ----
   const container = document.getElementById("mermaid-graph") as HTMLDivElement;
-  const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
   const copyButton = document.getElementById("copy-code") as HTMLButtonElement;
-  const orientButton = document.getElementById("orientation-button") as HTMLButtonElement;
+  const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
+  const exportSplit = document.getElementById("export-split") as HTMLDivElement;
+  const exportCaret = document.getElementById("export-caret") as HTMLButtonElement;
+  const orientationSelect = document.getElementById("orientation") as HTMLSelectElement;
+  const languageSelect = document.getElementById("language") as HTMLSelectElement;
+  const generateMarkdownButton = document.getElementById("generate-markdown") as HTMLButtonElement;
   const helpOverlay = document.getElementById("help-overlay") as HTMLDivElement;
   const helpButton = document.getElementById("help-button") as HTMLButtonElement;
   const closeHelpButton = document.getElementById("close-help") as HTMLButtonElement;
@@ -81,6 +79,11 @@ const directions = ["LR", "TB"] as const;
     errorDivs.forEach((div) => div.remove());
   }
 
+  function closeExportMenu(): void {
+    exportSplit.classList.remove("open");
+    exportCaret.setAttribute("aria-expanded", "false");
+  }
+
   // ----- Mermaid Initialization -----
   function initMermaid(): void {
     if (mermaidInitialized) {
@@ -89,7 +92,14 @@ const directions = ["LR", "TB"] as const;
     mermaid.initialize({
       startOnLoad: false,
       theme: "neutral",
-      themeCSS: ".classGroup .methods { display: none; }",
+      // INTERLIS classes never have operations, so Mermaid always reserves an
+      // empty methods compartment under the attributes. Mermaid 11 offers no
+      // config to suppress it (hideEmptyMembersBox only applies to classes with
+      // *no* members either). The renderer emits a second `.divider` line for
+      // that empty compartment; this hides only that trailing divider per node.
+      // The reserved vertical space itself stays — it is baked into the SVG
+      // geometry that edge routing depends on and cannot be removed safely.
+      themeCSS: ".node .divider ~ .divider { display: none; }",
       flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
       securityLevel: "strict",
     });
@@ -145,9 +155,12 @@ const directions = ["LR", "TB"] as const;
   const debouncedRender = debounce(renderDiagram, 150);
 
   // ----- Event Handlers -----
-  function handleMessage(event: MessageEvent<WebviewMessage>): void {
+  function handleMessage(event: MessageEvent<IncomingMessage>): void {
     const msg = event.data;
-    if (msg.type === "update") {
+    if (msg.type === "init") {
+      orientationSelect.value = msg.orientation;
+      languageSelect.value = msg.language;
+    } else if (msg.type === "update") {
       debouncedRender(msg.text, msg.resetZoom);
     }
   }
@@ -244,6 +257,7 @@ const directions = ["LR", "TB"] as const;
     link.click();
 
     URL.revokeObjectURL(url);
+    closeExportMenu();
   }
 
   function handleCopy(): void {
@@ -265,6 +279,30 @@ const directions = ["LR", "TB"] as const;
       });
   }
 
+  function handleCaretClick(e: MouseEvent): void {
+    e.stopPropagation();
+    const isOpen = exportSplit.classList.toggle("open");
+    exportCaret.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+
+  function handleDocumentClick(e: MouseEvent): void {
+    if (!exportSplit.contains(e.target as Node)) {
+      closeExportMenu();
+    }
+  }
+
+  function handleOrientationChange(): void {
+    vscode.postMessage({ type: "orientation", orientation: orientationSelect.value });
+  }
+
+  function handleLanguageChange(): void {
+    vscode.postMessage({ type: "language", language: languageSelect.value });
+  }
+
+  function handleGenerateMarkdown(): void {
+    vscode.postMessage({ type: "generateMarkdown" });
+  }
+
   function handleHelpOpen(): void {
     helpOverlay.style.visibility = "visible";
   }
@@ -277,24 +315,22 @@ const directions = ["LR", "TB"] as const;
     vscode.postMessage({ type: "webviewLoaded" });
   }
 
-  function handleOrientationChange(): void {
-    directionIndex = (directionIndex + 1) % directions.length;
-    orientButton.textContent = "Orientation: " + directions[directionIndex];
-    vscode.postMessage({ type: "orientation", orientation: directions[directionIndex] });
-  }
-
   function attachEvents(): void {
     window.addEventListener("message", handleMessage);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("click", handleDocumentClick);
     container.addEventListener("wheel", handleWheel, { passive: false });
     container.addEventListener("mousedown", handleMouseDown);
     container.addEventListener("dblclick", handleDoubleClick);
     copyButton.addEventListener("click", handleCopy);
-    helpButton.addEventListener("click", handleHelpOpen);
     downloadButton.addEventListener("click", handleDownload);
+    exportCaret.addEventListener("click", handleCaretClick);
+    orientationSelect.addEventListener("change", handleOrientationChange);
+    languageSelect.addEventListener("change", handleLanguageChange);
+    generateMarkdownButton.addEventListener("click", handleGenerateMarkdown);
+    helpButton.addEventListener("click", handleHelpOpen);
     closeHelpButton.addEventListener("click", handleHelpClose);
-    orientButton.addEventListener("click", handleOrientationChange);
   }
 
   function init(): void {

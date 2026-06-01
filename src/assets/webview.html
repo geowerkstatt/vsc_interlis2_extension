@@ -5,14 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="__CSP__">
   <style>__STYLE__</style>
-  <title>INTERLIS Diagram</title>
+  <title>INTERLIS Panel</title>
 </head>
 <body>
 
 <div class="actions">
-  <button class="button" id="download-svg">Download SVG</button>
-  <button class="button" id="copy-code">Copy Mermaid Code</button>
-  <button class="button" id="orientation-button">Orientation: LR</button>
+  <div class="cluster">
+    <div class="cluster-heading">Diagram</div>
+    <div class="cluster-controls">
+      <div class="split" id="export-split">
+        <button class="button" id="copy-code">Copy Mermaid Code</button>
+        <button class="caret" id="export-caret" aria-label="More export options" aria-haspopup="true" aria-expanded="false">&#9662;</button>
+        <div class="menu" role="menu">
+          <button id="download-svg" role="menuitem">Download SVG</button>
+        </div>
+      </div>
+      <label class="field">
+        Orientation
+        <select id="orientation">
+          <option value="LR" selected>Top &rarr; Bottom</option>
+          <option value="TB">Left &rarr; Right</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="cluster-separator"></div>
+
+  <div class="cluster">
+    <div class="cluster-heading">Markdown</div>
+    <div class="cluster-controls">
+      <button class="button" id="generate-markdown">Generate Markdown</button>
+      <label class="field">
+        Language
+        <select id="language">
+          <option value="auto" selected>Auto</option>
+          <option value="de">Deutsch</option>
+          <option value="fr">Fran&ccedil;ais</option>
+          <option value="it">Italiano</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+    </div>
+  </div>
 </div>
 
 <div class="diagram-container">
@@ -28,7 +63,7 @@
     <div class="help-content-controls">
       <span><strong>Pan:</strong> Click and drag</span>
       <span><strong>Zoom:</strong> Mouse wheel</span>
-      <span><strong>Reset:</strong> Double‑click</span>
+      <span><strong>Reset:</strong> Double&#8209;click</span>
     </div>
     <button class="button" id="close-help">Close</button>
   </div>

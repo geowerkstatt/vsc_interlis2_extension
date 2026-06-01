@@ -60,7 +60,7 @@
       },
       {
         "command": "interlis.showDiagramView",
-        "title": "Show INTERLIS Diagram View",
+        "title": "Show INTERLIS Panel",
         "category": "INTERLIS 2",
         "icon": "$(symbol-misc)"
       }
@@ -93,7 +93,51 @@
         "interlis2.autoOpenDiagramView": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically show the diagram view for the current INTERLIS file."
+          "description": "Automatically open the INTERLIS panel for the current INTERLIS file."
+        },
+        "interlis.documentation.language": {
+          "type": "string",
+          "enum": ["auto", "de", "fr", "it", "en"],
+          "enumDescriptions": [
+            "Match the VS Code UI language (de, fr, it, en); falls back to German for any other UI language.",
+            "German",
+            "French",
+            "Italian",
+            "English"
+          ],
+          "default": "auto",
+          "description": "Language used for generated markdown documentation and Mermaid diagrams. Affects column headers, placeholder text, the inherited-attribute suffix, and labels like the 'Numeric' fallback. User-defined INTERLIS identifiers in your .ili file are never translated. The per-string settings below override individual labels."
+        },
+        "interlis.documentation.abstractClassAttributes": {
+          "type": "string",
+          "enum": ["separate", "inline", "inlineAbstractOnly"],
+          "enumDescriptions": [
+            "Inherited attributes are shown only in the parent class section, never repeated in subclasses.",
+            "Inherited attributes from every ancestor (abstract or concrete) are repeated inline in each subclass table.",
+            "Inherited attributes are repeated inline in each subclass, but only when they were declared on an abstract ancestor."
+          ],
+          "default": "separate",
+          "description": "How to display inherited attributes in the generated markdown documentation."
+        },
+        "interlis.documentation.attributeNameHeader": {
+          "type": "string",
+          "default": "",
+          "description": "Header for the attribute-name column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
+        },
+        "interlis.documentation.cardinalityHeader": {
+          "type": "string",
+          "default": "",
+          "description": "Header for the cardinality column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
+        },
+        "interlis.documentation.typeHeader": {
+          "type": "string",
+          "default": "",
+          "description": "Header for the type column in generated markdown documentation. Leave empty to use the label from interlis.documentation.language."
+        },
+        "interlis.documentation.emptyClassPlaceholder": {
+          "type": "string",
+          "default": "",
+          "description": "Placeholder text shown in place of an attribute table for classes that have no attributes. Leave empty to use the label from interlis.documentation.language."
         }
       }
     }
@@ -129,7 +173,7 @@
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "mermaid": "^11.13.0",
+    "mermaid": "^11.15.0",
     "nodemon": "^3.1.10",
     "prettier": "^2.7.1",
     "rimraf": "^6.0.1",
