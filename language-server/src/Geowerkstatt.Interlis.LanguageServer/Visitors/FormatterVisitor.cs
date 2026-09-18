@@ -492,9 +492,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
     {
         return FormatChildren(context.children,
             [
-                new Rule(RelativeLocation.Before, IsOfType(Interlis24Lexer.ALL), AppendNewLine()),
-                new Rule(RelativeLocation.Before, child => child is Interlis24Parser.AttributeDefContext, AppendNewLine()),
-                new Rule(RelativeLocation.Before, child => context._attribute.Contains((child as ITerminalNode)?.Symbol), AppendNewLine()),
+                new Rule(RelativeLocation.Before, child => child is Interlis24Parser.ViewAttributeContext, AppendNewLine()),
             ]);
     }
 
@@ -520,7 +518,7 @@ public class FormatterVisitor : Interlis24ParserBaseVisitor<FormatterVisitor.Par
         return FormatChildren(context.children,
             [
                 new Rule(RelativeLocation.After, child => child == context.topic, AppendNewLine(), () => indentationSteps += 1),
-                new Rule(RelativeLocation.Before, IsOfType(Interlis24Lexer.OBJECTS), AppendNewLine()),
+                new Rule(RelativeLocation.Before, child => child is Interlis24Parser.MetaObjectsDefContext, AppendNewLine()),
             ]);
     }
 

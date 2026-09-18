@@ -31,9 +31,9 @@ public class ReferenceCollectorVisitor : Interlis24AstBaseVisitor<List<Reference
         base.VisitReference(reference);
 
         var occurenceUri = GetRootUriForTarget(reference.Source);
-        var occurenceLocation = reference.ReferenceLocation;
+        var occurenceLocation = reference.SourceRange;
 
-        var target = reference.Target;
+        var target = reference.Target as IInterlisDefinition;
         var targetUri = GetRootUriForTarget(target);
 
         if (occurenceUri is null

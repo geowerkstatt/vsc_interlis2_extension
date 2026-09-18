@@ -196,11 +196,11 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             return;
         }
 
-        (ClassDef? classDef, string? cardinalityString, Cardinality.RelationshipType relType) MapRole(
+        (ClassDef? classDef, string? cardinalityString, RoleType.RelationshipType relType) MapRole(
             AttributeDef attribute)
         {
             var (classDef, cardinalityString) = GetClassAndCardinality(attribute);
-            var roleType = ((RoleType)attribute.TypeDef!).Cardinality!.Type;
+            var roleType = ((RoleType)attribute.TypeDef!).Relationship;
             return (classDef, cardinalityString, roleType);
         }
 
@@ -216,9 +216,9 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         }
 
         bool leftDiamond =
-            left.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
+            left.relType is RoleType.RelationshipType.Aggregation or RoleType.RelationshipType.Composition;
         bool rightDiamond =
-            right.relType is Cardinality.RelationshipType.Aggregation or Cardinality.RelationshipType.Composition;
+            right.relType is RoleType.RelationshipType.Aggregation or RoleType.RelationshipType.Composition;
 
         if (leftDiamond && !rightDiamond)
         {
@@ -285,7 +285,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
         if (type == null) return "?";
         return type switch
         {
-            ReferenceType rt => EscapeMermaidText(rt.Target.Value?.Path.Last() ?? "?"),
+            ReferenceType rt => EscapeMermaidText(rt.Target.Value.GetTargetName() ?? "?"),
             TextType tt => tt.Length is { } len ? $"Text[{len}]" : "Text",
             NumericType nt => FormatNumericType(nt),
             BooleanType => "Boolean",
@@ -297,7 +297,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             },
             EnumerationType et =>
                 $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
-            EnumerationAllOfType allOf => EscapeMermaidText(allOf.TargetEnumeration?.Path.LastOrDefault() ?? "?"),
+            EnumerationValuesType enumValues => EscapeMermaidText(enumValues.TargetEnumeration?.Path.LastOrDefault() ?? "?"),
             FormattedType formatted => EscapeMermaidText(formatted.BasedOn?.Path.LastOrDefault()
                                        ?? formatted.FormatBaseType?.Path.LastOrDefault()
                                        ?? "Format"),
@@ -305,9 +305,17 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             PolyLineType polyLine => (polyLine.IsMultiGeometry ? "Multi" : "") + "Polyline",
             CoordType coord => (coord.IsMultiGeometry ? "Multi" : "") + "Coord",
             TypeRef tr => EscapeMermaidText(tr.Extends?.Path.Last() ?? "?"),
+            ObjectType ot => EscapeMermaidText(FormatTargetNames(ot.Targets)),
+            UnresolvedNamedType un => EscapeMermaidText(un.Target.Value.GetTargetName() ?? "?"),
             RoleType => "Role",
             _ => type.GetType().Name
         };
+    }
+
+    private static string FormatTargetNames(IEnumerable<RestrictedRef> targets)
+    {
+        var names = string.Join(", ", targets.Select(target => target.Value.GetTargetName()).Where(name => name is not null));
+        return names.Length > 0 ? names : "?";
     }
 
     private static string FormatEnumerationValues(EnumerationValuesList enumerationValues)
@@ -346,7 +354,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             return (null, null);
         }
 
-        var classDef = roleType.Targets.FirstOrDefault()?.Value?.Target as ClassDef;
+        var classDef = roleType.Targets.FirstOrDefault()?.Value.GetTargetDefinition() as ClassDef;
         var cardinality = FormatCardinality(roleType.Cardinality);
         return (classDef, cardinality);
     }
