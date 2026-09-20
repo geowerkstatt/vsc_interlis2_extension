@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Services;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Concurrent;
 
@@ -17,18 +18,45 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     private readonly CompilationService compilationService;
     private readonly ConcurrentDictionary<string, (string Source, Compilation Compilation)> compilationCache = new();
 
-    public InterlisEnvironmentCache(FileContentCache fileContentCache, CompilationService compilationService)
+    public InterlisEnvironmentCache(FileContentCache fileContentCache, CompilationService compilationService, WorkspaceModelIndex workspaceModelIndex)
     {
         this.fileContentCache = fileContentCache;
         this.compilationService = compilationService;
 
         this.fileContentCache.DocumentInvalidated += InvalidateCache;
+        workspaceModelIndex.FileChanged += InvalidateDependents;
     }
 
     private void InvalidateCache(DocumentUri uri)
     {
         compilationCache.Remove(uri.ToString(), out _);
         DocumentInvalidated?.Invoke(uri);
+    }
+
+    /// <summary>
+    /// Invalidates the compilations of the other documents that depend on a changed file: those that compiled a model
+    /// from it (the environment is flat, so this covers transitive dependencies), and those whose environment depends
+    /// on a model it defines (an import or a <c>TRANSLATION OF</c> base), which catches a dependency that was still
+    /// unresolved when the compilation was made (the file did not exist, had another version or another model name)
+    /// at any level of the chain.
+    /// </summary>
+    private void InvalidateDependents(DocumentUri changedFile, IReadOnlyCollection<string> affectedModels)
+    {
+        var changedUri = changedFile.ToString();
+        foreach (var (uri, entry) in compilationCache)
+        {
+            if (uri == changedUri)
+            {
+                continue;
+            }
+
+            var models = entry.Compilation.Environment.Content.Values;
+            if (models.Any(model => model.SourceUri == changedUri)
+                || models.SelectMany(model => model.Dependencies).Any(dependency => affectedModels.Contains(dependency.ModelName)))
+            {
+                InvalidateCache(DocumentUri.From(uri));
+            }
+        }
     }
 
     /// <inheritdoc />

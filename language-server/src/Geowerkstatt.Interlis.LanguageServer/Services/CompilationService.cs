@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer.Diagnostics;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -8,10 +9,11 @@ using System.Globalization;
 namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
 /// <summary>
-/// Compiles a document together with the models it imports, supplying the imported models from the INTERLIS model
-/// repositories.
+/// Compiles a document together with the models it imports, supplying the imported models from the files the editor
+/// can see (see <see cref="WorkspaceModelIndex"/>) or else from the INTERLIS model repositories.
 /// </summary>
 public sealed class CompilationService(
+    WorkspaceModelIndex workspaceModelIndex,
     RepositorySearcher repositorySearcher,
     ILoggerFactory loggerFactory,
     ExternalImportFileService externalImportFileService
@@ -40,15 +42,21 @@ public sealed class CompilationService(
     }
 
     /// <summary>
-    /// Supplies an imported model from the repositories: the model of the given name published for the importing
-    /// model's INTERLIS version, or <see langword="null"/> if there is none or it cannot be loaded. The model's source
-    /// is also stored as a local file (see <see cref="ExternalImportFileService"/>), whose URI becomes the model's
-    /// source URI so that positions in it can be navigated to.
+    /// Supplies an imported model: from an open document or a file in the workspace that defines it for the importing
+    /// model's INTERLIS version, or else the model of that name published in the repositories for that version;
+    /// <see langword="null"/> if there is none or it cannot be loaded. A repository model's source is also stored as
+    /// a local file (see <see cref="ExternalImportFileService"/>), whose URI becomes the model's source URI so that
+    /// positions in it can be navigated to.
     /// </summary>
     public async ValueTask<(TextReader Reader, string? SourceUri)?> OpenModelAsync(string modelName, double? languageVersion, CancellationToken cancellationToken)
     {
         try
         {
+            if (workspaceModelIndex.FindModel(modelName, languageVersion) is { } file)
+            {
+                return (new StringReader(file.Source), file.Uri.ToString());
+            }
+
             var schemaLanguage = languageVersion == null ? null : "ili" + languageVersion.Value.ToString(CultureInfo.InvariantCulture).Replace('.', '_');
             var foundModels = await repositorySearcher.SearchModels(m => m.Name == modelName && (schemaLanguage == null || m.SchemaLanguage == schemaLanguage));
             if (foundModels.Count == 0)

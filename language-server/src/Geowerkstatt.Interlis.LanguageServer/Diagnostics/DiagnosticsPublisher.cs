@@ -11,12 +11,29 @@ namespace Geowerkstatt.Interlis.LanguageServer.Diagnostics;
 
 /// <summary>
 /// Publishes the compiler's problems for an open document to the client (<c>textDocument/publishDiagnostics</c>).
-/// A document is compiled a short while after its last change so that typing does not compile on every keystroke;
-/// a change during the wait or the compilation cancels that run. Only the problems located in the document itself
-/// are published; problems of the models it imports are reported in their own file and are dropped here.
+/// Whenever a document's compilation is invalidated (its text changed, or a file it depends on did) it is compiled
+/// again a short while later, so that typing does not compile on every keystroke; a further invalidation during the
+/// wait or the compilation cancels that run. A closed document gets an empty list. Only the problems located in the
+/// document itself are published; problems of the models it imports are reported in their own file and are dropped
+/// here.
 /// </summary>
-internal sealed class DiagnosticsPublisher(InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, ILogger<DiagnosticsPublisher> logger)
+internal sealed class DiagnosticsPublisher
 {
+    private readonly FileContentCache fileContentCache;
+    private readonly InterlisEnvironmentCache environmentCache;
+    private readonly ILanguageServerFacade languageServer;
+    private readonly ILogger<DiagnosticsPublisher> logger;
+
+    public DiagnosticsPublisher(FileContentCache fileContentCache, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, ILogger<DiagnosticsPublisher> logger)
+    {
+        this.fileContentCache = fileContentCache;
+        this.environmentCache = environmentCache;
+        this.languageServer = languageServer;
+        this.logger = logger;
+
+        this.environmentCache.DocumentInvalidated += OnDocumentInvalidated;
+    }
+
     /// <summary>The <c>source</c> shown next to the diagnostics in the client.</summary>
     private const string DiagnosticSource = "interlis";
 
@@ -26,12 +43,24 @@ internal sealed class DiagnosticsPublisher(InterlisEnvironmentCache environmentC
     /// <summary>The cancellation of the latest scheduled run per open document.</summary>
     private readonly ConcurrentDictionary<DocumentUri, CancellationTokenSource> pending = new();
 
+    private void OnDocumentInvalidated(DocumentUri uri)
+    {
+        if (fileContentCache.Contains(uri))
+        {
+            Schedule(uri);
+        }
+        else
+        {
+            Clear(uri);
+        }
+    }
+
     /// <summary>
     /// Compiles the document after the <see cref="PublishDelay"/> and publishes its diagnostics, unless it is scheduled
     /// again or cleared in the meantime.
     /// </summary>
     /// <param name="uri">The document to publish diagnostics for.</param>
-    public void Schedule(DocumentUri uri)
+    private void Schedule(DocumentUri uri)
     {
         var cancellation = new CancellationTokenSource();
         pending.AddOrUpdate(uri, cancellation, (_, previous) =>
@@ -47,7 +76,7 @@ internal sealed class DiagnosticsPublisher(InterlisEnvironmentCache environmentC
     /// Removes the diagnostics of a document the client closed.
     /// </summary>
     /// <param name="uri">The closed document.</param>
-    public void Clear(DocumentUri uri)
+    private void Clear(DocumentUri uri)
     {
         if (pending.TryRemove(uri, out var cancellation))
         {
