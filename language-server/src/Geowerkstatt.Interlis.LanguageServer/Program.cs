@@ -1,4 +1,3 @@
-using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Diagnostics;
@@ -53,7 +52,6 @@ var server = await LanguageServer.From(options =>
                 provider.GetRequiredService<ILoggerFactory>()
             ));
             services.AddSingleton<IRepositoryCrawler, RepositoryCrawler>();
-            services.AddTransient<InterlisReader>();
             services.AddHttpClient();
 
             services.AddTransient<ReferenceCollectorVisitor>();

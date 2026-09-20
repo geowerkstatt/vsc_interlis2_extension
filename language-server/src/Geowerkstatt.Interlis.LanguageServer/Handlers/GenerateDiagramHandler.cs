@@ -1,9 +1,9 @@
-using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
@@ -20,16 +20,16 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
     private readonly ILogger<GenerateDiagramHandler> logger;
     private readonly ILoggerFactory loggerFactory;
-    private readonly InterlisReader interlisReader;
     private readonly FileContentCache fileContentCache;
+    private readonly InterlisEnvironmentCache environmentCache;
     private readonly ILanguageServerFacade languageServer;
     private readonly UiLanguageContext uiLanguageContext;
 
-    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, InterlisReader interlisReader, FileContentCache fileContentCache, ILanguageServerFacade languageServer, UiLanguageContext uiLanguageContext, ISerializer serializer) : base(Command, serializer)
+    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, FileContentCache fileContentCache, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, UiLanguageContext uiLanguageContext, ISerializer serializer) : base(Command, serializer)
     {
         this.logger = logger;
-        this.interlisReader = interlisReader;
         this.fileContentCache = fileContentCache;
+        this.environmentCache = environmentCache;
         this.loggerFactory = loggerFactory;
         this.languageServer = languageServer;
         this.uiLanguageContext = uiLanguageContext;
@@ -49,24 +49,24 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
             return null;
         }
 
-        var uri = options.Uri;
-        var orientation = options.Orientation;
-        var fileContent = uri == null ? null : await fileContentCache.GetAsync(uri);
-        if (string.IsNullOrEmpty(fileContent))
+        // Only open documents are known to the server; the client shows "Could not load diagram." for null.
+        if (options.Uri is not { } uriString || !fileContentCache.Contains(DocumentUri.From(uriString)))
         {
             return null;
         }
 
-        var uriForLog = uri?.ToString()?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+        var uri = DocumentUri.From(uriString);
+        var uriForLog = uriString.Replace("\r", string.Empty).Replace("\n", string.Empty);
         logger.LogInformation("Generate diagram for {Uri}", uriForLog);
 
         var locale = await GetLocalizationAsync(options.Language, cancellationToken);
 
         try
         {
-            using var stringReader = new StringReader(fileContent);
-            var interlisFile = interlisReader.ReadFile(stringReader);
-            return GenerateDiagram(interlisFile, orientation, locale);
+            // The same compilation the diagnostics use: cached, with the imports resolved. Only the document's own
+            // models are drawn.
+            var compilation = await environmentCache.GetCompilationAsync(uri, cancellationToken);
+            return GenerateDiagram(compilation.ForDocument(uri), options.Orientation, locale);
         }
         catch (Exception ex)
         {
