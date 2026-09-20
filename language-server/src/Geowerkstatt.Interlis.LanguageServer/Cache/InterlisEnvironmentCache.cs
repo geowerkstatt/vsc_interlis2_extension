@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 
 /// <summary>
-/// Stores the INTERLIS environment for each opened document in memory.
+/// Stores the compilation (the INTERLIS environment and the compiler's diagnostics) of each opened document in memory.
 /// </summary>
 public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
 {
@@ -14,40 +14,54 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     public event Action<DocumentUri>? DocumentInvalidated;
 
     private readonly FileContentCache fileContentCache;
-    private readonly ImportResolveService importResolveService;
-    private readonly ConcurrentDictionary<string, InterlisEnvironment> environmentCache = new();
+    private readonly CompilationService compilationService;
+    private readonly ConcurrentDictionary<string, (string Source, Compilation Compilation)> compilationCache = new();
 
-    public InterlisEnvironmentCache(FileContentCache fileContentCache, ImportResolveService importResolveService)
+    public InterlisEnvironmentCache(FileContentCache fileContentCache, CompilationService compilationService)
     {
         this.fileContentCache = fileContentCache;
-        this.importResolveService = importResolveService;
+        this.compilationService = compilationService;
 
         this.fileContentCache.DocumentInvalidated += InvalidateCache;
     }
 
     private void InvalidateCache(DocumentUri uri)
     {
-        environmentCache.Remove(uri.ToString(), out _);
+        compilationCache.Remove(uri.ToString(), out _);
         DocumentInvalidated?.Invoke(uri);
     }
 
     /// <inheritdoc />
-    public async ValueTask<InterlisEnvironment> GetAsync(DocumentUri uri)
+    public async ValueTask<InterlisEnvironment> GetAsync(DocumentUri uri) => (await GetCompilationAsync(uri)).Environment;
+
+    /// <summary>
+    /// Gets or computes the compilation of the given document.
+    /// </summary>
+    /// <param name="uri">The document URI.</param>
+    /// <param name="cancellationToken">Cancels a compilation that has to be computed.</param>
+    /// <returns>The document's environment and the compiler's diagnostics; empty for an unknown or empty document.</returns>
+    public async ValueTask<Compilation> GetCompilationAsync(DocumentUri uri, CancellationToken cancellationToken = default)
     {
-        if (environmentCache.TryGetValue(uri.ToString(), out var ast))
+        var source = await fileContentCache.GetAsync(uri);
+        if (compilationCache.TryGetValue(uri.ToString(), out var cached) && cached.Source == source)
         {
-            return ast;
+            return cached.Compilation;
         }
 
-        var source = await fileContentCache.GetAsync(uri);
         if (string.IsNullOrEmpty(source))
         {
-            return new InterlisEnvironment();
+            return new Compilation(new InterlisEnvironment(), []);
         }
 
-        var environment = importResolveService.CompileWithoutReferenceResolve(new StringReader(source), uri.ToString());
-        await importResolveService.ResolveImportsAsync(environment);
-        environmentCache[uri.ToString()] = environment;
-        return environment;
+        var compilation = await compilationService.CompileAsync(source, uri, cancellationToken);
+
+        // The document may have changed while compiling (the change invalidated the cache, but this compilation
+        // would re-populate it with a stale result): only keep it if the buffer still holds the compiled source.
+        if (await fileContentCache.GetAsync(uri) == source)
+        {
+            compilationCache[uri.ToString()] = (source, compilation);
+        }
+
+        return compilation;
     }
 }

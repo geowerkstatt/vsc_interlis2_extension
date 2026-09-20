@@ -1,4 +1,5 @@
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Diagnostics;
 using MediatR;
 using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -10,9 +11,10 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
 /// <summary>
-/// Handler to synchronize the text document contents between the client and this server.
+/// Handler to synchronize the text document contents between the client and this server, and to keep the
+/// document's diagnostics up to date.
 /// </summary>
-internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDocumentSelector textDocumentSelector, IOptions<ServerOptions> serverOptions) : TextDocumentSyncHandlerBase
+internal class TextDocumentSyncHandler(FileContentCache fileContentCache, DiagnosticsPublisher diagnosticsPublisher, TextDocumentSelector textDocumentSelector, IOptions<ServerOptions> serverOptions) : TextDocumentSyncHandlerBase
 {
     public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
 
@@ -23,6 +25,7 @@ internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDo
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
+        diagnosticsPublisher.Schedule(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
@@ -30,6 +33,7 @@ internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDo
     public override Task<Unit> Handle(DidChangeTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
+        diagnosticsPublisher.Schedule(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
@@ -37,6 +41,7 @@ internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDo
     public override Task<Unit> Handle(DidCloseTextDocumentParams notification, CancellationToken token)
     {
         fileContentCache.ClearBuffer(notification.TextDocument.Uri);
+        diagnosticsPublisher.Clear(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
@@ -44,6 +49,7 @@ internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDo
     public override Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
         fileContentCache.UpdateBuffer(request.TextDocument.Uri, request.Text ?? string.Empty);
+        diagnosticsPublisher.Schedule(request.TextDocument.Uri);
         return Unit.Task;
     }
 

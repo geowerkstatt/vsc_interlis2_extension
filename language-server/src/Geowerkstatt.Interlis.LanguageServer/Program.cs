@@ -1,6 +1,7 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Diagnostics;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
 using Geowerkstatt.Interlis.LanguageServer.Services;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
@@ -40,9 +41,10 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<InterlisEnvironmentCache>();
             services.AddSingleton<ReferenceCache>();
             services.AddSingleton<UiLanguageContext>();
+            services.AddSingleton<DiagnosticsPublisher>();
 
             services.AddSingleton<ExternalImportFileService>();
-            services.AddTransient<ImportResolveService>();
+            services.AddTransient<CompilationService>();
             services.AddSingleton(provider => new RepositorySearcher(
                 provider.GetRequiredService<IRepositoryCrawler>(),
                 provider.GetRequiredService<IConfiguration>(),
@@ -53,7 +55,6 @@ var server = await LanguageServer.From(options =>
             services.AddHttpClient();
 
             services.AddTransient<ReferenceCollectorVisitor>();
-            services.AddTransient<ModelImportVisitor>();
 
             services.AddSingleton(provider =>
             {
