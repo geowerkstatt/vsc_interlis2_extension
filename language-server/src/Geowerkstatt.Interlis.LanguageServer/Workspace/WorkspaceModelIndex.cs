@@ -123,6 +123,12 @@ public sealed class WorkspaceModelIndex
         return candidates.FirstOrDefault();
     }
 
+    /// <summary>
+    /// The indexed file with the given URI, or <see langword="null"/> if the editor does not see it.
+    /// </summary>
+    /// <param name="uri">The file's URI.</param>
+    public IndexedFile? Find(DocumentUri uri) => files.TryGetValue(uri, out var file) ? file : null;
+
     /// <summary>Re-indexes a document whose buffer changed, or falls back to the file on disk when it was closed.</summary>
     private void Refresh(DocumentUri uri)
     {
