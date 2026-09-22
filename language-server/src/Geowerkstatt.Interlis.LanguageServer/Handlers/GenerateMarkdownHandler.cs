@@ -1,6 +1,7 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.JsonRpc;
@@ -20,14 +21,14 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
     public const string Command = "generateMarkdown";
 
     private readonly ILogger<GenerateMarkdownHandler> logger;
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly InterlisEnvironmentCache environmentCache;
     private readonly ILanguageServerFacade languageServer;
     private readonly UiLanguageContext uiLanguageContext;
 
     public GenerateMarkdownHandler(
         ILogger<GenerateMarkdownHandler> logger,
-        FileContentCache fileContentCache,
+        OpenDocuments openDocuments,
         InterlisEnvironmentCache environmentCache,
         ILanguageServerFacade languageServer,
         UiLanguageContext uiLanguageContext,
@@ -35,7 +36,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         : base(Command, serializer)
     {
         this.logger = logger;
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.environmentCache = environmentCache;
         this.languageServer = languageServer;
         this.uiLanguageContext = uiLanguageContext;
@@ -56,7 +57,7 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
         }
 
         // Only open documents are known to the server; the client shows "please re-open the file" for null.
-        if (options.Uri is not { } uriString || !fileContentCache.Contains(DocumentUri.From(uriString)))
+        if (options.Uri is not { } uriString || !openDocuments.Contains(DocumentUri.From(uriString)))
         {
             return null;
         }

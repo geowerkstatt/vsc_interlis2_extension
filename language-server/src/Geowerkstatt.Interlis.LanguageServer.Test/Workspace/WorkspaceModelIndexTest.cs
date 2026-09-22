@@ -25,9 +25,9 @@ public class WorkspaceModelIndexTest
 
     private const string TempFolderName = "INTERLIS Language Server Test";
 
-    private static (FileContentCache Buffers, WorkspaceModelIndex Index) CreateIndex()
+    private static (OpenDocuments Buffers, WorkspaceModelIndex Index) CreateIndex()
     {
-        var buffers = new FileContentCache();
+        var buffers = new OpenDocuments();
         var externalFiles = new ExternalImportFileService(NullLogger<ExternalImportFileService>.Instance, Options.Create(new ServerOptions { LanguageName = "INTERLIS2", TempFolderName = TempFolderName }));
         return (buffers, new WorkspaceModelIndex(buffers, externalFiles, NullLogger<WorkspaceModelIndex>.Instance));
     }
@@ -37,7 +37,7 @@ public class WorkspaceModelIndexTest
     {
         var (buffers, index) = CreateIndex();
         var repositoryCopy = DocumentUri.FromFileSystemPath(Path.Combine(Path.GetTempPath(), TempFolderName, "models.interlis.ch", "core", "B.ili"));
-        buffers.UpdateBuffer(repositoryCopy, ModelB);
+        buffers.Update(repositoryCopy, ModelB);
 
         Assert.IsNull(index.FindModel("B", 2.4));
     }
@@ -47,7 +47,7 @@ public class WorkspaceModelIndexTest
     {
         var (buffers, index) = CreateIndex();
         var uri = DocumentUri.From("file:///c:/work/b.ili");
-        buffers.UpdateBuffer(uri, ModelB);
+        buffers.Update(uri, ModelB);
 
         var found = index.FindModel("B", 2.4);
 
@@ -63,12 +63,12 @@ public class WorkspaceModelIndexTest
     {
         var (buffers, index) = CreateIndex();
         var uri = DocumentUri.From("file:///c:/work/b.ili");
-        buffers.UpdateBuffer(uri, ModelB);
+        buffers.Update(uri, ModelB);
 
         Assert.IsNull(index.FindModel("B", 2.3));
         Assert.IsNull(index.FindModel("Unknown", 2.4));
 
-        buffers.ClearBuffer(uri);
+        buffers.Close(uri);
         Assert.IsNull(index.FindModel("B", 2.4));
     }
 
@@ -80,9 +80,9 @@ public class WorkspaceModelIndexTest
         var changes = new List<(DocumentUri Uri, IReadOnlyCollection<string> Models)>();
         index.FileChanged += (changedUri, models) => changes.Add((changedUri, models));
 
-        buffers.UpdateBuffer(uri, ModelA);
-        buffers.UpdateBuffer(uri, ModelA);
-        buffers.UpdateBuffer(uri, ModelB);
+        buffers.Update(uri, ModelA);
+        buffers.Update(uri, ModelA);
+        buffers.Update(uri, ModelB);
 
         // The repeated identical text raises nothing.
         Assert.AreEqual(2, changes.Count);

@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Services;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -19,14 +20,14 @@ namespace Geowerkstatt.Interlis.LanguageServer.Diagnostics;
 /// </summary>
 internal sealed class DiagnosticsPublisher
 {
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly InterlisEnvironmentCache environmentCache;
     private readonly ILanguageServerFacade languageServer;
     private readonly ILogger<DiagnosticsPublisher> logger;
 
-    public DiagnosticsPublisher(FileContentCache fileContentCache, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, ILogger<DiagnosticsPublisher> logger)
+    public DiagnosticsPublisher(OpenDocuments openDocuments, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, ILogger<DiagnosticsPublisher> logger)
     {
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.environmentCache = environmentCache;
         this.languageServer = languageServer;
         this.logger = logger;
@@ -45,7 +46,7 @@ internal sealed class DiagnosticsPublisher
 
     private void OnDocumentInvalidated(DocumentUri uri)
     {
-        if (fileContentCache.Contains(uri))
+        if (openDocuments.Contains(uri))
         {
             Schedule(uri);
         }

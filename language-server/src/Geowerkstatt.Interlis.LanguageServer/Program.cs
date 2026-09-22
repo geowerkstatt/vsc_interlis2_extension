@@ -37,7 +37,7 @@ var server = await LanguageServer.From(options =>
                 .AddOptions<ServerOptions>()
                 .BindConfiguration(ServerOptions.ConfigSection);
 
-            services.AddSingleton<FileContentCache>();
+            services.AddSingleton<OpenDocuments>();
             services.AddSingleton<InterlisEnvironmentCache>();
             services.AddSingleton<ReferenceCache>();
             services.AddSingleton<UiLanguageContext>();

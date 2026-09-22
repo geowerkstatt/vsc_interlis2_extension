@@ -26,18 +26,18 @@ public sealed class WorkspaceModelIndex
     /// </summary>
     public event Action<DocumentUri, IReadOnlyCollection<string>>? FileChanged;
 
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly ExternalImportFileService externalImportFileService;
     private readonly ILogger<WorkspaceModelIndex> logger;
     private readonly ConcurrentDictionary<DocumentUri, IndexedFile> files = new();
 
-    public WorkspaceModelIndex(FileContentCache fileContentCache, ExternalImportFileService externalImportFileService, ILogger<WorkspaceModelIndex> logger)
+    public WorkspaceModelIndex(OpenDocuments openDocuments, ExternalImportFileService externalImportFileService, ILogger<WorkspaceModelIndex> logger)
     {
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.externalImportFileService = externalImportFileService;
         this.logger = logger;
 
-        this.fileContentCache.DocumentInvalidated += Refresh;
+        this.openDocuments.DocumentChanged += Refresh;
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public sealed class WorkspaceModelIndex
                     foreach (var path in Directory.EnumerateFiles(folder.GetFileSystemPath(), "*.ili", SearchOption.AllDirectories))
                     {
                         var uri = DocumentUri.FromFileSystemPath(path);
-                        if (!fileContentCache.Contains(uri))
+                        if (!openDocuments.Contains(uri))
                         {
                             IndexFromDisk(uri);
                         }
@@ -84,7 +84,7 @@ public sealed class WorkspaceModelIndex
         // An open document is indexed from its buffer (see Refresh), which may be ahead of the disk: re-indexing it
         // from disk here would revert the entry to the saved text and recompile its dependents against it. A deleted
         // open document stays indexed too; Refresh drops it once the editor closes it and the file is still gone.
-        if (fileContentCache.Contains(uri) || externalImportFileService.IsExternalFile(uri))
+        if (openDocuments.Contains(uri) || externalImportFileService.IsExternalFile(uri))
         {
             return;
         }
@@ -111,7 +111,7 @@ public sealed class WorkspaceModelIndex
     {
         var candidates = files.Values
             .Where(file => file.Models.Contains(modelName) && (version == null || file.Version == version))
-            .OrderByDescending(file => fileContentCache.Contains(file.Uri))
+            .OrderByDescending(file => openDocuments.Contains(file.Uri))
             .ThenBy(file => file.Uri.ToString(), StringComparer.Ordinal)
             .ToList();
 
@@ -131,7 +131,7 @@ public sealed class WorkspaceModelIndex
             return;
         }
 
-        if (fileContentCache.TryGetBuffer(uri, out var buffer))
+        if (openDocuments.TryGetText(uri, out var buffer))
         {
             Index(uri, buffer);
         }

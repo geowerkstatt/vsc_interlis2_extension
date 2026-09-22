@@ -14,16 +14,16 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     /// <inheritdoc />
     public event Action<DocumentUri>? DocumentInvalidated;
 
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly CompilationService compilationService;
     private readonly ConcurrentDictionary<string, (string Source, Compilation Compilation)> compilationCache = new();
 
-    public InterlisEnvironmentCache(FileContentCache fileContentCache, CompilationService compilationService, WorkspaceModelIndex workspaceModelIndex)
+    public InterlisEnvironmentCache(OpenDocuments openDocuments, CompilationService compilationService, WorkspaceModelIndex workspaceModelIndex)
     {
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.compilationService = compilationService;
 
-        this.fileContentCache.DocumentInvalidated += InvalidateCache;
+        this.openDocuments.DocumentChanged += InvalidateCache;
         workspaceModelIndex.FileChanged += InvalidateDependents;
     }
 
@@ -70,7 +70,7 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
     /// <returns>The document's environment and the compiler's diagnostics; empty for an unknown or empty document.</returns>
     public async ValueTask<Compilation> GetCompilationAsync(DocumentUri uri, CancellationToken cancellationToken = default)
     {
-        var source = await fileContentCache.GetAsync(uri);
+        var source = openDocuments.GetText(uri);
         if (compilationCache.TryGetValue(uri.ToString(), out var cached) && cached.Source == source)
         {
             return cached.Compilation;
@@ -85,7 +85,7 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
 
         // The document may have changed while compiling (the change invalidated the cache, but this compilation
         // would re-populate it with a stale result): only keep it if the buffer still holds the compiled source.
-        if (await fileContentCache.GetAsync(uri) == source)
+        if (openDocuments.GetText(uri) == source)
         {
             compilationCache[uri.ToString()] = (source, compilation);
         }

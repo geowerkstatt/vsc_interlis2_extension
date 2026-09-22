@@ -1,6 +1,7 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -20,15 +21,15 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
 
     private readonly ILogger<GenerateDiagramHandler> logger;
     private readonly ILoggerFactory loggerFactory;
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly InterlisEnvironmentCache environmentCache;
     private readonly ILanguageServerFacade languageServer;
     private readonly UiLanguageContext uiLanguageContext;
 
-    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, FileContentCache fileContentCache, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, UiLanguageContext uiLanguageContext, ISerializer serializer) : base(Command, serializer)
+    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, OpenDocuments openDocuments, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, UiLanguageContext uiLanguageContext, ISerializer serializer) : base(Command, serializer)
     {
         this.logger = logger;
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.environmentCache = environmentCache;
         this.loggerFactory = loggerFactory;
         this.languageServer = languageServer;
@@ -50,7 +51,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         }
 
         // Only open documents are known to the server; the client shows "Could not load diagram." for null.
-        if (options.Uri is not { } uriString || !fileContentCache.Contains(DocumentUri.From(uriString)))
+        if (options.Uri is not { } uriString || !openDocuments.Contains(DocumentUri.From(uriString)))
         {
             return null;
         }
