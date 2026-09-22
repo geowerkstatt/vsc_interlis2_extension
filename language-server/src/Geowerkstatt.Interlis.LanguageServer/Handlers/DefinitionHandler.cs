@@ -1,5 +1,6 @@
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Microsoft.Extensions.Logging;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -24,7 +25,7 @@ internal class DefinitionHandler(ILogger<DefinitionHandler> logger, ReferenceCac
             .Where(r => r.OccurenceStart <= location && r.OccurenceEnd >= location && r.Target.NameLocations.Count != 0)
             .Select(r => new Location
             {
-                Uri = r.TargetFile,
+                Uri = DocumentUri.From(r.Target.NameLocations.First().SourceUri!),
                 Range = r.Target.NameLocations.First().ToOmnisharpRange(),
             })
             .Select(location => new LocationOrLocationLink(location))

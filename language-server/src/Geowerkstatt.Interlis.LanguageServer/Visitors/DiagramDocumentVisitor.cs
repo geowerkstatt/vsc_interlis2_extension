@@ -267,7 +267,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             text = locale.NumericLabel;
         }
 
-        var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault();
+        var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault()?.Name;
         if (!string.IsNullOrEmpty(unitName))
             text += $" [{EscapeMermaidText(unitName)}]";
 
@@ -297,14 +297,14 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             },
             EnumerationType et =>
                 $"Enum{MermaidConstants.LeftParenthesis}{FormatEnumerationValues(et.Values)}{MermaidConstants.RightParenthesis}",
-            EnumerationValuesType enumValues => EscapeMermaidText(enumValues.TargetEnumeration?.Path.LastOrDefault() ?? "?"),
-            FormattedType formatted => EscapeMermaidText(formatted.BasedOn?.Path.LastOrDefault()
-                                       ?? formatted.FormatBaseType?.Path.LastOrDefault()
+            EnumerationValuesType enumValues => EscapeMermaidText(enumValues.TargetEnumeration?.Path.LastOrDefault()?.Name ?? "?"),
+            FormattedType formatted => EscapeMermaidText(formatted.BasedOn?.Path.LastOrDefault()?.Name
+                                       ?? formatted.FormatBaseType?.Path.LastOrDefault()?.Name
                                        ?? "Format"),
             SurfaceType surface => (surface.IsMultiGeometry ? "Multi" : "") + (surface.IsCoverage ? "Area" : "Surface"),
             PolyLineType polyLine => (polyLine.IsMultiGeometry ? "Multi" : "") + "Polyline",
             CoordType coord => (coord.IsMultiGeometry ? "Multi" : "") + "Coord",
-            TypeRef tr => EscapeMermaidText(tr.Extends?.Path.Last() ?? "?"),
+            TypeRef tr => EscapeMermaidText(tr.Extends?.Path.Last().Name ?? "?"),
             ObjectType ot => EscapeMermaidText(FormatTargetNames(ot.Targets)),
             UnresolvedNamedType un => EscapeMermaidText(un.Target.Value.GetTargetName() ?? "?"),
             RoleType => "Role",
@@ -369,7 +369,7 @@ internal class DiagramDocumentVisitor : Interlis24AstBaseVisitor<object?>
             {
                 string parentLabel = extRef.Target is ClassDef parentClass
                     ? GetMermaidClassId(parentClass)
-                    : $"`{EscapeMermaidText(extRef.Path.Last())} #60;#60;EXTERNAL#62;#62;`";
+                    : $"`{EscapeMermaidText(extRef.Path.Last().Name)} #60;#60;EXTERNAL#62;#62;`";
 
                 // `Parent <|-- Child` renders the same generalization arrow as
                 // `Child --|> Parent`, but Mermaid's layout ranks the edge source

@@ -289,7 +289,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
             SurfaceType surfaceType => FormatGeometryName(surfaceType),
             PolyLineType polyLineType => FormatPolyLineName(polyLineType),
             CoordType coordType => FormatCoordName(coordType),
-            TypeRef typeRef => typeRef.Extends?.Path.Last(),
+            TypeRef typeRef => typeRef.Extends?.Path.Last().Name,
             UnresolvedNamedType unresolvedType => unresolvedType.Target.Value.GetTargetName(),
             RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value.GetTargetName()).Where(target => target is not null)),
             _ => type?.ToString(),
@@ -353,10 +353,10 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         return name;
     }
 
-    private static string FormatQualifiedPath(IEnumerable<string>? path)
+    private static string FormatQualifiedPath(IEnumerable<PathSegment>? path)
     {
         if (path == null) return "?";
-        var joined = string.Join(".", path);
+        var joined = string.Join(".", path.Select(segment => segment.Name));
         return string.IsNullOrEmpty(joined) ? "?" : joined;
     }
 

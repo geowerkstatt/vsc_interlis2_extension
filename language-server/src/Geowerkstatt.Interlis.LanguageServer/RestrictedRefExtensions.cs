@@ -16,7 +16,7 @@ public static class RestrictedRefExtensions
     {
         return target switch
         {
-            RestrictedRef.DefinitionRef definitionRef => definitionRef.Reference?.Path.LastOrDefault(),
+            RestrictedRef.DefinitionRef definitionRef => definitionRef.Reference?.Path.LastOrDefault()?.Name,
             RestrictedRef.AnyRef anyRef => anyRef.Kind switch
             {
                 RestrictedRef.AnyKind.Class => "ANYCLASS",
