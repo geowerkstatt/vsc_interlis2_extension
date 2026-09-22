@@ -3,6 +3,7 @@
 
 * Diagnostics: syntax errors, unresolved references, invalid paths and type errors are shown in the editor while typing. A missing or incompatible imported model is reported at its `IMPORTS` entry instead of a popup.
 * Imports resolve to open documents and `*.ili` files in the workspace before the model repositories are searched, so models under development can import each other.
+* _Find All References_ lists the uses of an element across the workspace, from a use, a qualifying name or the declaration, without the importing files having to be open.
 * Outline, breadcrumbs and _Go to Symbol in Editor_ show the definitions of the file (document symbols).
 * Markdown documentation and the diagram are generated from the same compilation as the diagnostics, so they see the imported models and reuse the cached result.
 * Markdown documentation:

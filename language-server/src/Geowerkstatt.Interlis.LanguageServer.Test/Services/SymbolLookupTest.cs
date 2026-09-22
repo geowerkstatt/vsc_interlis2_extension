@@ -100,6 +100,21 @@ public class SymbolLookupTest
     }
 
     [TestMethod]
+    public void OccurrencesIncludeTheNamesQualifyingAnotherName()
+    {
+        var lookup = Lookup();
+
+        var topic = lookup.Occurrences(lookup.DeclaredAt(new Position(2, 10))!).Single();
+        Assert.AreEqual(Document, topic.Uri);
+        Assert.AreEqual(new Range(8, 36, 8, 41), topic.Range);
+
+        var model = lookup.Occurrences(lookup.DeclaredAt(new Position(1, 6))!).Single();
+        Assert.AreEqual(new Range(8, 30, 8, 35), model.Range);
+
+        Assert.AreEqual(0, lookup.Occurrences(lookup.DeclaredAt(new Position(8, 14))!).Count(), "a declaration is not an occurrence");
+    }
+
+    [TestMethod]
     public void DeclarationLocationsAreTheOpeningNameThenTheNameAfterEnd()
     {
         var lookup = Lookup();
@@ -123,6 +138,8 @@ public class SymbolLookupTest
         Assert.AreSame(metaObject, lookup.DeclaredAt(new Position(2, 64)));
 
         Assert.AreEqual("2:61-2:65", Describe(SymbolLookup.DeclarationLocations(metaObject)));
+        Assert.AreEqual("11:51-11:55, 12:58-12:62", Describe(lookup.Occurrences(metaObject)));
+        CollectionAssert.AreEqual(new[] { "Model" }, lookup.DeclaringModels(metaObject).Select(m => m.Name).ToList());
     }
 
     [TestMethod]

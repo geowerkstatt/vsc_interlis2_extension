@@ -4,6 +4,7 @@ using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Position = OmniSharp.Extensions.LanguageServer.Protocol.Models.Position;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
@@ -46,6 +47,15 @@ internal sealed class SymbolLookup(InterlisEnvironmentCache environmentCache, Re
             .Select(name => new Location { Uri = DocumentUri.From(name.SourceUri!), Range = name.ToOmnisharpRange() });
     }
 
+    /// <summary>
+    /// Identifies an element across compilations by where its name is declared (file and span). Every compilation
+    /// parses the models it imports again, so the same element is a different object in each of them and cannot be
+    /// matched by identity; and a meta object has no fully qualified name to match by. <see langword="null"/> for an
+    /// element never written down.
+    /// </summary>
+    /// <param name="target">The element.</param>
+    public static string? DeclarationKey(IReferenceTarget target)
+        => target.NameLocations.FirstOrDefault() is { SourceUri: { } uri } name ? $"{uri}#{name}" : null;
 }
 
 /// <summary>
@@ -97,6 +107,34 @@ internal sealed record DocumentLookup(DocumentUri Uri, Compilation Compilation, 
         => Compilation.ForDocument(Uri).Content.Values
             .SelectMany(model => model.ReferenceTargets())
             .FirstOrDefault(target => target.NameLocations.Any(name => Contains(name, position)));
+
+    /// <summary>
+    /// The models of the file that declares <paramref name="target"/>, as this document's compilation knows them:
+    /// the files that can name the element are those defining or importing one of these models.
+    /// </summary>
+    /// <param name="target">The element.</param>
+    public IEnumerable<ModelDef> DeclaringModels(IReferenceTarget target)
+    {
+        var declaringFile = target.NameLocations.FirstOrDefault()?.SourceUri;
+        return declaringFile == null ? [] : Compilation.Environment.Content.Values.Where(model => model.SourceUri == declaringFile);
+    }
+
+    /// <summary>
+    /// The places this document writes the name of <paramref name="target"/>: where it is used, where it qualifies
+    /// another name (<c>Topic</c> in <c>Model.Topic.ClassA</c>) and where it qualifies a role (<c>Assoc</c> in
+    /// <c>Role[Assoc]</c>), each as the span of that one name. Matched by <see cref="SymbolLookup.DeclarationKey"/>,
+    /// because the element is a different object in every compilation.
+    /// </summary>
+    /// <param name="target">The element.</param>
+    public IEnumerable<Location> Occurrences(IReferenceTarget target)
+    {
+        var key = SymbolLookup.DeclarationKey(target);
+        return key == null
+            ? []
+            : References
+                .Where(reference => SymbolLookup.DeclarationKey(reference.Target) == key)
+                .Select(reference => new Location { Uri = Uri, Range = new Range(reference.OccurenceStart, reference.OccurenceEnd) });
+    }
 
     private static bool Contains(RangePosition range, Position position)
         => range.Start.ToOmnisharpPosition() <= position && range.End.ToOmnisharpPosition() >= position;

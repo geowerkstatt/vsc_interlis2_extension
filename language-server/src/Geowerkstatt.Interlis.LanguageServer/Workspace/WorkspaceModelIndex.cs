@@ -129,6 +129,20 @@ public sealed class WorkspaceModelIndex
     /// <param name="uri">The file's URI.</param>
     public IndexedFile? Find(DocumentUri uri) => files.TryGetValue(uri, out var file) ? file : null;
 
+    /// <summary>
+    /// The files that can name an element of the model <paramref name="modelName"/>: the files defining the model
+    /// and the files depending on it. A file can only name an element of a model it declares or imports, so no
+    /// other file has to be searched for references.
+    /// </summary>
+    /// <param name="modelName">The name of the model.</param>
+    public IReadOnlyList<IndexedFile> FindFilesUsing(string modelName)
+    {
+        return files.Values
+            .Where(file => file.Models.Contains(modelName) || file.Dependencies.Contains(modelName))
+            .OrderBy(file => file.Uri.ToString(), StringComparer.Ordinal)
+            .ToList();
+    }
+
     /// <summary>Re-indexes a document whose buffer changed, or falls back to the file on disk when it was closed.</summary>
     private void Refresh(DocumentUri uri)
     {

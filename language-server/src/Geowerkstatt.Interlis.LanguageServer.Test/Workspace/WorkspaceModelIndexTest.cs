@@ -91,6 +91,21 @@ public class WorkspaceModelIndexTest
     }
 
     [TestMethod]
+    public void FindFilesUsingReturnsTheDefiningAndTheDependingFiles()
+    {
+        var (buffers, index) = CreateIndex();
+        var a = DocumentUri.From("file:///c:/work/a.ili");
+        var b = DocumentUri.From("file:///c:/work/b.ili");
+        buffers.Update(a, ModelA);
+        buffers.Update(b, ModelB);
+
+        // A defines A and imports B, B defines B.
+        CollectionAssert.AreEqual(new[] { a, b }, index.FindFilesUsing("B").Select(f => f.Uri).ToList());
+        CollectionAssert.AreEqual(new[] { a }, index.FindFilesUsing("A").Select(f => f.Uri).ToList());
+        Assert.AreEqual(0, index.FindFilesUsing("Unknown").Count);
+    }
+
+    [TestMethod]
     public async Task IndexesWatchedFilesFromDisk()
     {
         var (_, index) = CreateIndex();
