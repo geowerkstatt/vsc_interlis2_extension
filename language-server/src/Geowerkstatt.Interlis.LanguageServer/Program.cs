@@ -39,13 +39,13 @@ var server = await LanguageServer.From(options =>
 
             services.AddSingleton<OpenDocuments>();
             services.AddSingleton<InterlisEnvironmentCache>();
-            services.AddSingleton<ReferenceCache>();
             services.AddSingleton<UiLanguageContext>();
             services.AddSingleton<DiagnosticsPublisher>();
             services.AddSingleton<WorkspaceModelIndex>();
 
             services.AddSingleton<ExternalImportFileService>();
             services.AddTransient<CompilationService>();
+            services.AddTransient<SymbolLookup>();
             services.AddSingleton(provider => new RepositorySearcher(
                 provider.GetRequiredService<IRepositoryCrawler>(),
                 provider.GetRequiredService<IConfiguration>(),

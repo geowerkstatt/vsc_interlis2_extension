@@ -7,6 +7,41 @@ namespace Geowerkstatt.Interlis.LanguageServer;
 [TestClass]
 public class AstExtensionsTest
 {
+    private const string TestModel = """
+        INTERLIS 2.4;
+        MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+            TOPIC TestTopic =
+                CLASS ClassA =
+                    attrA : TEXT*10;
+                    MANDATORY CONSTRAINT DEFINED (attrA);
+                END ClassA;
+            END TestTopic;
+        END TestModel.
+        """;
+
+    private static ModelDef Model()
+    {
+        var environment = new InterlisReader().ReadFile(new StringReader(TestModel), "file:///test.ili");
+        return (ModelDef)environment.Content["TestModel"];
+    }
+
+    [TestMethod]
+    public void SelfAndDescendantsCoversContentAndConstraints()
+    {
+        var names = Model().SelfAndDescendants().Select(d => d.FullyQualifiedName).ToList();
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "TestModel",
+                "TestModel.TestTopic",
+                "TestModel.TestTopic.ClassA",
+                "TestModel.TestTopic.ClassA.attrA",
+                "TestModel.TestTopic.ClassA.Constraint1",
+            },
+            names);
+    }
+
     [TestMethod]
     public void WrittenNamesIncludeTheAssociationQualifyingARole()
     {

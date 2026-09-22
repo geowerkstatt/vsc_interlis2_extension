@@ -13,7 +13,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Cache;
 /// compiled from the indexed content, so an entry is kept for every file that was compiled, not only for the open
 /// ones. Entries live until the file changes; nothing else evicts them.
 /// </summary>
-public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
+public sealed class InterlisEnvironmentCache
 {
     /// <summary>Raised when a document's compilation was dropped, so that what is derived from it can be recomputed.</summary>
     public event Action<DocumentUri>? DocumentInvalidated;
@@ -70,9 +70,6 @@ public sealed class InterlisEnvironmentCache : ICache<InterlisEnvironment>
             }
         }
     }
-
-    /// <inheritdoc />
-    public async ValueTask<InterlisEnvironment> GetAsync(DocumentUri uri) => (await GetCompilationAsync(uri)).Environment;
 
     /// <summary>
     /// Gets or computes the compilation of the given document.
