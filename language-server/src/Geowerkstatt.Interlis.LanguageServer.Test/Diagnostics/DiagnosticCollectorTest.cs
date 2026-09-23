@@ -34,6 +34,20 @@ public class DiagnosticCollectorTest
     }
 
     [TestMethod]
+    public void IgnoresTheUnsupportedVersionWarning()
+    {
+        var collector = new DiagnosticCollector();
+        using (var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(collector)))
+        {
+            new InterlisReader(loggerFactory).ReadFile(new StringReader(ModelWithUnresolvedType.Replace("INTERLIS 2.4;", "INTERLIS 2.3;")), "file:///test.ili");
+        }
+
+        // Only the model's own problem is left.
+        var diagnostic = collector.Diagnostics.Single();
+        Assert.AreEqual("Could not resolve 'reference 'Unknown' from TestModel.TestTopic.ClassA' at 5:19-5:26", diagnostic.Message);
+    }
+
+    [TestMethod]
     public void IgnoresLogEntriesWithoutRange()
     {
         var collector = new DiagnosticCollector();

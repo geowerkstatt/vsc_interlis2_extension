@@ -73,6 +73,7 @@ var server = await LanguageServer.From(options =>
         .WithHandler<ReferencesHandler>()
         .WithHandler<RenameHandler>()
         .WithHandler<HoverHandler>()
+        .WithHandler<InterlisVersionHandler>()
         .OnInitialize((server, request, _) =>
         {
             // The publisher (and the caches it depends on) work from events, so they must exist before anything
