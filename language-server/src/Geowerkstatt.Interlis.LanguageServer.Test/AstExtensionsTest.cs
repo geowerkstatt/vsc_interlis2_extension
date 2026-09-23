@@ -74,4 +74,50 @@ public class AstExtensionsTest
         CollectionAssert.AreEqual(new[] { "THIS", "RoleB", "Assoc", "Flag" }, path.WrittenNames().Select(name => name.Name).ToList());
         Assert.AreEqual(3, path.Path.Count);
     }
+
+    [TestMethod]
+    public void NameSourceIsTheElementANameFollows()
+    {
+        var environment = new InterlisReader().ReadFile(new StringReader("""
+            INTERLIS 2.4;
+            MODEL Model AT "http://example.com" VERSION "1.0.0" =
+                TOPIC Topic =
+                    CLASS Base =
+                        Flag : BOOLEAN;
+                    END Base;
+
+                    CLASS Derived EXTENDS Base =
+                        Flag (EXTENDED) : BOOLEAN;
+                    END Derived;
+
+                    VIEW Implicit
+                        PROJECTION OF Base;
+                        =
+                        ALL OF Base;
+                    END Implicit;
+
+                    VIEW Explicit
+                        PROJECTION OF Alias ~ Base;
+                        =
+                        ALL OF Alias;
+                    END Explicit;
+                END Topic;
+
+                TOPIC Extending EXTENDS Topic =
+                    CLASS Base (EXTENDED) =
+                    END Base;
+                END Extending;
+            END Model.
+            """), "file:///test.ili");
+        var definitions = ((ModelDef)environment.Content["Model"]).SelfAndDescendants().ToDictionary(d => d.FullyQualifiedName);
+
+        // An EXTENDED attribute or class redefines the inherited element of its name; an implicit base name is the
+        // name of the viewable it stands for. Everything else, an explicit alias included, names itself.
+        Assert.AreSame(definitions["Model.Topic.Base -> Flag"], definitions["Model.Topic.Derived -> Flag"].NameSource());
+        Assert.AreSame(definitions["Model.Topic.Base"], definitions["Model.Extending.Base"].NameSource());
+        Assert.AreSame(definitions["Model.Topic.Base"], definitions["Model.Topic.Implicit.Base"].NameSource());
+        Assert.IsNull(definitions["Model.Topic.Explicit.Alias"].NameSource());
+        Assert.IsNull(definitions["Model.Topic.Base -> Flag"].NameSource());
+        Assert.IsNull(definitions["Model.Topic.Base"].NameSource());
+    }
 }

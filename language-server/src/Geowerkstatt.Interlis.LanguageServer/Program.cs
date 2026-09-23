@@ -71,6 +71,7 @@ var server = await LanguageServer.From(options =>
         .WithHandler<WatchedFilesHandler>()
         .WithHandler<DocumentSymbolHandler>()
         .WithHandler<ReferencesHandler>()
+        .WithHandler<RenameHandler>()
         .OnInitialize((server, request, _) =>
         {
             // The publisher (and the caches it depends on) work from events, so they must exist before anything

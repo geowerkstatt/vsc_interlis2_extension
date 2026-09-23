@@ -65,6 +65,38 @@ public class SymbolLookupTest
         END Model.
         """;
 
+    private const string NamesakeModel = """
+        INTERLIS 2.4;
+        MODEL Model AT "http://example.com" VERSION "1.0.0" =
+            TOPIC Topic =
+                CLASS Base =
+                    Flag : BOOLEAN;
+                END Base;
+
+                CLASS Derived EXTENDS Base =
+                    Flag (EXTENDED) : BOOLEAN;
+                END Derived;
+
+                VIEW Implicit
+                    PROJECTION OF Base;
+                    =
+                    ALL OF Base;
+                END Implicit;
+
+                VIEW Explicit
+                    PROJECTION OF Alias ~ Base;
+                    =
+                    ALL OF Alias;
+                END Explicit;
+            END Topic;
+
+            TOPIC Extending EXTENDS Topic =
+                CLASS Base (EXTENDED) =
+                END Base;
+            END Extending;
+        END Model.
+        """;
+
     /// <summary>Renders locations as <c>line:start-line:end</c>, comma separated, so a failure shows the actual spans.</summary>
     private static string Describe(IEnumerable<Location> locations)
         => string.Join(", ", locations.Select(l => $"{l.Range.Start.Line}:{l.Range.Start.Character}-{l.Range.End.Line}:{l.Range.End.Character}"));
@@ -159,5 +191,30 @@ public class SymbolLookupTest
         Assert.IsInstanceOfType<ClassDef>(lookup.FindAt(new Position(8, 28)));
         Assert.IsInstanceOfType<ClassDef>(lookup.ReferencedAt(new Position(8, 28)));
         Assert.AreSame(allOf, lookup.DeclaredAt(new Position(8, 28)));
+    }
+
+    [TestMethod]
+    public void NameRangeAtIsTheSpanOfTheNameUnderThePosition()
+    {
+        var lookup = Lookup();
+
+        Assert.AreEqual(new Range(8, 36, 8, 41), lookup.NameRangeAt(new Position(8, 38)), "a name qualifying another one");
+        Assert.AreEqual(new Range(3, 14, 3, 18), lookup.NameRangeAt(new Position(3, 15)), "a declaration");
+        Assert.AreEqual(new Range(9, 12, 9, 19), lookup.NameRangeAt(new Position(9, 19)), "the name after END, from its end");
+        Assert.IsNull(lookup.NameRangeAt(new Position(3, 8)), "the CLASS keyword names nothing");
+    }
+
+    [TestMethod]
+    public void NamedAfterListsTheElementsThatFollowAnotherElementsName()
+    {
+        var lookup = Lookup(NamesakeModel);
+        var baseClass = lookup.DeclaredAt(new Position(3, 15))!;
+        var flag = lookup.DeclaredAt(new Position(4, 13))!;
+
+        // The implicit base name of the view over Base and the EXTENDED class of the extending topic follow the
+        // class's name; the explicit alias chooses its own. The EXTENDED attribute follows the base attribute.
+        CollectionAssert.AreEqual(new[] { "Model.Topic.Implicit.Base", "Model.Extending.Base" }, lookup.NamedAfter(baseClass).Select(d => d.FullyQualifiedName).ToList());
+        CollectionAssert.AreEqual(new[] { "Model.Topic.Derived -> Flag" }, lookup.NamedAfter(flag).Select(d => d.FullyQualifiedName).ToList());
+        Assert.AreEqual(0, lookup.NamedAfter(lookup.DeclaredAt(new Position(18, 27))!).Count(), "nothing follows the alias");
     }
 }

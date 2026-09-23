@@ -10,7 +10,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
 /// <summary>
 /// Answers what a position in a document names and where an element's name is written, for the features that
-/// navigate by name (go-to-definition, find-references and, later, rename). An element is any
+/// navigate by name (go-to-definition, find-references and rename). An element is any
 /// <see cref="IReferenceTarget"/>: a definition, or a meta object a basket declares, which can be pointed at
 /// without being a definition.
 /// </summary>
@@ -104,9 +104,37 @@ internal sealed record DocumentLookup(DocumentUri Uri, Compilation Compilation, 
     /// </summary>
     /// <param name="position">The position in the document.</param>
     public IReferenceTarget? DeclaredAt(Position position)
-        => Compilation.ForDocument(Uri).Content.Values
-            .SelectMany(model => model.ReferenceTargets())
-            .FirstOrDefault(target => target.NameLocations.Any(name => Contains(name, position)));
+        => Declared().FirstOrDefault(target => target.NameLocations.Any(name => Contains(name, position)));
+
+    /// <summary>
+    /// The span of the name written at <paramref name="position"/>, be it a use or a declaration, or
+    /// <see langword="null"/> when no name is written there: the text a rename started there replaces.
+    /// </summary>
+    /// <param name="position">The position in the document.</param>
+    public Range? NameRangeAt(Position position)
+    {
+        if (References.FirstOrDefault(r => r.OccurenceStart <= position && r.OccurenceEnd >= position) is { } reference)
+        {
+            return new Range(reference.OccurenceStart, reference.OccurenceEnd);
+        }
+
+        return Declared().SelectMany(target => target.NameLocations).FirstOrDefault(name => Contains(name, position))?.ToOmnisharpRange();
+    }
+
+    /// <summary>
+    /// The elements this document declares that take their name from <paramref name="target"/> instead of choosing
+    /// their own (see <see cref="AstExtensions.NameSource"/>): the implicit base names of views over it and the
+    /// <c>EXTENDED</c> redefinitions of it. They have to follow when the element is renamed. Matched by
+    /// <see cref="SymbolLookup.DeclarationKey"/>, because the element is a different object in every compilation.
+    /// </summary>
+    /// <param name="target">The element.</param>
+    public IEnumerable<IInterlisDefinition> NamedAfter(IReferenceTarget target)
+    {
+        var key = SymbolLookup.DeclarationKey(target);
+        return key == null
+            ? []
+            : Declared().OfType<IInterlisDefinition>().Where(definition => definition.NameSource() is { } source && SymbolLookup.DeclarationKey(source) == key);
+    }
 
     /// <summary>
     /// The models of the file that declares <paramref name="target"/>, as this document's compilation knows them:
@@ -135,6 +163,10 @@ internal sealed record DocumentLookup(DocumentUri Uri, Compilation Compilation, 
                 .Where(reference => SymbolLookup.DeclarationKey(reference.Target) == key)
                 .Select(reference => new Location { Uri = Uri, Range = new Range(reference.OccurenceStart, reference.OccurenceEnd) });
     }
+
+    /// <summary>The elements the document's own models declare (see <see cref="AstExtensions.ReferenceTargets"/>).</summary>
+    private IEnumerable<IReferenceTarget> Declared()
+        => Compilation.ForDocument(Uri).Content.Values.SelectMany(model => model.ReferenceTargets());
 
     private static bool Contains(RangePosition range, Position position)
         => range.Start.ToOmnisharpPosition() <= position && range.End.ToOmnisharpPosition() >= position;
