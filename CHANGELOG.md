@@ -30,6 +30,7 @@
 * Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
 * Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
 * Documentation: README troubleshooting note for `spawn UNKNOWN` when the extension folder lacks execute permission.
+* Updated INTERLIS compiler and repository crawler to 3.0.43.
 
 ### 0.4.2 - 2025-08-26
 
