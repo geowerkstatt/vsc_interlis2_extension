@@ -1,12 +1,3 @@
-using Geowerkstatt.Interlis.LanguageServer.Cache;
-using Geowerkstatt.Interlis.LanguageServer.Services;
-using Geowerkstatt.Interlis.LanguageServer.Visitors;
-using Geowerkstatt.Interlis.LanguageServer.Workspace;
-using Geowerkstatt.Interlis.RepositoryCrawler;
-using Geowerkstatt.Interlis.RepositoryCrawler.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.JsonRpc.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -56,30 +47,10 @@ public class RenameHandlerTest
         END B.
         """;
 
-    private const string TempFolderName = "INTERLIS Language Server Test";
-
     private static RenameHandler CreateHandler()
     {
-        var documents = new OpenDocuments();
-        var externalFiles = new ExternalImportFileService(NullLogger<ExternalImportFileService>.Instance, Options.Create(new ServerOptions { LanguageName = "INTERLIS2", TempFolderName = TempFolderName }));
-        var index = new WorkspaceModelIndex(documents, externalFiles, NullLogger<WorkspaceModelIndex>.Instance);
-
-        // Opened after the index exists, as in the server, so that it indexes them and B's import resolves to A.
-        documents.Update(DocumentA, ModelA);
-        documents.Update(DocumentB, ModelB);
-
-        // Every import resolves from the open documents, so the repositories are never asked; the searcher only has
-        // to be constructible.
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["RepositoryCrawler:RootRepositoryUri"] = "http://localhost",
-            ["RepositoryCrawler:CacheDbFolder"] = Path.Combine(Path.GetTempPath(), TempFolderName),
-        }).Build();
-        var repositorySearcher = new RepositorySearcher(new NoRepositories(), configuration, NullLoggerFactory.Instance);
-        var compilationService = new CompilationService(index, repositorySearcher, NullLoggerFactory.Instance, externalFiles);
-        var cache = new InterlisEnvironmentCache(documents, compilationService, index);
-
-        return new RenameHandler(new SymbolLookup(cache, new ReferenceCollectorVisitor()), index, externalFiles, TextDocumentSelector.ForLanguage("INTERLIS2"));
+        var workspace = TestWorkspace.Open((DocumentA, ModelA), (DocumentB, ModelB));
+        return new RenameHandler(workspace.SymbolLookup, workspace.Index, workspace.ExternalFiles, workspace.Selector);
     }
 
     private static Task<WorkspaceEdit?> Rename(RenameHandler handler, DocumentUri document, int line, int character, string newName)
@@ -90,7 +61,8 @@ public class RenameHandlerTest
 
     /// <summary>
     /// Renders the edits per file as <c>file: line:start-line:end, ...</c> in source order, one file per line, so a
-    /// failure shows the actual spans. Every edit is expected to write <paramref name="newName"/>.
+    /// failure shows the actual spans. Every edit is expected to write <paramref name="newName"/>. Compared with
+    /// <see cref="AssertEdits"/>, which normalizes the line endings of both sides.
     /// </summary>
     private static string Describe(WorkspaceEdit? edit, string newName)
     {
@@ -105,6 +77,10 @@ public class RenameHandlerTest
             }));
     }
 
+    /// <summary>Asserts the edits rendered by <see cref="Describe"/>, with the line endings of both sides normalized so that the raw string expectations compare on every checkout.</summary>
+    private static void AssertEdits(string expected, WorkspaceEdit? edit, string newName)
+        => Assert.AreEqual(expected.ReplaceLineEndings(), Describe(edit, newName).ReplaceLineEndings());
+
     [TestMethod]
     public async Task RenamesTheDeclarationTheUsesAndTheNamesFollowingIt()
     {
@@ -116,12 +92,12 @@ public class RenameHandlerTest
         // 'Base->Flag' (line 9) and 'ALL OF Base' (line 11).
         var edit = await Rename(handler, DocumentB, 5, 40, "Root");
 
-        Assert.AreEqual(
+        AssertEdits(
             """
             A.ili: 3:14-3:18, 5:12-5:16, 8:26-8:30, 9:26-9:30, 11:19-11:23
             B.ili: 5:38-5:42
             """,
-            Describe(edit, "Root"));
+            edit, "Root");
     }
 
     [TestMethod]
@@ -136,8 +112,8 @@ public class RenameHandlerTest
             A.ili: 4:12-4:16, 9:32-9:36
             B.ili: 6:12-6:16, 7:39-7:43
             """;
-        Assert.AreEqual(expected, Describe(await Rename(handler, DocumentA, 4, 13, "Active"), "Active"));
-        Assert.AreEqual(expected, Describe(await Rename(handler, DocumentB, 7, 41, "Active"), "Active"));
+        AssertEdits(expected, await Rename(handler, DocumentA, 4, 13, "Active"), "Active");
+        AssertEdits(expected, await Rename(handler, DocumentB, 7, 41, "Active"), "Active");
     }
 
     [TestMethod]
@@ -185,14 +161,5 @@ public class RenameHandlerTest
 
         var nothing = await Assert.ThrowsExceptionAsync<RpcErrorException>(() => Rename(handler, DocumentA, 3, 9, "Root"));
         StringAssert.Contains(nothing.Message, "no element to rename");
-    }
-
-    private sealed class NoRepositories : IRepositoryCrawler
-    {
-        public Task<IDictionary<string, Repository>> CrawlModelRepositories(RepositoryCrawlerOptions options)
-            => Task.FromResult<IDictionary<string, Repository>>(new Dictionary<string, Repository>());
-
-        public Task<InterlisFile?> FetchInterlisFile(Model model, Func<string, InterlisFile?> getCachedFile)
-            => Task.FromResult<InterlisFile?>(null);
     }
 }

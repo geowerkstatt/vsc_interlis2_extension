@@ -42,6 +42,8 @@ Imported models from the model repositories are downloaded automatically to enab
 
 _Rename Symbol_ (`F2`) renames a declared element together with all its uses in the workspace, including files that are not open. Elements of repository models cannot be renamed.
 
+Hovering a name shows the fully qualified name of the element it refers to, with each name linking to its declaration, and its doc comments (`/** ... */`).
+
 ### File associations
 
 To make VS Code treat other file extensions than the default `.ili` as INTERLIS2 files, add the following to the user settings:

@@ -5,6 +5,7 @@
 * Imports resolve to open documents and `*.ili` files in the workspace before the model repositories are searched, so models under development can import each other.
 * _Find All References_ lists the uses of an element across the workspace, from a use, a qualifying name or the declaration, without the importing files having to be open.
 * _Rename Symbol_ (`F2`) renames an element together with all its uses across the workspace, including the implicit view base names and `EXTENDED` redefinitions that follow its name. Elements of repository models cannot be renamed.
+* Hovering a name shows the qualified name of the element, each part linking to its declaration, and its doc comments (`/** ... */`).
 * Outline, breadcrumbs and _Go to Symbol in Editor_ show the definitions of the file (document symbols).
 * Markdown documentation and the diagram are generated from the same compilation as the diagnostics, so they see the imported models and reuse the cached result.
 * Markdown documentation:
