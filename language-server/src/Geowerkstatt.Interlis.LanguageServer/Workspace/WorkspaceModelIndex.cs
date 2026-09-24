@@ -31,6 +31,9 @@ public sealed class WorkspaceModelIndex
     private readonly ILogger<WorkspaceModelIndex> logger;
     private readonly ConcurrentDictionary<DocumentUri, IndexedFile> files = new();
 
+    /// <summary>The initial scan of the workspace folders; completed while none was started.</summary>
+    private Task scan = Task.CompletedTask;
+
     public WorkspaceModelIndex(OpenDocuments openDocuments, ExternalImportFileService externalImportFileService, ILogger<WorkspaceModelIndex> logger)
     {
         this.openDocuments = openDocuments;
@@ -41,15 +44,15 @@ public sealed class WorkspaceModelIndex
     }
 
     /// <summary>
-    /// Indexes the <c>*.ili</c> files of the given workspace folders in the background. Lookups meanwhile see the
-    /// files indexed so far; a compilation that resolved an import elsewhere in the meantime is invalidated when
-    /// the file defining the model is indexed (<see cref="FileChanged"/>), so it catches up on its own.
+    /// Indexes the <c>*.ili</c> files of the given workspace folders in the background. <see cref="FindModel"/>
+    /// meanwhile sees the files indexed so far, <see cref="FindModelAsync"/> waits for the scan before it reports a
+    /// model as missing.
     /// </summary>
     /// <param name="folders">The workspace folders.</param>
     public void ScanWorkspace(IEnumerable<DocumentUri> folders)
     {
         var folderList = folders.ToList();
-        _ = Task.Run(() =>
+        scan = Task.Run(() =>
         {
             foreach (var folder in folderList)
             {
@@ -121,6 +124,27 @@ public sealed class WorkspaceModelIndex
         }
 
         return candidates.FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Finds the file defining the model like <see cref="FindModel"/>, but while the workspace scan is still running
+    /// it waits for the scan before reporting the model as missing, so that an import is not resolved from the
+    /// repositories (or reported unresolved) only because its file has not been indexed yet.
+    /// </summary>
+    /// <param name="modelName">The name of the model.</param>
+    /// <param name="version">The INTERLIS version the model must be written in, or <see langword="null"/> for any.</param>
+    /// <param name="cancellationToken">Cancels waiting for the scan.</param>
+    /// <returns>The file defining the model, or <see langword="null"/> if no file the editor can see defines it.</returns>
+    public async ValueTask<IndexedFile?> FindModelAsync(string modelName, double? version, CancellationToken cancellationToken)
+    {
+        var file = FindModel(modelName, version);
+        if (file != null || scan.IsCompleted)
+        {
+            return file;
+        }
+
+        await scan.WaitAsync(cancellationToken);
+        return FindModel(modelName, version);
     }
 
     /// <summary>

@@ -52,7 +52,7 @@ public sealed class CompilationService(
     {
         try
         {
-            if (workspaceModelIndex.FindModel(modelName, languageVersion) is { } file)
+            if (await workspaceModelIndex.FindModelAsync(modelName, languageVersion, cancellationToken) is { } file)
             {
                 return (new StringReader(file.Source), file.Uri.ToString());
             }

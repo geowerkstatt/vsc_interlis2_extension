@@ -124,4 +124,50 @@ public class WorkspaceModelIndexTest
             File.Delete(path);
         }
     }
+
+    [TestMethod]
+    public async Task ImportsResolveToFilesOfARunningWorkspaceScan()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var gate = Path.Combine(folder, "gate.ili");
+        Directory.CreateDirectory(Path.Combine(folder, "sub"));
+        using var gateReached = new SemaphoreSlim(0);
+        using var release = new ManualResetEventSlim();
+        try
+        {
+            // The scan indexes a folder's own files before its subfolders, so it reaches the gate before B.
+            await File.WriteAllTextAsync(gate, ModelB.Replace("B", "Gate"));
+            await File.WriteAllTextAsync(Path.Combine(folder, "sub", "b.ili"), ModelB);
+            var a = DocumentUri.From("file:///c:/work/a.ili");
+            var workspace = TestWorkspace.Open((a, ModelA));
+
+            // FileChanged runs on the scan's thread, so blocking it at the gate keeps the scan running.
+            workspace.Index.FileChanged += (uri, _) =>
+            {
+                if (uri == DocumentUri.FromFileSystemPath(gate))
+                {
+                    gateReached.Release();
+                    release.Wait();
+                }
+            };
+
+            // A document compiled while the scan runs, as one the editor restores on startup: its import must wait
+            // for the scan instead of being reported unresolved. Without waiting, it would complete well within
+            // the grace period, before the scan is released.
+            workspace.Index.ScanWorkspace([DocumentUri.FromFileSystemPath(folder)]);
+            Assert.IsTrue(await gateReached.WaitAsync(TimeSpan.FromSeconds(10)));
+            var compiling = workspace.Cache.GetCompilationAsync(a).AsTask();
+            await Task.WhenAny(compiling, Task.Delay(TimeSpan.FromMilliseconds(500)));
+            release.Set();
+            var compilation = await compiling;
+
+            Assert.IsTrue(compilation.Environment.Content.ContainsKey("B"));
+            Assert.AreEqual(0, compilation.Diagnostics.Count, string.Join(Environment.NewLine, compilation.Diagnostics.Select(d => d.Message)));
+        }
+        finally
+        {
+            release.Set();
+            Directory.Delete(folder, true);
+        }
+    }
 }
