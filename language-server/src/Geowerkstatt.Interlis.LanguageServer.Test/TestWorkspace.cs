@@ -16,7 +16,7 @@ namespace Geowerkstatt.Interlis.LanguageServer;
 /// The server's services wired up as in <c>Program.cs</c>, without a client and without the model repositories, for
 /// tests that drive a handler over open documents.
 /// </summary>
-internal sealed record TestWorkspace(WorkspaceModelIndex Index, ExternalImportFileService ExternalFiles, InterlisEnvironmentCache Cache, SymbolLookup SymbolLookup)
+internal sealed record TestWorkspace(OpenDocuments Buffers, WorkspaceModelIndex Index, ExternalImportFileService ExternalFiles, InterlisEnvironmentCache Cache, SymbolLookup SymbolLookup)
 {
     /// <summary>The folder under the temp path holding the stored repository models.</summary>
     public const string TempFolderName = "INTERLIS Language Server Test";
@@ -54,7 +54,7 @@ internal sealed record TestWorkspace(WorkspaceModelIndex Index, ExternalImportFi
             buffers.Update(uri, source);
         }
 
-        return new TestWorkspace(index, externalFiles, cache, new SymbolLookup(cache, new ReferenceCollectorVisitor()));
+        return new TestWorkspace(buffers, index, externalFiles, cache, new SymbolLookup(cache, new ReferenceCollectorVisitor()));
     }
 
     private sealed class NoRepositories : IRepositoryCrawler
