@@ -27,19 +27,24 @@ internal sealed record TestWorkspace(WorkspaceModelIndex Index, ExternalImportFi
     /// Creates the workspace with the given documents open. Every import has to resolve from these documents, because
     /// the repositories answer nothing.
     /// </summary>
-    public static TestWorkspace Open(params (DocumentUri Uri, string Source)[] documents)
+    public static TestWorkspace Open(params (DocumentUri Uri, string Source)[] documents) => Open(new NoRepositories(), documents);
+
+    /// <summary>
+    /// Creates the workspace with the given documents open and <paramref name="repositories"/> answering the imports
+    /// no open document defines.
+    /// </summary>
+    public static TestWorkspace Open(IRepositoryCrawler repositories, params (DocumentUri Uri, string Source)[] documents)
     {
         var buffers = new OpenDocuments();
         var externalFiles = new ExternalImportFileService(NullLogger<ExternalImportFileService>.Instance, Options.Create(new ServerOptions { LanguageName = "INTERLIS2", TempFolderName = TempFolderName }));
         var index = new WorkspaceModelIndex(buffers, externalFiles, NullLogger<WorkspaceModelIndex>.Instance);
 
-        // The searcher is never asked, but has to be constructible.
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             [$"{RepositoryCrawlerOptions.SectionName}:{nameof(RepositoryCrawlerOptions.RootRepositoryUri)}"] = "http://localhost",
             [$"{RepositoryCrawlerOptions.SectionName}:{nameof(RepositoryCrawlerOptions.CacheDbFolder)}"] = Path.Combine(Path.GetTempPath(), TempFolderName),
         }).Build();
-        var repositorySearcher = new RepositorySearcher(new NoRepositories(), configuration, NullLoggerFactory.Instance);
+        var repositorySearcher = new RepositorySearcher(repositories, configuration, NullLoggerFactory.Instance);
         var compilationService = new CompilationService(index, repositorySearcher, NullLoggerFactory.Instance, externalFiles);
         var cache = new InterlisEnvironmentCache(buffers, compilationService, index);
 

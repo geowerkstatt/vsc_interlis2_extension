@@ -22,6 +22,14 @@ public sealed class CompilationService(
     private readonly ILogger<CompilationService> logger = loggerFactory.CreateLogger<CompilationService>();
 
     /// <summary>
+    /// Serializes the repository lookups of all compilations: neither the <see cref="RepositorySearcher"/> nor the
+    /// stored copies of the <see cref="ExternalImportFileService"/> are safe for concurrent use. On an empty cache,
+    /// concurrent lookups crawl the repositories in parallel and fail creating and filling the same cache database,
+    /// and a model file written twice at once fails the second time.
+    /// </summary>
+    private static readonly SemaphoreSlim RepositoryLock = new(1, 1);
+
+    /// <summary>
     /// Compiles the INTERLIS source code of a document with its transitive imports (see
     /// <see cref="InterlisReader.ReadModelWithImportsAsync"/>). The problems the compiler reports on the way are
     /// collected instead of logged, so a compilation's diagnostics are exactly those of the returned
@@ -57,6 +65,25 @@ public sealed class CompilationService(
                 return (new StringReader(file.Source), file.Uri.ToString());
             }
 
+            return await LoadFromRepositoriesAsync(modelName, languageVersion, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The import stays unresolved, which the compiler reports at the IMPORTS entry.
+            logger.LogError(ex, "Failed to load imported model '{ModelName}'.", modelName);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Loads the model of that name published in the repositories for that version and stores its source as a local
+    /// file, one lookup at a time (see <see cref="RepositoryLock"/>).
+    /// </summary>
+    private async Task<(TextReader Reader, string? SourceUri)?> LoadFromRepositoriesAsync(string modelName, double? languageVersion, CancellationToken cancellationToken)
+    {
+        await RepositoryLock.WaitAsync(cancellationToken);
+        try
+        {
             var schemaLanguage = languageVersion == null ? null : "ili" + languageVersion.Value.ToString(CultureInfo.InvariantCulture).Replace('.', '_');
             var foundModels = await repositorySearcher.SearchModels(m => m.Name == modelName && (schemaLanguage == null || m.SchemaLanguage == schemaLanguage));
             if (foundModels.Count == 0)
@@ -77,11 +104,9 @@ public sealed class CompilationService(
             var localUri = await externalImportFileService.GetModelUriAsync(model);
             return (new StringReader(content), localUri?.ToString());
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        finally
         {
-            // The import stays unresolved, which the compiler reports at the IMPORTS entry.
-            logger.LogError(ex, "Failed to load imported model '{ModelName}'.", modelName);
-            return null;
+            RepositoryLock.Release();
         }
     }
 }
