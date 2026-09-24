@@ -1,6 +1,13 @@
 # Change Log
 ### vNext
 
+* Diagnostics: syntax errors, unresolved references, invalid paths and type errors are shown in the editor while typing. A missing or incompatible imported model is reported at its `IMPORTS` entry instead of a popup.
+* Imports resolve to open documents and `*.ili` files in the workspace before the model repositories are searched, so models under development can import each other.
+* _Find All References_ lists the uses of an element across the workspace, from a use, a qualifying name or the declaration, without the importing files having to be open.
+* _Rename Symbol_ (`F2`) renames an element together with all its uses across the workspace, including the implicit view base names and `EXTENDED` redefinitions that follow its name. Elements of repository models cannot be renamed.
+* Hovering a name shows the qualified name of the element, each part linking to its declaration, and its doc comments (`/** ... */`).
+* Outline, breadcrumbs and _Go to Symbol in Editor_ show the definitions of the file (document symbols).
+* Markdown documentation and the diagram are generated from the same compilation as the diagnostics, so they see the imported models and reuse the cached result.
 * Markdown documentation:
   * Use UML notation `0..*` instead of `0..n` for unbounded multiplicities.
   * Drop `<b>` emphasis on top-level enumeration values.
@@ -23,6 +30,7 @@
 * Security: escape model names, attribute names and configurable column headers in generated markdown/HTML and Mermaid diagrams so special characters can no longer break out of a table cell or diagram label; restrict the `geow.uml.color` meta-attribute to hex or plain color names.
 * Syntax highlighting: highlight bare `0` and `*` consistently in numeric/cardinality positions.
 * Documentation: README troubleshooting note for `spawn UNKNOWN` when the extension folder lacks execute permission.
+* Updated INTERLIS compiler and repository crawler to 3.0.43.
 
 ### 0.4.2 - 2025-08-26
 

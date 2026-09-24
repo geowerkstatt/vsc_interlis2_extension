@@ -17,3 +17,7 @@ indent_size = 2
 
 [*.sh]
 end_of_line = lf
+
+# Test methods are not an API: their names read as sentences, so the Async suffix rule does not apply.
+[language-server/src/Geowerkstatt.Interlis.LanguageServer.Test/**.cs]
+dotnet_diagnostic.VSTHRD200.severity = none

@@ -1,4 +1,5 @@
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using MediatR;
 using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Protocol;
@@ -12,7 +13,7 @@ namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 /// <summary>
 /// Handler to synchronize the text document contents between the client and this server.
 /// </summary>
-internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDocumentSelector textDocumentSelector, IOptions<ServerOptions> serverOptions) : TextDocumentSyncHandlerBase
+internal class TextDocumentSyncHandler(OpenDocuments openDocuments, TextDocumentSelector textDocumentSelector, IOptions<ServerOptions> serverOptions) : TextDocumentSyncHandlerBase
 {
     public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
 
@@ -22,28 +23,28 @@ internal class TextDocumentSyncHandler(FileContentCache fileContentCache, TextDo
     /// <inheritdoc />
     public override Task<Unit> Handle(DidOpenTextDocumentParams notification, CancellationToken token)
     {
-        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.TextDocument.Text);
+        openDocuments.Update(notification.TextDocument.Uri, notification.TextDocument.Text);
         return Unit.Task;
     }
 
     /// <inheritdoc />
     public override Task<Unit> Handle(DidChangeTextDocumentParams notification, CancellationToken token)
     {
-        fileContentCache.UpdateBuffer(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
+        openDocuments.Update(notification.TextDocument.Uri, notification.ContentChanges.Last().Text);
         return Unit.Task;
     }
 
     /// <inheritdoc />
     public override Task<Unit> Handle(DidCloseTextDocumentParams notification, CancellationToken token)
     {
-        fileContentCache.ClearBuffer(notification.TextDocument.Uri);
+        openDocuments.Close(notification.TextDocument.Uri);
         return Unit.Task;
     }
 
     /// <inheritdoc />
     public override Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
-        fileContentCache.UpdateBuffer(request.TextDocument.Uri, request.Text ?? string.Empty);
+        openDocuments.Update(request.TextDocument.Uri, request.Text ?? string.Empty);
         return Unit.Task;
     }
 

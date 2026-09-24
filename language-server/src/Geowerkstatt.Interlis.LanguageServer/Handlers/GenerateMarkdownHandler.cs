@@ -1,10 +1,11 @@
-using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.JsonRpc;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
@@ -20,23 +21,23 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
     public const string Command = "generateMarkdown";
 
     private readonly ILogger<GenerateMarkdownHandler> logger;
-    private readonly InterlisReader interlisReader;
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
+    private readonly InterlisEnvironmentCache environmentCache;
     private readonly ILanguageServerFacade languageServer;
     private readonly UiLanguageContext uiLanguageContext;
 
     public GenerateMarkdownHandler(
         ILogger<GenerateMarkdownHandler> logger,
-        InterlisReader interlisReader,
-        FileContentCache fileContentCache,
+        OpenDocuments openDocuments,
+        InterlisEnvironmentCache environmentCache,
         ILanguageServerFacade languageServer,
         UiLanguageContext uiLanguageContext,
         ISerializer serializer)
         : base(Command, serializer)
     {
         this.logger = logger;
-        this.interlisReader = interlisReader;
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
+        this.environmentCache = environmentCache;
         this.languageServer = languageServer;
         this.uiLanguageContext = uiLanguageContext;
     }
@@ -55,23 +56,24 @@ public class GenerateMarkdownHandler : ExecuteTypedResponseCommandHandlerBase<Ge
             return null;
         }
 
-        var uri = options.Uri;
-        var fileContent = uri == null ? null : await fileContentCache.GetAsync(uri);
-        if (string.IsNullOrEmpty(fileContent))
+        // Only open documents are known to the server; the client shows "please re-open the file" for null.
+        if (options.Uri is not { } uriString || !openDocuments.Contains(DocumentUri.From(uriString)))
         {
             return null;
         }
 
-        var uriForLog = uri?.ToString()?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+        var uri = DocumentUri.From(uriString);
+        var uriForLog = uriString.Replace("\r", string.Empty).Replace("\n", string.Empty);
         logger.LogInformation("Generate markdown for {Uri}", uriForLog);
 
         var config = await GetDocumentationConfigAsync(options.Language, cancellationToken);
 
         try
         {
-            using var stringReader = new StringReader(fileContent);
-            var interlisFile = interlisReader.ReadFile(stringReader);
-            return GenerateMarkdown(interlisFile, config);
+            // The same compilation the diagnostics use: cached, with the imports resolved. Only the document's own
+            // models are documented.
+            var compilation = await environmentCache.GetCompilationAsync(uri, cancellationToken);
+            return GenerateMarkdown(compilation.ForDocument(uri), config);
         }
         catch (Exception ex)
         {

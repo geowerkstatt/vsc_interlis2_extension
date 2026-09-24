@@ -1,9 +1,10 @@
-using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Diagnostics;
 using Geowerkstatt.Interlis.LanguageServer.Handlers;
 using Geowerkstatt.Interlis.LanguageServer.Services;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Geowerkstatt.Interlis.RepositoryCrawler;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,24 +37,24 @@ var server = await LanguageServer.From(options =>
                 .AddOptions<ServerOptions>()
                 .BindConfiguration(ServerOptions.ConfigSection);
 
-            services.AddSingleton<FileContentCache>();
+            services.AddSingleton<OpenDocuments>();
             services.AddSingleton<InterlisEnvironmentCache>();
-            services.AddSingleton<ReferenceCache>();
             services.AddSingleton<UiLanguageContext>();
+            services.AddSingleton<DiagnosticsPublisher>();
+            services.AddSingleton<WorkspaceModelIndex>();
 
             services.AddSingleton<ExternalImportFileService>();
-            services.AddTransient<ImportResolveService>();
+            services.AddTransient<CompilationService>();
+            services.AddTransient<SymbolLookup>();
             services.AddSingleton(provider => new RepositorySearcher(
                 provider.GetRequiredService<IRepositoryCrawler>(),
                 provider.GetRequiredService<IConfiguration>(),
                 provider.GetRequiredService<ILoggerFactory>()
             ));
             services.AddSingleton<IRepositoryCrawler, RepositoryCrawler>();
-            services.AddTransient<InterlisReader>();
             services.AddHttpClient();
 
             services.AddTransient<ReferenceCollectorVisitor>();
-            services.AddTransient<ModelImportVisitor>();
 
             services.AddSingleton(provider =>
             {
@@ -67,8 +68,27 @@ var server = await LanguageServer.From(options =>
         .WithHandler<FormatterHandler>()
         .WithHandler<DefinitionHandler>()
         .WithHandler<GenerateDiagramHandler>()
+        .WithHandler<WatchedFilesHandler>()
+        .WithHandler<DocumentSymbolHandler>()
+        .WithHandler<ReferencesHandler>()
+        .WithHandler<RenameHandler>()
+        .WithHandler<HoverHandler>()
+        .WithHandler<InterlisVersionHandler>()
         .OnInitialize((server, request, _) =>
         {
+            // The publisher (and the caches it depends on) work from events, so they must exist before anything
+            // raises one: before the workspace scan below and before the first document is opened.
+            server.Services.GetRequiredService<DiagnosticsPublisher>();
+
+            // Index the INTERLIS files of the workspace so imports resolve to them before the model repositories.
+            var folders = request.WorkspaceFolders?.Select(folder => folder.Uri).ToList() ?? [];
+            if (folders.Count == 0 && request.RootUri is { } rootUri)
+            {
+                folders.Add(rootUri);
+            }
+
+            server.Services.GetRequiredService<WorkspaceModelIndex>().ScanWorkspace(folders);
+
             // Client reports its UI language (e.g. "de", "fr") so that output
             // defaults match the user's environment when the workspace setting
             // is "auto". Unknown values fall through to the German bundle.

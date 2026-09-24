@@ -3,12 +3,14 @@ import { TextEditor } from "vscode";
 import { getLanguageClient, startLanguageServer, stopLanguageServer } from "./languageServer";
 import { initializeDiagramPanel, showDiagramPanel } from "./diagramPanel";
 import { generateMarkdown } from "./markdown";
+import { initializeVersionStatus } from "./versionStatus";
 
 export async function activate(context: vscode.ExtensionContext) {
   const configuration = vscode.workspace.getConfiguration("interlis2");
 
   await startLanguageServer(context);
   initializeDiagramPanel(context, configuration);
+  initializeVersionStatus(context);
 
   const markdownCommand = vscode.commands.registerTextEditorCommand(
     "interlis.generateMarkdown",

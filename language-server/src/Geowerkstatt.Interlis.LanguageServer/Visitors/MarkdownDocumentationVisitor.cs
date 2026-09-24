@@ -209,7 +209,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         if (left?.TypeDef is RoleType leftRoleType)
         {
-            var leftClass = leftRoleType.Targets.FirstOrDefault()?.Value?.Target as ClassDef;
+            var leftClass = leftRoleType.Targets.FirstOrDefault()?.Value.GetTargetDefinition() as ClassDef;
             if (leftClass == classDef)
             {
                 VisitAttributeDef(right);
@@ -262,7 +262,13 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     {
         if (type is ReferenceType referenceType)
         {
-            VisitReferenceType(referenceType);
+            VisitReferencedType(referenceType.Target.Value);
+            return;
+        }
+
+        if (type is ObjectType objectType)
+        {
+            VisitObjectType(objectType);
             return;
         }
 
@@ -278,13 +284,14 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
                 _ => "Blackbox",
             },
             EnumerationType enumerationType => FormatEnumerationValues(enumerationType.Values),
-            EnumerationAllOfType allOfType => FormatQualifiedPath(allOfType.TargetEnumeration?.Path),
+            EnumerationValuesType enumValuesType => FormatQualifiedPath(enumValuesType.TargetEnumeration?.Path),
             FormattedType formattedType => FormatFormattedType(formattedType),
             SurfaceType surfaceType => FormatGeometryName(surfaceType),
             PolyLineType polyLineType => FormatPolyLineName(polyLineType),
             CoordType coordType => FormatCoordName(coordType),
-            TypeRef typeRef => typeRef.Extends?.Path.Last(),
-            RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value?.Path.Last()).Where(target => target is not null)),
+            TypeRef typeRef => typeRef.Extends?.Path.Last().Name,
+            UnresolvedNamedType unresolvedType => unresolvedType.Target.Value.GetTargetName(),
+            RoleType roleType => string.Join(", ", roleType.Targets.Select(target => target.Value.GetTargetName()).Where(target => target is not null)),
             _ => type?.ToString(),
         };
 
@@ -346,10 +353,10 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         return name;
     }
 
-    private static string FormatQualifiedPath(IEnumerable<string>? path)
+    private static string FormatQualifiedPath(IEnumerable<PathSegment>? path)
     {
         if (path == null) return "?";
-        var joined = string.Join(".", path);
+        var joined = string.Join(".", path.Select(segment => segment.Name));
         return string.IsNullOrEmpty(joined) ? "?" : joined;
     }
 
@@ -366,17 +373,35 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
     }
 
     /// <summary>
+    /// Appends the names of the structures or classes an attribute holds objects of.
+    /// A single structure target is documented like a reference, including its nested attribute table.
+    /// </summary>
+    /// <param name="objectType">The object type of the attribute.</param>
+    private void VisitObjectType(ObjectType objectType)
+    {
+        if (objectType.Targets.Count == 1)
+        {
+            VisitReferencedType(objectType.Targets[0].Value);
+            return;
+        }
+
+        var typeNames = objectType.Targets
+            .Select(target => target.Value.GetTargetName())
+            .Where(name => name is not null);
+        documentation.Append(EscapeText(string.Join(", ", typeNames)));
+    }
+
+    /// <summary>
     /// Appends the name of the referenced type to the documentation.
     /// If the referenced type is a structure, its attributes and associations are also documented using an HTML table.
     /// </summary>
-    /// <param name="referenceType">The referenced type.</param>
-    private void VisitReferenceType(ReferenceType referenceType)
+    /// <param name="reference">The reference target.</param>
+    private void VisitReferencedType(RestrictedRef.RefTarget? reference)
     {
-        var reference = referenceType.Target.Value;
-        var typeName = reference?.Path.Last();
+        var typeName = reference.GetTargetName();
         documentation.Append(EscapeText(typeName));
 
-        if (reference?.Target is ClassDef classDef && classDef.IsStructure)
+        if (reference.GetTargetDefinition() is ClassDef classDef && classDef.IsStructure)
         {
             documentation.Append("<br/>");
 

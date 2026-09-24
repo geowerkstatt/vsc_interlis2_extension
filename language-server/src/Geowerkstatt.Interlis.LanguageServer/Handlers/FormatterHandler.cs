@@ -1,23 +1,24 @@
 using Geowerkstatt.Interlis.Compiler;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Visitors;
+using Geowerkstatt.Interlis.LanguageServer.Workspace;
+using Microsoft.Extensions.Logging.Abstractions;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using Microsoft.Extensions.Logging.Abstractions;
 using Position = OmniSharp.Extensions.LanguageServer.Protocol.Models.Position;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
-using Geowerkstatt.Interlis.LanguageServer.Visitors;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
 
 public class FormatterHandler : DocumentFormattingHandlerBase
 {
-    private readonly FileContentCache fileContentCache;
+    private readonly OpenDocuments openDocuments;
     private readonly TextDocumentSelector documentSelector;
 
-    public FormatterHandler(FileContentCache fileContentCache, TextDocumentSelector documentSelector)
+    public FormatterHandler(OpenDocuments openDocuments, TextDocumentSelector documentSelector)
     {
-        this.fileContentCache = fileContentCache;
+        this.openDocuments = openDocuments;
         this.documentSelector = documentSelector;
     }
 
@@ -29,9 +30,9 @@ public class FormatterHandler : DocumentFormattingHandlerBase
         };
     }
 
-    public override async Task<TextEditContainer?> Handle(DocumentFormattingParams request, CancellationToken cancellationToken)
+    public override Task<TextEditContainer?> Handle(DocumentFormattingParams request, CancellationToken cancellationToken)
     {
-        var inputText = await fileContentCache.GetAsync(request.TextDocument.Uri);
+        var inputText = openDocuments.GetText(request.TextDocument.Uri);
 
         var loggerFactory = NullLoggerFactory.Instance;
         var reader = new InterlisReader(loggerFactory);
@@ -55,6 +56,6 @@ public class FormatterHandler : DocumentFormattingHandlerBase
             NewText = formattedOutput.Content,
         };
 
-        return new TextEditContainer(edit);
+        return Task.FromResult<TextEditContainer?>(new TextEditContainer(edit));
     }
 }

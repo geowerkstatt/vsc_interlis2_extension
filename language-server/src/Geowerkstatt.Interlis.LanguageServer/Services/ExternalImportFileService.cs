@@ -1,6 +1,7 @@
 using Geowerkstatt.Interlis.RepositoryCrawler.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Services;
 
@@ -38,6 +39,22 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
             logger.LogError(ex, "Failed to load model \"{ModelName}\"", model.Name);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Whether the file is one of the stored repository models, i.e. lies in the temporary directory. Such a file
+    /// is not part of the user's workspace even when the editor opens it (e.g. through go-to-definition).
+    /// </summary>
+    /// <param name="uri">The file to check.</param>
+    public bool IsExternalFile(DocumentUri uri)
+    {
+        if (uri.Scheme != "file")
+        {
+            return false;
+        }
+
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return Path.GetFullPath(uri.GetFileSystemPath()).StartsWith(Path.GetFullPath(tempDirectory) + Path.DirectorySeparatorChar, comparison);
     }
 
     private string GetTempLocalFilePath(Model modelDeclaration)
