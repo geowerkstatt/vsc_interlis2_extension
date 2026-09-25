@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 0.5.0 - 2026-09-25
+
 * Diagnostics: syntax errors, unresolved references, invalid paths and type errors are shown in the editor while typing. A missing or incompatible imported model is reported at its `IMPORTS` entry instead of a popup.
 * Imports resolve to open documents and `*.ili` files in the workspace before the model repositories are searched, so models under development can import each other.
 * _Find All References_ lists the uses of an element across the workspace, from a use, a qualifying name or the declaration, without the importing files having to be open.
