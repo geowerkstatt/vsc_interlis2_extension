@@ -1,7 +1,7 @@
 namespace Geowerkstatt.Interlis.LanguageServer;
 
 /// <summary>
-/// Localized labels for the generated markdown documentation and Mermaid
+/// Localized labels for the generated markdown documentation and class
 /// diagrams. Only labels we add appear here; user-defined INTERLIS identifiers
 /// and INTERLIS keywords (TEXT, BOOLEAN, SURFACE, ...) stay as written.
 /// </summary>
