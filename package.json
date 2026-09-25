@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/GeoWerkstatt/vsc_interlis2_extension.git"
   },
-  "version": "0.5.0",
+  "version": "0.5.1",
   "engines": {
     "vscode": "^1.63.0"
   },
@@ -97,7 +97,13 @@
         },
         "interlis.documentation.language": {
           "type": "string",
-          "enum": ["auto", "de", "fr", "it", "en"],
+          "enum": [
+            "auto",
+            "de",
+            "fr",
+            "it",
+            "en"
+          ],
           "enumDescriptions": [
             "Match the VS Code UI language (de, fr, it, en); falls back to German for any other UI language.",
             "German",
@@ -110,7 +116,11 @@
         },
         "interlis.documentation.abstractClassAttributes": {
           "type": "string",
-          "enum": ["separate", "inline", "inlineAbstractOnly"],
+          "enum": [
+            "separate",
+            "inline",
+            "inlineAbstractOnly"
+          ],
           "enumDescriptions": [
             "Inherited attributes are shown only in the parent class section, never repeated in subclasses.",
             "Inherited attributes from every ancestor (abstract or concrete) are repeated inline in each subclass table.",
