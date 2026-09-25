@@ -1,12 +1,11 @@
 using Geowerkstatt.Interlis.Compiler.AST;
 using Geowerkstatt.Interlis.LanguageServer.Cache;
+using Geowerkstatt.Interlis.LanguageServer.Services;
 using Geowerkstatt.Interlis.LanguageServer.Visitors;
 using Geowerkstatt.Interlis.LanguageServer.Workspace;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
 
 namespace Geowerkstatt.Interlis.LanguageServer.Handlers;
@@ -23,17 +22,15 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
     private readonly ILoggerFactory loggerFactory;
     private readonly OpenDocuments openDocuments;
     private readonly InterlisEnvironmentCache environmentCache;
-    private readonly ILanguageServerFacade languageServer;
-    private readonly UiLanguageContext uiLanguageContext;
+    private readonly DocumentationLanguageResolver languageResolver;
 
-    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, OpenDocuments openDocuments, InterlisEnvironmentCache environmentCache, ILanguageServerFacade languageServer, UiLanguageContext uiLanguageContext, ISerializer serializer) : base(Command, serializer)
+    public GenerateDiagramHandler(ILogger<GenerateDiagramHandler> logger, ILoggerFactory loggerFactory, OpenDocuments openDocuments, InterlisEnvironmentCache environmentCache, DocumentationLanguageResolver languageResolver, ISerializer serializer) : base(Command, serializer)
     {
         this.logger = logger;
+        this.loggerFactory = loggerFactory;
         this.openDocuments = openDocuments;
         this.environmentCache = environmentCache;
-        this.loggerFactory = loggerFactory;
-        this.languageServer = languageServer;
-        this.uiLanguageContext = uiLanguageContext;
+        this.languageResolver = languageResolver;
     }
 
     /// <summary>
@@ -60,7 +57,7 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
         var uriForLog = uriString.Replace("\r", string.Empty).Replace("\n", string.Empty);
         logger.LogInformation("Generate diagram for {Uri}", uriForLog);
 
-        var locale = await GetLocalizationAsync(options.Language, cancellationToken);
+        var locale = await languageResolver.ResolveAsync(options.Language, cancellationToken);
 
         try
         {
@@ -79,43 +76,6 @@ public class GenerateDiagramHandler : ExecuteTypedResponseCommandHandlerBase<Gen
             logger.LogError(ex, "Failed to generate diagram for {Uri}", uriForLog);
             return null;
         }
-    }
-
-    private async Task<DocumentationLocalization> GetLocalizationAsync(string? requestLanguage, CancellationToken cancellationToken)
-    {
-        // Webview dropdown overrides the workspace setting; skip the round-trip when present.
-        if (!string.IsNullOrEmpty(requestLanguage))
-        {
-            return DocumentationLocalization.For(uiLanguageContext.Resolve(requestLanguage));
-        }
-
-        try
-        {
-            var configRequest = new ConfigurationParams
-            {
-                Items = new[]
-                {
-                    new ConfigurationItem
-                    {
-                        Section = DocumentationOptions.ConfigSection
-                    }
-                }
-            };
-
-            var response = await languageServer.Workspace.RequestConfiguration(configRequest, cancellationToken);
-            if (response.Any())
-            {
-                var configToken = response.First();
-                var language = uiLanguageContext.Resolve(configToken?["language"]?.ToString());
-                return DocumentationLocalization.For(language);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to retrieve configuration, using defaults");
-        }
-
-        return DocumentationLocalization.For(uiLanguageContext.Language);
     }
 
     private string GenerateDiagram(InterlisEnvironment interlisFile, String orientation, DocumentationLocalization locale)

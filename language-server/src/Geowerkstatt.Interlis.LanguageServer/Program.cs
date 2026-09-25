@@ -42,6 +42,7 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<UiLanguageContext>();
             services.AddSingleton<DiagnosticsPublisher>();
             services.AddSingleton<WorkspaceModelIndex>();
+            services.AddSingleton<DocumentationLanguageResolver>();
 
             services.AddSingleton<ExternalImportFileService>();
             services.AddTransient<CompilationService>();
