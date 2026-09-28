@@ -25,11 +25,19 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
         try
         {
             var fileCacheLocation = GetTempLocalFilePath(model);
+            var content = model.FileContent?.Content ?? string.Empty;
+
+            // A copy of an older release of the model would put the compiled positions on the wrong lines.
             if (File.Exists(fileCacheLocation))
-                return new Uri(fileCacheLocation);
+            {
+                if (await File.ReadAllTextAsync(fileCacheLocation) == content)
+                    return new Uri(fileCacheLocation);
+
+                File.SetAttributes(fileCacheLocation, FileAttributes.Normal);
+            }
 
             Directory.CreateDirectory(Path.GetDirectoryName(fileCacheLocation) ?? tempDirectory);
-            await File.WriteAllTextAsync(fileCacheLocation, model.FileContent?.Content);
+            await File.WriteAllTextAsync(fileCacheLocation, content);
             File.SetAttributes(fileCacheLocation, FileAttributes.ReadOnly);
 
             return new Uri(fileCacheLocation);
