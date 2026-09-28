@@ -1,0 +1,60 @@
+INTERLIS 2.4;
+
+/* Small model to exercise topic inheritance in the diagram renderers:
+   two topics extend a common base topic and refine its abstract class. */
+MODEL TopicExtension (en) AT "https://example.org/interlis" VERSION "2026-09-19" =
+
+  TOPIC Base =
+
+    CLASS Feature (ABSTRACT) =
+      Identifier : MANDATORY TEXT*20;
+      Remark : TEXT*200;
+    END Feature;
+
+    CLASS Owner =
+      Name : MANDATORY TEXT*60;
+    END Owner;
+
+    ASSOCIATION FeatureOwner =
+      Feature -- {0..*} Feature;
+      Owner -- {1} Owner;
+    END FeatureOwner;
+
+  END Base;
+
+  TOPIC Buildings EXTENDS Base =
+
+    CLASS Building EXTENDS Feature =
+      Storeys : 1 .. 200;
+      Usage : (Residential, Commercial, Industrial, Other);
+    END Building;
+
+    CLASS Address =
+      Street : MANDATORY TEXT*60;
+      Number : TEXT*10;
+    END Address;
+
+    ASSOCIATION BuildingAddress =
+      Building -- {1} Building;
+      Address -- {0..*} Address;
+    END BuildingAddress;
+
+  END Buildings;
+
+  TOPIC Parcels EXTENDS Base =
+
+    CLASS Parcel EXTENDS Feature =
+      Area : 0 .. 99999999;
+    END Parcel;
+
+    STRUCTURE Boundary =
+      Kind : (Fence, Wall, Hedge);
+    END Boundary;
+
+    CLASS Fenced EXTENDS Parcel =
+      Boundaries : BAG {1..*} OF Boundary;
+    END Fenced;
+
+  END Parcels;
+
+END TopicExtension.

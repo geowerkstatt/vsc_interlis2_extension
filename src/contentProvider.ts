@@ -2,8 +2,6 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as crypto from "node:crypto";
 
-const MERMAID_VERSION = "11.6.0";
-
 function getNonce(): string {
   return crypto.randomBytes(16).toString("base64");
 }

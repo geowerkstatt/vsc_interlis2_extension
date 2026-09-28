@@ -1,46 +1,39 @@
-import mermaid from "mermaid";
-
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import { createCytoscapeRenderer, ZOOM_STEP } from "./cytoscapeRenderer";
+import { createFilterTree } from "./filterTree";
 
 interface VSCodeApi {
   postMessage(message: unknown): void;
 }
 
-type IncomingMessage =
-  | { type: "init"; language: string; orientation: string }
-  | { type: "update"; text: string; resetZoom: boolean };
+type IncomingMessage = { type: "init"; language: string } | { type: "update"; text: string; resetZoom: boolean };
 
 declare const acquireVsCodeApi: () => VSCodeApi;
 
 (() => {
   const vscode = acquireVsCodeApi();
 
-  // ---- State ----
-  let mermaidInitialized = false;
-  let lastMermaidCode = "";
-  let originalViewBox: Pick<ViewBox, "w" | "h"> | null = null;
-  let currentViewBox: ViewBox | null = null;
-  let zoomLevel = 1;
-  let isPanning = false;
-  let panStart = { x: 0, y: 0 };
-
   // ---- DOM Elements ----
-  const container = document.getElementById("mermaid-graph") as HTMLDivElement;
-  const copyButton = document.getElementById("copy-code") as HTMLButtonElement;
+  const graphContainer = document.getElementById("graph") as HTMLDivElement;
+  const resetLayoutButton = document.getElementById("reset-layout") as HTMLButtonElement;
+  const settleLayoutButton = document.getElementById("settle-layout") as HTMLButtonElement;
+  const filterToggle = document.getElementById("toggle-filters") as HTMLButtonElement;
+  const filterPopover = document.getElementById("filter-popover") as HTMLElement;
+  const filterTree = document.getElementById("filter-tree") as HTMLDivElement;
+  const resetFiltersButton = document.getElementById("reset-filters") as HTMLButtonElement;
   const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
-  const exportSplit = document.getElementById("export-split") as HTMLDivElement;
-  const exportCaret = document.getElementById("export-caret") as HTMLButtonElement;
-  const orientationSelect = document.getElementById("orientation") as HTMLSelectElement;
-  const languageSelect = document.getElementById("language") as HTMLSelectElement;
   const generateMarkdownButton = document.getElementById("generate-markdown") as HTMLButtonElement;
+  const languageSelect = document.getElementById("language") as HTMLSelectElement;
+  const zoomInButton = document.getElementById("zoom-in") as HTMLButtonElement;
+  const zoomOutButton = document.getElementById("zoom-out") as HTMLButtonElement;
+  const zoomFitButton = document.getElementById("zoom-fit") as HTMLButtonElement;
   const helpOverlay = document.getElementById("help-overlay") as HTMLDivElement;
   const helpButton = document.getElementById("help-button") as HTMLButtonElement;
   const closeHelpButton = document.getElementById("close-help") as HTMLButtonElement;
+
+  // ---- Renderer ----
+  const renderer = createCytoscapeRenderer(graphContainer, {
+    onReveal: (location) => vscode.postMessage({ type: "reveal", uri: location.uri, line: location.line }),
+  });
 
   // ----- Helpers -----
   function debounce<T extends any[]>(fn: (...args: T) => void, delay: number) {
@@ -53,201 +46,25 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     };
   }
 
-  function getSvgElement(): SVGSVGElement | null {
-    return container.querySelector("svg");
-  }
-
-  function updateViewBox(vb: ViewBox): void {
-    const svg = getSvgElement();
-    if (!svg) {
-      return;
-    }
-    svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  }
-
-  function resetPanZoom(): void {
-    originalViewBox = null;
-    currentViewBox = null;
-    zoomLevel = 1;
-    isPanning = false;
-    container.style.cursor = "default";
-  }
-
-  function removeMermaidErrorContainers(): void {
-    // Select all DIVs with an id beginning with "dmermaid-"
-    const errorDivs = document.querySelectorAll<HTMLDivElement>('div[id^="dmermaid-"]');
-    errorDivs.forEach((div) => div.remove());
-  }
-
-  function closeExportMenu(): void {
-    exportSplit.classList.remove("open");
-    exportCaret.setAttribute("aria-expanded", "false");
-  }
-
-  // ----- Mermaid Initialization -----
-  function initMermaid(): void {
-    if (mermaidInitialized) {
-      return;
-    }
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: "neutral",
-      // INTERLIS classes never have operations, so Mermaid always reserves an
-      // empty methods compartment under the attributes. Mermaid 11 offers no
-      // config to suppress it (hideEmptyMembersBox only applies to classes with
-      // *no* members either). The renderer emits a second `.divider` line for
-      // that empty compartment; this hides only that trailing divider per node.
-      // The reserved vertical space itself stays — it is baked into the SVG
-      // geometry that edge routing depends on and cannot be removed safely.
-      themeCSS: ".node .divider ~ .divider { display: none; }",
-      flowchart: { curve: "basis", nodeSpacing: 50, rankSpacing: 50 },
-      securityLevel: "strict",
-    });
-    mermaidInitialized = true;
-    console.log("Mermaid initialized");
-  }
-
-  // ----- Diagram Rendering -----
-  async function renderDiagram(diagramCode: string, resetZoom: boolean): Promise<void> {
-    if (!diagramCode) {
-      container.innerHTML = "<div>Could not load diagram.</div>";
-      resetPanZoom();
-      return;
-    }
-
-    removeMermaidErrorContainers();
-    initMermaid();
-    container.textContent = "Rendering...";
-    lastMermaidCode = diagramCode;
-
-    try {
-      const id = `mermaid-${Date.now()}`;
-      // mermaid.render already sanitizes the svg with dompurify: https://github.com/mermaid-js/mermaid/blob/a566353030e8b5aa6379b2989aa19663d5f37bc3/packages/mermaid/src/mermaidAPI.ts#L454
-      const { svg } = await mermaid.render(id, diagramCode);
-      container.innerHTML = svg;
-
-      const svgElement = getSvgElement();
-      const viewBoxAttribute = svgElement?.getAttribute("viewBox");
-      if (!viewBoxAttribute) {
-        throw new Error("No viewBox on SVG");
-      }
-
-      const [, , widthString, heightString] = viewBoxAttribute.split(" ");
-      const width = Number(widthString);
-      const height = Number(heightString);
-
-      originalViewBox = { w: width, h: height };
-
-      if (!currentViewBox || resetZoom) {
-        currentViewBox = { x: 0, y: 0, w: width, h: height };
-        zoomLevel = 1;
-      }
-      updateViewBox(currentViewBox);
-      container.style.cursor = "grab";
-      console.log("Render complete");
-    } catch (err: any) {
-      console.error("Render error:", err);
-      container.textContent = `Error rendering diagram: ${err.message}`;
-      resetPanZoom();
-    }
-  }
-
-  const debouncedRender = debounce(renderDiagram, 150);
+  const debouncedRender = debounce((text: string, resetZoom: boolean) => {
+    void renderer.render(text, resetZoom);
+  }, 150);
 
   // ----- Event Handlers -----
   function handleMessage(event: MessageEvent<IncomingMessage>): void {
     const msg = event.data;
     if (msg.type === "init") {
-      orientationSelect.value = msg.orientation;
       languageSelect.value = msg.language;
     } else if (msg.type === "update") {
       debouncedRender(msg.text, msg.resetZoom);
     }
   }
 
-  function handleWheel(e: WheelEvent): void {
-    const svgElement = getSvgElement();
-    if (!svgElement || !currentViewBox || !originalViewBox) return;
-    e.preventDefault();
-
-    const rect = svgElement.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const svgX = currentViewBox.x + (mouseX / rect.width) * currentViewBox.w;
-    const svgY = currentViewBox.y + (mouseY / rect.height) * currentViewBox.h;
-
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    const newZoom = Math.min(15, Math.max(0.2, zoomLevel * factor));
-    if (newZoom === zoomLevel) return;
-
-    const newW = originalViewBox.w / newZoom;
-    const newH = originalViewBox.h / newZoom;
-    const newX = svgX - (mouseX / rect.width) * newW;
-    const newY = svgY - (mouseY / rect.height) * newH;
-
-    zoomLevel = newZoom;
-    currentViewBox = { x: newX, y: newY, w: newW, h: newH };
-    updateViewBox(currentViewBox);
-  }
-
-  function handleMouseDown(e: MouseEvent): void {
-    if (e.button !== 0 || !currentViewBox) return;
-    const svgEl = getSvgElement();
-    if (!svgEl) return;
-    container.style.cursor = "grabbing";
-    isPanning = true;
-    panStart = { x: e.clientX, y: e.clientY };
-  }
-
-  function handleMouseMove(e: MouseEvent): void {
-    if (!isPanning || !currentViewBox) return;
-    e.preventDefault();
-    const svgElement = getSvgElement();
-    if (!svgElement) {
-      isPanning = false;
-      return;
-    }
-
-    const rect = svgElement.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
-    const scale = Math.max(currentViewBox.w / rect.width, currentViewBox.h / rect.height);
-
-    currentViewBox.x -= dx * scale;
-    currentViewBox.y -= dy * scale;
-    updateViewBox(currentViewBox);
-
-    panStart = { x: e.clientX, y: e.clientY };
-  }
-
-  function handleMouseUp(e: MouseEvent): void {
-    if (e.button === 0) {
-      isPanning = false;
-      container.style.cursor = "grab";
-    }
-  }
-
-  function handleDoubleClick(): void {
-    if (!originalViewBox || !currentViewBox) return;
-    currentViewBox = { x: 0, y: 0, w: originalViewBox.w, h: originalViewBox.h };
-    zoomLevel = 1;
-    updateViewBox(currentViewBox);
-  }
-
   function handleDownload(): void {
-    const svgEl = getSvgElement();
-    if (!svgEl || !originalViewBox) return;
+    const svg = renderer.getExportSvg();
+    if (!svg) return;
 
-    const clone = svgEl.cloneNode(true) as SVGSVGElement;
-    clone.setAttribute("viewBox", `0 0 ${originalViewBox.w} ${originalViewBox.h}`);
-    clone.removeAttribute("width");
-    clone.removeAttribute("height");
-
-    const svgString = new XMLSerializer().serializeToString(clone);
+    const svgString = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([svgString], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
 
@@ -257,46 +74,49 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     link.click();
 
     URL.revokeObjectURL(url);
-    closeExportMenu();
   }
 
-  function handleCopy(): void {
-    const text = copyButton.textContent ?? "";
-    navigator.clipboard
-      .writeText(lastMermaidCode)
-      .then(() => {
-        copyButton.textContent = "Copied!";
-        setTimeout(() => {
-          copyButton.textContent = text;
-        }, 2000);
-      })
-      .catch((e) => {
-        console.error(e);
-        copyButton.textContent = "Copy failed";
-        setTimeout(() => {
-          copyButton.textContent = text;
-        }, 2000);
-      });
+  function handleFitView(): void {
+    renderer.fitToView();
   }
 
-  function handleCaretClick(e: MouseEvent): void {
-    e.stopPropagation();
-    const isOpen = exportSplit.classList.toggle("open");
-    exportCaret.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  function handleResetLayout(): void {
+    void renderer.resetLayout();
   }
 
-  function handleDocumentClick(e: MouseEvent): void {
-    if (!exportSplit.contains(e.target as Node)) {
-      closeExportMenu();
-    }
-  }
-
-  function handleOrientationChange(): void {
-    vscode.postMessage({ type: "orientation", orientation: orientationSelect.value });
+  function handleSettleLayout(): void {
+    void renderer.settleLayout();
   }
 
   function handleLanguageChange(): void {
     vscode.postMessage({ type: "language", language: languageSelect.value });
+  }
+
+  function setFiltersOpen(open: boolean): void {
+    filterPopover.hidden = !open;
+    filterToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function handleFilterToggle(): void {
+    setFiltersOpen(filterPopover.hidden);
+  }
+
+  /** The popover stays open while the diagram is used, and closes on a click anywhere else or with Escape. */
+  function handleDocumentPointerDown(event: PointerEvent): void {
+    if (filterPopover.hidden) return;
+    const target = event.target as Node | null;
+    if (target && (filterPopover.contains(target) || filterToggle.contains(target))) return;
+    setFiltersOpen(false);
+  }
+
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key !== "Escape") return;
+    if (!filterPopover.hidden) {
+      setFiltersOpen(false);
+      filterToggle.focus();
+    } else if (helpOverlay.style.visibility === "visible") {
+      handleHelpClose();
+    }
   }
 
   function handleGenerateMarkdown(): void {
@@ -317,25 +137,25 @@ declare const acquireVsCodeApi: () => VSCodeApi;
 
   function attachEvents(): void {
     window.addEventListener("message", handleMessage);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("click", handleDocumentClick);
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("mousedown", handleMouseDown);
-    container.addEventListener("dblclick", handleDoubleClick);
-    copyButton.addEventListener("click", handleCopy);
+    resetLayoutButton.addEventListener("click", handleResetLayout);
+    settleLayoutButton.addEventListener("click", handleSettleLayout);
+    filterToggle.addEventListener("click", handleFilterToggle);
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    document.addEventListener("keydown", handleKeyDown);
     downloadButton.addEventListener("click", handleDownload);
-    exportCaret.addEventListener("click", handleCaretClick);
-    orientationSelect.addEventListener("change", handleOrientationChange);
-    languageSelect.addEventListener("change", handleLanguageChange);
     generateMarkdownButton.addEventListener("click", handleGenerateMarkdown);
+    languageSelect.addEventListener("change", handleLanguageChange);
+    zoomInButton.addEventListener("click", () => renderer.zoomBy(ZOOM_STEP));
+    zoomOutButton.addEventListener("click", () => renderer.zoomBy(1 / ZOOM_STEP));
+    zoomFitButton.addEventListener("click", handleFitView);
     helpButton.addEventListener("click", handleHelpOpen);
     closeHelpButton.addEventListener("click", handleHelpClose);
   }
 
   function init(): void {
     attachEvents();
-    initMermaid();
+    const filters = createFilterTree(filterTree, (next) => renderer.setFilters(next));
+    resetFiltersButton.addEventListener("click", () => filters.reset());
     postWebviewLoaded();
   }
 

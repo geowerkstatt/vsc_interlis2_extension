@@ -42,6 +42,7 @@ var server = await LanguageServer.From(options =>
             services.AddSingleton<UiLanguageContext>();
             services.AddSingleton<DiagnosticsPublisher>();
             services.AddSingleton<WorkspaceModelIndex>();
+            services.AddSingleton<DocumentationLanguageResolver>();
 
             services.AddSingleton<ExternalImportFileService>();
             services.AddTransient<CompilationService>();
@@ -67,7 +68,7 @@ var server = await LanguageServer.From(options =>
         .WithHandler<GenerateMarkdownHandler>()
         .WithHandler<FormatterHandler>()
         .WithHandler<DefinitionHandler>()
-        .WithHandler<GenerateDiagramHandler>()
+        .WithHandler<GenerateGraphHandler>()
         .WithHandler<WatchedFilesHandler>()
         .WithHandler<DocumentSymbolHandler>()
         .WithHandler<ReferencesHandler>()

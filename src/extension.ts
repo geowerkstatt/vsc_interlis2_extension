@@ -21,8 +21,9 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  const showDiagramCommand = vscode.commands.registerCommand("interlis.showDiagramView", () =>
-    showDiagramPanel(context)
+  // From an editor's title bar or context menu the command receives that editor's file.
+  const showDiagramCommand = vscode.commands.registerCommand("interlis.showDiagramView", (uri?: unknown) =>
+    showDiagramPanel(context, uri instanceof vscode.Uri ? uri : undefined)
   );
 
   context.subscriptions.push(markdownCommand);
