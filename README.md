@@ -59,7 +59,9 @@ The example above associates extensions such as `.ili` with this extension.
 The extension provides the command "Generate markdown documentation" to create markdown code from an INTERLIS 2 file describing the classes and their attributes. This command can be executed from the Command Palette (Default hotkey `Ctrl+Shift+P`) or the context menu of an open INTERLIS 2 file.
 
 ### Live Diagram View
-Watch your ILI models come to life in real time. As you type, the diagram automatically updates so you can instantly see your model’s structure, spot inconsistencies, and keep everything aligned—no extra clicks required. Export the diagram as .SVG to embed in your webpages, or copy the mermaid code directly to your clipboard.
+Watch your ILI models come to life in real time. As you type, the diagram automatically updates so you can instantly see your model’s structure, spot inconsistencies, and keep everything aligned—no extra clicks required. Export the diagram as .SVG to embed in your webpages or edit it further.
+
+The diagram is an interactive UML class graph. Drag boxes and arrows, and click a box or association to jump to its definition. `Filters` switches each kind of box, compartment and arrow on and off, including the imported models. The diagram stays on its file until you run `Show INTERLIS Panel for This File` from another INTERLIS editor.
 
 ### Format Document
 The Format Document command automatically formats your entire INTERLIS file. It adjusts indentation and spacing to make the code more readable and consistent, while carefully preserving all existing comments. You can invoke this command by right-clicking in an INTERLIS editor and selecting "Format Document" from the context menu.
