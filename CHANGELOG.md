@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Jumps into a repository model land on the right line after the repositories publish a new release of it.
 
 ### 0.5.0 - 2026-09-25
 
