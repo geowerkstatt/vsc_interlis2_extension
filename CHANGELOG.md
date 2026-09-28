@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Jumps into a repository model land on the right line after the repositories publish a new release of it.
 * Diagram preview:
   * Interactive graph replaces the Mermaid class diagram: drag boxes and arrows, click a box or association to jump to its definition.
   * Show domains, constraints, views and imported models; a filter tree switches each kind on and off.
