@@ -4,19 +4,295 @@ body {
     height: 100vh;
     padding: 0;
     background-color: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
+    font-family: var(--vscode-font-family, "Segoe UI", system-ui, sans-serif);
+    font-size: 13px;
 }
 
+.icon-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+/* Toolbar: one line of icon-and-text buttons in the style of VS Code's own toolbars. */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 32px;
+    padding: 0 6px;
+    flex: none;
+    border-bottom: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}
+
+.tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 7px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.tool.icon-only {
+    width: 24px;
+    padding: 0;
+    justify-content: center;
+}
+
+.tool:hover,
+.tool[aria-expanded="true"] {
+    background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.25));
+}
+
+.tool:active {
+    background: var(--vscode-toolbar-activeBackground, rgba(128, 128, 128, 0.35));
+}
+
+.tool:focus-visible,
+.zoom-button:focus-visible,
+.language:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.tool svg,
+.zoom-button svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+}
+
+.tool .chevron {
+    width: 12px;
+    height: 12px;
+    margin-left: -2px;
+    opacity: 0.7;
+}
+
+.tool-separator {
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background: var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}
+
+.tool-spacer {
+    flex: 1;
+}
+
+.language {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 24px;
+    padding: 0 1.4rem 0 0.5rem;
+    margin-left: 2px;
+    border: 1px solid var(--vscode-dropdown-border, var(--vscode-widget-border, transparent));
+    border-radius: 4px;
+    background-color: var(--vscode-dropdown-background);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23888' d='M2 4l4 4 4-4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.4rem center;
+    background-size: 9px;
+    color: var(--vscode-dropdown-foreground);
+    font: inherit;
+    cursor: pointer;
+}
+
+/* In a narrow panel the labels go first; the icons and their tooltips stay. */
+@media (max-width: 560px) {
+    .tool > span {
+        display: none;
+    }
+}
+
+/* Filter popover below its toolbar button */
+
+.popover-anchor {
+    position: relative;
+}
+
+.filter-popover {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    z-index: 10;
+    min-width: 15rem;
+    max-height: calc(100vh - 3.5rem);
+    overflow: auto;
+    padding: 6px 4px 4px;
+    background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+    color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+    border: 1px solid var(--vscode-editorWidget-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
+    border-radius: 6px;
+    box-shadow: 0 4px 16px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+}
+
+.filter-popover[hidden] {
+    display: none;
+}
+
+.filter-popover-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 6px 8px 2px;
+    border-top: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}
+
+.link {
+    border: none;
+    padding: 0;
+    background: none;
+    color: var(--vscode-textLink-foreground);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+.filter-tree {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-node > summary {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: default;
+    list-style: none;
+}
+
+.filter-node > summary::-webkit-details-marker {
+    display: none;
+}
+
+.filter-leaf {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* The twisty is the only part of a summary that opens the node; the switch and its text change the filter. */
+.twisty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 22px;
+    flex: none;
+    cursor: pointer;
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    opacity: 0.8;
+}
+
+.filter-leaf .twisty {
+    cursor: default;
+}
+
+.twisty .chevron {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+    transform: rotate(-90deg);
+    transition: transform 100ms ease-out;
+}
+
+.filter-node[open] > summary .chevron {
+    transform: none;
+}
+
+.filter-children {
+    display: flex;
+    flex-direction: column;
+    margin-left: 16px;
+}
+
+/* A switch drawn as an eye: the checkbox keeps the state and the keyboard focus, but is not shown. */
+.filter-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 6px 0 2px;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.filter-label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.filter-label:has(input:focus-visible) {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.filter-label .eye-on,
+.filter-label .eye-off {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+
+.filter-label input:checked ~ .eye-off,
+.filter-label input:not(:checked) ~ .eye-on {
+    display: none;
+}
+
+.filter-label:has(input:not(:checked)) {
+    color: var(--vscode-descriptionForeground, rgba(128, 128, 128, 0.9));
+}
+
+.filter-label:has(input:disabled) {
+    cursor: default;
+    opacity: 0.45;
+}
+
+/* Diagram */
+
 .diagram-container {
+    position: relative;
     flex: 1;
     display: flex;
     overflow: hidden;
     background-color: var(--vscode-editor-background);
 }
 
-#mermaid-graph {
+.graph-view {
     flex: 1;
     display: flex;
-    padding: 1rem;
     justify-content: center;
     align-items: center;
     touch-action: none;
@@ -26,21 +302,81 @@ body {
     -webkit-user-select: none; /* Safari/Chrome */
 }
 
-#mermaid-graph:active {
+/* The explicit display above would otherwise override the hidden attribute. */
+.graph-view[hidden] {
+    display: none;
+}
+
+.graph-view:active {
     cursor: grabbing;
 }
 
-#mermaid-graph svg {
-    width: 100%;
-    height: 100%;
-    max-width: none !important;
-    display: block;
-    box-sizing: border-box;
+.graph-message {
+    color: var(--vscode-editor-foreground);
+}
+
+/* cytoscape.js mounts its canvas layers into this element. */
+.cy-mount {
+    flex: 1;
+    align-self: stretch;
+    min-width: 0;
+    min-height: 0;
     background: white;
-    position: relative;
-    border-radius: 0.75rem;
     overflow: hidden;
 }
+
+.cy-mount[hidden] {
+    display: none;
+}
+
+/* Zoom controls floating over the bottom-right corner of the canvas */
+
+.zoom-cluster {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    background: #f6f6f6;
+    color: #333;
+    border: 1px solid #cfcfcf;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* Without a diagram (a message is shown instead) there is nothing to zoom. */
+.diagram-container:has(.cy-mount[hidden]) .zoom-cluster {
+    display: none;
+}
+
+.zoom-button {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-bottom: 1px solid #dedede;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+}
+
+.zoom-button:last-child {
+    border-bottom: none;
+}
+
+.zoom-button:hover {
+    background: #e6e6e6;
+}
+
+.zoom-button:active {
+    background: #d9d9d9;
+}
+
+/* Help overlay */
 
 .help-overlay {
     position: absolute;
@@ -48,6 +384,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    z-index: 20;
 
     background: rgba(0, 0, 0, 0.4);
 
@@ -70,7 +407,7 @@ body {
 
     padding: 1rem;
     border-radius: 0.5rem;
-    width: 15rem;
+    width: 19rem;
 }
 
 .help-content-title {
@@ -84,96 +421,6 @@ body {
     gap: 0.25rem;
 }
 
-.help-button {
-    border: none;
-    border-radius: 50%;
-
-    width: 3rem;
-    height: 3rem;
-
-    position: absolute;
-    z-index: 99;
-    bottom: 2rem;
-    right: 2rem;
-
-    cursor: pointer;
-
-    font-size: 2rem;
-    font-weight: bold;
-
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-}
-
-.help-button:hover {
-    background-color: var(--vscode-button-hoverBackground);
-    border-color: var(--vscode-button-hoverBackground);
-}
-
-/* Toolbar */
-
-.actions {
-    display: flex;
-    gap: 1.25rem;
-    align-items: stretch;
-    justify-content: center;
-    padding: 0.75rem 1rem 1rem 1rem;
-    flex-wrap: wrap;
-}
-
-.cluster {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-}
-
-.cluster-heading {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.55));
-    padding-left: 0.15rem;
-}
-
-.cluster-controls {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-}
-
-.cluster-separator {
-    width: 1px;
-    align-self: stretch;
-    background: var(--vscode-widget-border, rgba(255, 255, 255, 0.18));
-    /* Align with the controls row, not the cluster heading. */
-    margin: 1.25rem 0 0.25rem 0;
-}
-
-/* When the panel is too narrow to fit both clusters side-by-side, stack
-   them vertically inside a content-width container with a border-left
-   anchor on the left. The container is centered in the panel; the
-   clusters inside are left-aligned against the border. */
-@media (max-width: 900px) {
-    .actions {
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: flex-start;
-        justify-content: flex-start;
-
-        width: max-content;
-        max-width: calc(100% - 2rem);
-        margin: 0.75rem auto 1rem;
-        padding: 0 0 0 1rem;
-
-        border-left: 2px solid var(--vscode-widget-border, rgba(255, 255, 255, 0.18));
-    }
-
-    .cluster-separator {
-        display: none;
-    }
-}
-
 .button {
     background-color: var(--vscode-button-background);
     border: 1px solid var(--vscode-button-background);
@@ -181,135 +428,20 @@ body {
     box-sizing: border-box;
     color: var(--vscode-button-foreground);
     cursor: pointer;
-    font-family: Graphik, -apple-system, system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    font-size: 13px;
+    font: inherit;
     line-height: 1.15;
-    height: 38px;
+    height: 30px;
     padding: 0 14px;
-    min-width: 11rem;
+    min-width: 8rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    text-transform: none;
-    transition: background-color 80ms ease-in-out, border-color 80ms ease-in-out;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
-}
-
-.button:disabled {
-    opacity: .5;
-}
-
-.button:focus {
-    outline: 0;
 }
 
 .button:hover,
 .button:active {
     background-color: var(--vscode-button-hoverBackground);
     border-color: var(--vscode-button-hoverBackground);
-}
-
-/* Split button: main action on the left, caret on the right opens a menu. */
-.split {
-    display: inline-flex;
-    position: relative;
-}
-
-.split .button {
-    min-width: 10rem;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.split .caret {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    border: 1px solid var(--vscode-button-background);
-    border-left: none;
-    border-top-right-radius: 4px;
-    border-bottom-right-radius: 4px;
-    width: 30px;
-    height: 38px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    transition: background-color 80ms ease-in-out, border-color 80ms ease-in-out;
-}
-
-.split .caret:hover {
-    background-color: var(--vscode-button-hoverBackground);
-    border-color: var(--vscode-button-hoverBackground);
-}
-
-.split .menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    min-width: 12rem;
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border, var(--vscode-dropdown-background));
-    border-radius: 4px;
-    padding: 0.25rem 0;
-    display: none;
-    z-index: 10;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-.split.open .menu {
-    display: block;
-}
-
-.split .menu button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 0.4rem 0.75rem;
-    background: transparent;
-    color: var(--vscode-dropdown-foreground);
-    border: none;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.split .menu button:hover {
-    background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
-}
-
-/* Labeled select field */
-.field {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.65));
-    font-size: 13px;
-}
-
-.field select {
-    appearance: none;
-    -webkit-appearance: none;
-    background-color: var(--vscode-dropdown-background);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23ccc' d='M2 4l4 4 4-4z'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-    background-size: 10px;
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border, var(--vscode-dropdown-background));
-    border-radius: 4px;
-    height: 30px;
-    padding: 0 1.75rem 0 0.6rem;
-    font-size: 13px;
-    cursor: pointer;
-    min-width: 8rem;
-}
-
-.field select:focus {
-    outline: 1px solid var(--vscode-focusBorder, transparent);
-    outline-offset: -1px;
 }

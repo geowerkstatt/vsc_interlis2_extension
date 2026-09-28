@@ -9,52 +9,75 @@
 </head>
 <body>
 
-<div class="actions">
-  <div class="cluster">
-    <div class="cluster-heading">Diagram</div>
-    <div class="cluster-controls">
-      <div class="split" id="export-split">
-        <button class="button" id="copy-code">Copy Mermaid Code</button>
-        <button class="caret" id="export-caret" aria-label="More export options" aria-haspopup="true" aria-expanded="false">&#9662;</button>
-        <div class="menu" role="menu">
-          <button id="download-svg" role="menuitem">Download SVG</button>
-        </div>
+<svg class="icon-sprite" aria-hidden="true">
+  <defs>
+    <symbol id="icon-fit" viewBox="0 0 16 16"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></symbol>
+    <symbol id="icon-reset" viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3"/></symbol>
+    <symbol id="icon-settle" viewBox="0 0 16 16"><path d="M2 5c2-2 4 2 6 0s4-2 6 0M2 11c2-2 4 2 6 0s4-2 6 0"/></symbol>
+    <symbol id="icon-filter" viewBox="0 0 16 16"><path d="M2 3h12l-4.5 5.5V13l-3 1V8.5z" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></symbol>
+    <symbol id="icon-markdown" viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1"/><path d="M4 10V6l2 2 2-2v4M11 6v4m-1.5-1.5L11 10l1.5-1.5"/></symbol>
+    <symbol id="icon-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3"/><path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.7c-.6.3-.8.6-.8 1.2M8 11.3v.2" stroke-linecap="round"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="icon-minus" viewBox="0 0 16 16"><path d="M3 8h10"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+    <symbol id="icon-eye" viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></symbol>
+    <symbol id="icon-eye-closed" viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/><path d="M3 13 13 3"/></symbol>
+  </defs>
+</svg>
+
+<div class="toolbar" role="toolbar" aria-label="Diagram">
+  <button class="tool" id="reset-layout" title="Arrange everything afresh; manual moves and bends are dropped">
+    <svg><use href="#icon-reset"/></svg><span>Reset layout</span>
+  </button>
+  <button class="tool" id="settle-layout" title="Run the layout from the current positions; manual moves are kept as the starting point">
+    <svg><use href="#icon-settle"/></svg><span>Settle</span>
+  </button>
+
+  <div class="tool-separator"></div>
+
+  <div class="popover-anchor">
+    <button class="tool" id="toggle-filters" title="Choose what the diagram shows" aria-controls="filter-popover" aria-expanded="false" aria-haspopup="true">
+      <svg><use href="#icon-filter"/></svg><span>Filters</span><svg class="chevron"><use href="#icon-chevron"/></svg>
+    </button>
+    <div class="filter-popover" id="filter-popover" hidden>
+      <div class="filter-tree" id="filter-tree"></div>
+      <div class="filter-popover-footer">
+        <button class="link" id="reset-filters">Reset filters</button>
       </div>
-      <label class="field">
-        Orientation
-        <select id="orientation">
-          <option value="LR" selected>Top &rarr; Bottom</option>
-          <option value="TB">Left &rarr; Right</option>
-        </select>
-      </label>
     </div>
   </div>
 
-  <div class="cluster-separator"></div>
+  <div class="tool-separator"></div>
 
-  <div class="cluster">
-    <div class="cluster-heading">Markdown</div>
-    <div class="cluster-controls">
-      <button class="button" id="generate-markdown">Generate Markdown</button>
-      <label class="field">
-        Language
-        <select id="language">
-          <option value="auto" selected>Auto</option>
-          <option value="de">Deutsch</option>
-          <option value="fr">Fran&ccedil;ais</option>
-          <option value="it">Italiano</option>
-          <option value="en">English</option>
-        </select>
-      </label>
-    </div>
-  </div>
+  <button class="tool" id="download-svg" title="Save the diagram as it is shown as an editable SVG file">
+    <svg><use href="#icon-download"/></svg><span>SVG</span>
+  </button>
+  <button class="tool" id="generate-markdown" title="Generate the Markdown documentation of the model">
+    <svg><use href="#icon-markdown"/></svg><span>Markdown</span>
+  </button>
+  <select id="language" class="language" title="Language of the generated Markdown">
+    <option value="auto" selected>Auto</option>
+    <option value="de">Deutsch</option>
+    <option value="fr">Fran&ccedil;ais</option>
+    <option value="it">Italiano</option>
+    <option value="en">English</option>
+  </select>
+
+  <div class="tool-spacer"></div>
+
+  <button class="tool icon-only" id="help-button" title="Controls">
+    <svg><use href="#icon-help"/></svg>
+  </button>
 </div>
 
 <div class="diagram-container">
-  <div id="mermaid-graph">
-    Loading...
+  <div id="graph" class="graph-view"></div>
+  <div class="zoom-cluster" id="zoom-cluster">
+    <button class="zoom-button" id="zoom-in" title="Zoom in"><svg><use href="#icon-plus"/></svg></button>
+    <button class="zoom-button" id="zoom-out" title="Zoom out"><svg><use href="#icon-minus"/></svg></button>
+    <button class="zoom-button" id="zoom-fit" title="Fit to view"><svg><use href="#icon-fit"/></svg></button>
   </div>
-  <button class="help-button" id="help-button">?</button>
 </div>
 
 <div class="help-overlay" id="help-overlay">
@@ -62,8 +85,13 @@
     <span class="help-content-title">Controls</span>
     <div class="help-content-controls">
       <span><strong>Pan:</strong> Click and drag</span>
-      <span><strong>Zoom:</strong> Mouse wheel</span>
-      <span><strong>Reset:</strong> Double&#8209;click</span>
+      <span><strong>Zoom:</strong> Mouse wheel, or the buttons at the bottom right</span>
+      <span><strong>Fit to view:</strong> The button at the bottom right, or double&#8209;click the background</span>
+      <span><strong>Move a box or frame:</strong> Drag it</span>
+      <span><strong>Move an arrow:</strong> Drag it</span>
+      <span><strong>Straighten an arrow:</strong> Double&#8209;click it</span>
+      <span><strong>Go to definition:</strong> Click a box, frame or association line</span>
+      <span><strong>Highlight relations:</strong> Hover a box</span>
     </div>
     <button class="button" id="close-help">Close</button>
   </div>

@@ -60,7 +60,7 @@
       },
       {
         "command": "interlis.showDiagramView",
-        "title": "Show INTERLIS Panel",
+        "title": "Show INTERLIS Panel for This File",
         "category": "INTERLIS 2",
         "icon": "$(symbol-misc)"
       }
@@ -112,7 +112,7 @@
             "English"
           ],
           "default": "auto",
-          "description": "Language used for generated markdown documentation and Mermaid diagrams. Affects column headers, placeholder text, the inherited-attribute suffix, and labels like the 'Numeric' fallback. User-defined INTERLIS identifiers in your .ili file are never translated. The per-string settings below override individual labels."
+          "description": "Language used for generated markdown documentation and the class diagram. Affects column headers, placeholder text, the inherited-attribute suffix, and labels like the 'Numeric' fallback. User-defined INTERLIS identifiers in your .ili file are never translated. The per-string settings below override individual labels."
         },
         "interlis.documentation.abstractClassAttributes": {
           "type": "string",
@@ -187,7 +187,6 @@
     "eslint": "^8.13.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "mermaid": "^11.16.1",
     "nodemon": "^3.1.10",
     "prettier": "^2.7.1",
     "rimraf": "^6.0.1",
