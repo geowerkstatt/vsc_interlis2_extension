@@ -69,6 +69,7 @@ var server = await LanguageServer.From(options =>
         .WithHandler<FormatterHandler>()
         .WithHandler<DefinitionHandler>()
         .WithHandler<GenerateDiagramHandler>()
+        .WithHandler<GenerateGraphHandler>()
         .WithHandler<WatchedFilesHandler>()
         .WithHandler<DocumentSymbolHandler>()
         .WithHandler<ReferencesHandler>()
