@@ -15,45 +15,59 @@ public class CompilationServiceTest
         """;
 
     [TestMethod]
-    public async Task RepositoryLookupsDoNotRunConcurrently()
+    public async Task RepositoryLookupsRunConcurrently()
     {
-        var repositories = new SlowRepositories();
+        var repositories = new RendezvousRepositories();
         var a1 = DocumentUri.From("file:///c:/work/a1.ili");
         var a2 = DocumentUri.From("file:///c:/work/a2.ili");
         var workspace = TestWorkspace.Open(repositories, (a1, ModelA.Replace("MODEL A", "MODEL A1").Replace("END A.", "END A1.")), (a2, ModelA.Replace("MODEL A", "MODEL A2").Replace("END A.", "END A2.")));
 
         // B is in no open document, so both compilations look it up in the repositories.
-        await Task.WhenAll(workspace.Cache.GetCompilationAsync(a1).AsTask(), workspace.Cache.GetCompilationAsync(a2).AsTask());
+        var compilations = await Task.WhenAll(workspace.Cache.GetCompilationAsync(a1).AsTask(), workspace.Cache.GetCompilationAsync(a2).AsTask());
 
-        Assert.AreEqual(2, repositories.Crawls);
-        Assert.AreEqual(1, repositories.MaxConcurrentCrawls);
+        Assert.AreEqual(1, repositories.Crawls);
+        var sourceUris = compilations.Select(compilation => compilation.Environment.Content.GetValueOrDefault("B")?.SourceUri).ToList();
+        CollectionAssert.AllItemsAreNotNull(sourceUris, "Both compilations resolve B to its stored copy.");
+        Assert.AreEqual(sourceUris[0], sourceUris[1]);
     }
 
-    /// <summary>Repositories that know no models and take a while to crawl, counting crawls running at once.</summary>
-    private sealed class SlowRepositories : IRepositoryCrawler
+    /// <summary>
+    /// Repositories that publish model B, in a folder of their own so that no copy stored by an earlier run exists.
+    /// A fetch waits for the other one, so the lookups have to run at the same time.
+    /// </summary>
+    private sealed class RendezvousRepositories : IRepositoryCrawler
     {
-        private readonly object counts = new();
-        private int running;
+        private const string ModelB = """
+            INTERLIS 2.4;
+            MODEL B AT "http://example.com" VERSION "1" =
+            END B.
+            """;
 
-        public int Crawls { get; private set; }
+        private readonly Uri uri = new($"http://models.example.com/{Guid.NewGuid():N}/");
+        private readonly TaskCompletionSource bothFetching = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int fetches;
+        private int crawls;
 
-        public int MaxConcurrentCrawls { get; private set; }
+        public int Crawls => crawls;
 
-        public async Task<IDictionary<string, Repository>> CrawlModelRepositories(RepositoryCrawlerOptions options)
+        public Task<IDictionary<string, Repository>> CrawlModelRepositories(RepositoryCrawlerOptions options)
         {
-            var now = Interlocked.Increment(ref running);
-            lock (counts)
-            {
-                Crawls++;
-                MaxConcurrentCrawls = Math.Max(MaxConcurrentCrawls, now);
-            }
-
-            await Task.Delay(200);
-            Interlocked.Decrement(ref running);
-            return new Dictionary<string, Repository>();
+            Interlocked.Increment(ref crawls);
+            var repository = new Repository { HostNameId = uri.Host, Uri = uri, Name = uri.Host };
+            repository.Models.Add(new Model { Name = "B", SchemaLanguage = "ili2_4", File = "B.ili", Version = "1", ModelRepository = repository });
+            return Task.FromResult<IDictionary<string, Repository>>(new Dictionary<string, Repository> { [repository.HostNameId] = repository });
         }
 
-        public Task<InterlisFile?> FetchInterlisFile(Model model, Func<string, InterlisFile?> getCachedFile)
-            => Task.FromResult<InterlisFile?>(null);
+        public async Task<InterlisFile?> FetchInterlisFile(Model model, Func<string, InterlisFile?> getCachedFile)
+        {
+            if (Interlocked.Increment(ref fetches) == 2)
+            {
+                bothFetching.SetResult();
+            }
+
+            await bothFetching.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            model.FileContent = new InterlisFile { MD5 = "B", Content = ModelB };
+            return model.FileContent;
+        }
     }
 }
