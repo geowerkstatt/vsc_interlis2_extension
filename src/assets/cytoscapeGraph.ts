@@ -13,8 +13,8 @@ import {
   GraphRelationship,
 } from "./graphDocument";
 
-// Pure model-to-cytoscape mapping (elements, stylesheet, layout options). No DOM access, so the
-// same code runs headless in node for layout experiments.
+// Model-to-cytoscape mapping (elements, stylesheet, layout options). Only the class boxes touch the
+// DOM: they are built as SVG elements.
 
 export const FONT_FAMILY = '"Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const NAME_FONT_SIZE = 13;
@@ -207,8 +207,22 @@ export interface RelationEdgeData {
 
 const LOOP_OVERHANG = 70; // how far a self-association loop reaches beyond the box corner
 
-function escapeXml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+export const SVG_NS = "http://www.w3.org/2000/svg";
+
+export type Attributes = Record<string, string | number>;
+
+export function element<K extends keyof SVGElementTagNameMap>(
+  doc: Document,
+  tag: K,
+  attributes: Attributes,
+  text?: string
+): SVGElementTagNameMap[K] {
+  const el = doc.createElementNS(SVG_NS, tag);
+  for (const [name, value] of Object.entries(attributes)) {
+    el.setAttribute(name, String(value));
+  }
+  if (text !== undefined) el.textContent = text;
+  return el;
 }
 
 function truncate(text: string): string {
@@ -310,51 +324,80 @@ export function buildClassBox(
   );
   const height = headerHeight + bodyHeight + constraintsHeight;
 
-  const fill = fillOf(node, imported);
-  const dash =
-    node.kind === "structure" ? ' stroke-dasharray="8 4"' : node.kind === "external" ? ' stroke-dasharray="3 3"' : "";
+  const dash = node.kind === "structure" ? "8 4" : node.kind === "external" ? "3 3" : undefined;
   const nameStyle = node.isAbstract || node.kind === "external" ? "italic" : "normal";
 
-  const parts: string[] = [];
-  parts.push(
-    `<rect x="0.6" y="0.6" width="${width - 1.2}" height="${height - 1.2}" rx="4" fill="${escapeXml(fill)}" ` +
-      `stroke="${STROKE}" stroke-width="1.2"${dash}/>`
+  const svg = element(document, "svg", {
+    width,
+    height,
+    viewBox: `0 0 ${width} ${height}`,
+    "font-family": FONT_FAMILY,
+  });
+  svg.appendChild(
+    element(document, "rect", {
+      x: 0.6,
+      y: 0.6,
+      width: width - 1.2,
+      height: height - 1.2,
+      rx: 4,
+      fill: fillOf(node, imported),
+      stroke: STROKE,
+      "stroke-width": 1.2,
+      ...(dash && { "stroke-dasharray": dash }),
+    })
   );
   let baseline = PADDING_Y;
   if (stereotype) {
     baseline += STEREOTYPE_FONT_SIZE;
-    parts.push(
-      `<text x="${
-        width / 2
-      }" y="${baseline}" text-anchor="middle" font-size="${STEREOTYPE_FONT_SIZE}" fill="${MUTED}">` +
-        `${escapeXml(stereotype)}</text>`
+    svg.appendChild(
+      element(
+        document,
+        "text",
+        { x: width / 2, y: baseline, "text-anchor": "middle", "font-size": STEREOTYPE_FONT_SIZE, fill: MUTED },
+        stereotype
+      )
     );
     baseline += 2;
   }
   baseline += NAME_FONT_SIZE;
-  parts.push(
-    `<text x="${width / 2}" y="${baseline}" text-anchor="middle" font-size="${NAME_FONT_SIZE}" font-weight="700" ` +
-      `font-style="${nameStyle}" fill="${TEXT}">${escapeXml(node.name)}</text>`
+  svg.appendChild(
+    element(
+      document,
+      "text",
+      {
+        x: width / 2,
+        y: baseline,
+        "text-anchor": "middle",
+        "font-size": NAME_FONT_SIZE,
+        "font-weight": 700,
+        "font-style": nameStyle,
+        fill: TEXT,
+      },
+      node.name
+    )
   );
   /** A compartment below `top`: separator line, then one row per entry. */
   function compartment(top: number, entries: string[], style: string): void {
     if (!entries.length) return;
-    parts.push(`<line x1="0" x2="${width}" y1="${top}" y2="${top}" stroke="${STROKE}" stroke-width="1"/>`);
+    svg.appendChild(
+      element(document, "line", { x1: 0, x2: width, y1: top, y2: top, stroke: STROKE, "stroke-width": 1 })
+    );
     entries.forEach((row, i) => {
       const y = top + PADDING_Y + (i + 1) * ROW_HEIGHT - 4;
-      parts.push(
-        `<text x="${PADDING_X}" y="${y}" font-size="${ATTRIBUTE_FONT_SIZE}" font-style="${style}" fill="${TEXT}">` +
-          `${escapeXml(row)}</text>`
+      svg.appendChild(
+        element(
+          document,
+          "text",
+          { x: PADDING_X, y, "font-size": ATTRIBUTE_FONT_SIZE, "font-style": style, fill: TEXT },
+          row
+        )
       );
     });
   }
   compartment(headerHeight, rows, "normal");
   compartment(headerHeight + bodyHeight, constraints, "italic");
 
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" ` +
-    `font-family='${FONT_FAMILY}'>${parts.join("")}</svg>`;
-  return { svg, width, height };
+  return { svg: new XMLSerializer().serializeToString(svg), width, height };
 }
 
 export function toDataUri(svg: string): string {

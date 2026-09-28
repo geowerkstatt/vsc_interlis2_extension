@@ -1,6 +1,15 @@
 import type { Core, EdgeSingular, NodeSingular, Position } from "cytoscape";
-import { FONT_FAMILY, FRAME_STROKE, FRAME_TINT, IMPORTED_STROKE, IMPORTED_TINT, STROKE } from "./cytoscapeGraph";
-import type { RelationEdgeData } from "./cytoscapeGraph";
+import {
+  element,
+  FONT_FAMILY,
+  FRAME_STROKE,
+  FRAME_TINT,
+  IMPORTED_STROKE,
+  IMPORTED_TINT,
+  STROKE,
+  SVG_NS,
+} from "./cytoscapeGraph";
+import type { Attributes, RelationEdgeData } from "./cytoscapeGraph";
 
 /**
  * Builds an editable SVG of the current cytoscape graph from its model (node positions, compound
@@ -10,7 +19,6 @@ import type { RelationEdgeData } from "./cytoscapeGraph";
  * class boxes into PNG images.)
  */
 
-const SVG_NS = "http://www.w3.org/2000/svg";
 const MARGIN = 40;
 const ARROW_LENGTH = 14;
 const ARROW_HALF_WIDTH = 7;
@@ -20,22 +28,7 @@ const END_LABEL_DISTANCE = 32;
 const FRAME_LABEL_HEIGHT = 18;
 const BOX_IMAGE_PREFIX = "data:image/svg+xml;utf8,";
 
-type Attributes = Record<string, string | number>;
 type ArrowShape = "triangle" | "diamond" | "vee";
-
-function element<K extends keyof SVGElementTagNameMap>(
-  doc: Document,
-  tag: K,
-  attributes: Attributes,
-  text?: string
-): SVGElementTagNameMap[K] {
-  const el = doc.createElementNS(SVG_NS, tag);
-  for (const [name, value] of Object.entries(attributes)) {
-    el.setAttribute(name, String(value));
-  }
-  if (text !== undefined) el.textContent = text;
-  return el;
-}
 
 function unit(from: Position, to: Position): Position {
   const dx = to.x - from.x;
