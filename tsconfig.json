@@ -7,8 +7,7 @@
       "dom",
     ],
     "rootDir": "src",
-    "outDir": "out",
-    "sourceMap": true,
+    "noEmit": true,
     "strict": true
   },
   "include": [
