@@ -13,6 +13,12 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
     private readonly string tempDirectory = Path.Combine(Path.GetTempPath(), serverOptions.Value.TempFolderName);
 
     /// <summary>
+    /// Serializes storing the files: compilations running at once may import the same model, and a file written twice
+    /// at once fails the second time on Windows, or is found by the second while the first is still writing it.
+    /// </summary>
+    private readonly SemaphoreSlim storeLock = new(1, 1);
+
+    /// <summary>
     /// Gets the URI of the INTERLIS file containing the given <see cref="Model"/>.
     /// </summary>
     /// <remarks>
@@ -22,6 +28,7 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
     /// <returns>The URI of the INTERLIS file containing the <paramref name="model"/>.</returns>
     public async Task<Uri?> GetModelUriAsync(Model model)
     {
+        await storeLock.WaitAsync();
         try
         {
             var fileCacheLocation = GetTempLocalFilePath(model);
@@ -46,6 +53,10 @@ public sealed class ExternalImportFileService(ILogger<ExternalImportFileService>
         {
             logger.LogError(ex, "Failed to load model \"{ModelName}\"", model.Name);
             return null;
+        }
+        finally
+        {
+            storeLock.Release();
         }
     }
 

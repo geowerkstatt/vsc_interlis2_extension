@@ -9,6 +9,7 @@
   * The diagram changes file only via `Show INTERLIS Panel for This File` and otherwise keeps its layout.
   * `Copy Mermaid Code` and `Orientation` are removed.
   * Language server: `generateGraph` replaces `generateDiagram`.
+* Updated INTERLIS compiler and repository crawler to 3.1.45.
 
 ### 0.5.0 - 2026-09-25
 

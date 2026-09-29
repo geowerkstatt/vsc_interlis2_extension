@@ -39,10 +39,11 @@ internal sealed record TestWorkspace(OpenDocuments Buffers, WorkspaceModelIndex 
         var externalFiles = new ExternalImportFileService(NullLogger<ExternalImportFileService>.Instance, Options.Create(new ServerOptions { LanguageName = "INTERLIS2", TempFolderName = TempFolderName }));
         var index = new WorkspaceModelIndex(buffers, externalFiles, NullLogger<WorkspaceModelIndex>.Instance);
 
+        // A cache database of its own, so that the repository tree another test left in a shared one is never served.
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             [$"{RepositoryCrawlerOptions.SectionName}:{nameof(RepositoryCrawlerOptions.RootRepositoryUri)}"] = "http://localhost",
-            [$"{RepositoryCrawlerOptions.SectionName}:{nameof(RepositoryCrawlerOptions.CacheDbFolder)}"] = Path.Combine(Path.GetTempPath(), TempFolderName),
+            [$"{RepositoryCrawlerOptions.SectionName}:{nameof(RepositoryCrawlerOptions.CacheDbFolder)}"] = Path.Combine(Path.GetTempPath(), TempFolderName, "cache-" + Guid.NewGuid().ToString("N")),
         }).Build();
         var repositorySearcher = new RepositorySearcher(repositories, configuration, NullLoggerFactory.Instance);
         var compilationService = new CompilationService(index, repositorySearcher, NullLoggerFactory.Instance, externalFiles);
