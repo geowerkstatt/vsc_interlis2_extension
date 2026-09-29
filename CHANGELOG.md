@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* First stable release; no functional changes since 0.6.0.
 
 ### 0.6.0 - 2026-09-29
 
