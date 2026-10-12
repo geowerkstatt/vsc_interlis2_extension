@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* The extension is bundled into a single file with esbuild, so the package no longer ships its npm dependencies and loads faster.
 
 ### 1.0.0 - 2026-09-29
 

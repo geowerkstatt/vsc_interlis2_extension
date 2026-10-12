@@ -154,10 +154,12 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "build:ts": "tsc -p ./",
+    "build:ext": "esbuild src/extension.ts src/browser.ts --bundle --platform=node --target=es2020 --external:vscode --sourcemap --outdir=out",
     "build:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js",
+    "check:ts": "tsc -p ./",
     "copy:assets": "cpy \"src/assets/**/*.{html,css}\" out/assets --flat",
-    "compile": "npm run build:webview && npm run build:ts && npm run copy:assets",
+    "compile": "npm run build:webview && npm run build:ext && npm run check:ts && npm run copy:assets",
+    "watch:ext": "esbuild src/extension.ts src/browser.ts --bundle --platform=node --target=es2020 --external:vscode --sourcemap --outdir=out --watch",
     "watch:ts": "tsc -watch -p ./",
     "watch:webview": "esbuild src/assets/webview.ts --bundle --target=es2017 --outfile=out/assets/webview.js --watch",
     "watch:assets": "nodemon --watch src/assets --ext html,css --exec \"npm run copy:assets\"",
@@ -173,7 +175,6 @@
   "devDependencies": {
     "@types/cytoscape-fcose": "^2.2.5",
     "@types/node": "^16.11.7",
-    "@types/node-fetch": "^2.6.2",
     "@types/vscode": "^1.34.0",
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
@@ -193,7 +194,6 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "node-fetch": "^2.6.7",
     "vscode-languageclient": "^9.0.1"
   }
 }
