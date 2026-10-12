@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Geowerkstatt.Interlis.LanguageServer.Test/Geowerkstatt.Interlis.LanguageServer.Test.csproj" />
+  <Project Path="Geowerkstatt.Interlis.LanguageServer/Geowerkstatt.Interlis.LanguageServer.csproj" />
+</Solution>
