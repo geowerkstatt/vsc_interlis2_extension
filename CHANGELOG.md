@@ -1,6 +1,9 @@
 # Change Log
 ### vNext
 
+
+### 1.0.1 - 2026-10-13
+
 * The extension is bundled into a single file with esbuild, so the package no longer ships its npm dependencies and loads faster.
 * Update Language server to .NET 10.
 * Updated INTERLIS compiler and repository crawler to 3.1.47.
