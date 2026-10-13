@@ -25,9 +25,9 @@ jobs:
           node-version: 20.x
 
       - name: Install .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: "8.0"
+          dotnet-version: "10.0"
 
       - name: Get current version
         run: |

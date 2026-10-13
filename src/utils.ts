@@ -29,7 +29,7 @@ export function getServerExecutable(context: vscode.ExtensionContext, debug: boo
   const exeExt = process.platform === "win32" ? ".exe" : "";
   const serverName = `Geowerkstatt.Interlis.LanguageServer${exeExt}`;
   const runPath = `language-server/bin/${getRuntimeId()}/${serverName}`;
-  const debugPath = `language-server/src/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net8.0/${serverName}`;
+  const debugPath = `language-server/src/Geowerkstatt.Interlis.LanguageServer/bin/Debug/net10.0/${serverName}`;
   const absoluteDebug = context.asAbsolutePath(debugPath);
 
   const command = debug && fs.existsSync(absoluteDebug) ? absoluteDebug : context.asAbsolutePath(runPath);
