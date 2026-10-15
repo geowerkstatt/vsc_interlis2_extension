@@ -24,6 +24,7 @@ import {
   TextMeasurer,
 } from "./cytoscapeGraph";
 import { GraphDocument, GraphNode, GraphNodeKind } from "./graphDocument";
+import { attachScrollbars } from "./scrollbars";
 
 cytoscape.use(fcose);
 cytoscape.use(layoutUtilities); // required by fCoSE's packComponents
@@ -325,6 +326,7 @@ export function createCytoscapeRenderer(
     boxSelectionEnabled: false,
     autounselectify: true,
   });
+  attachScrollbars(cy, container, FIT_PADDING);
 
   mount.addEventListener(
     "wheel",

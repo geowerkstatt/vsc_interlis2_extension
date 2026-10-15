@@ -5,6 +5,7 @@
   * `All` and `None` next to `Reset filters` switch every filter on or off.
   * A message takes the place of an empty diagram: while it loads, and when nothing is left to show, with a link to the filters if they hide everything.
   * Boxes of unresolved references (`«external»`) are hidden together with the last arrow leading to them.
+  * Scrollbars show which part of the diagram is in view and how far it is zoomed in; drag them or click beside them to pan without a mouse wheel.
 
 ### 1.0.1 - 2026-10-13
 
