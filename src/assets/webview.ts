@@ -1,3 +1,4 @@
+import { rasterizeSvg } from "./cytoscapeExport";
 import { createCytoscapeRenderer, ZOOM_STEP } from "./cytoscapeRenderer";
 import { createFilterTree } from "./filterTree";
 
@@ -5,7 +6,10 @@ interface VSCodeApi {
   postMessage(message: unknown): void;
 }
 
-type IncomingMessage = { type: "init"; language: string } | { type: "update"; text: string; resetZoom: boolean };
+type IncomingMessage =
+  | { type: "init"; language: string }
+  | { type: "update"; text: string; resetZoom: boolean }
+  | { type: "export"; id: number; format: "svg" | "png" };
 
 declare const acquireVsCodeApi: () => VSCodeApi;
 
@@ -22,7 +26,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   const allFiltersButton = document.getElementById("all-filters") as HTMLButtonElement;
   const noFiltersButton = document.getElementById("no-filters") as HTMLButtonElement;
   const resetFiltersButton = document.getElementById("reset-filters") as HTMLButtonElement;
-  const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
+  const exportButton = document.getElementById("export") as HTMLButtonElement;
   const generateMarkdownButton = document.getElementById("generate-markdown") as HTMLButtonElement;
   const languageSelect = document.getElementById("language") as HTMLSelectElement;
   const zoomInButton = document.getElementById("zoom-in") as HTMLButtonElement;
@@ -60,23 +64,27 @@ declare const acquireVsCodeApi: () => VSCodeApi;
       languageSelect.value = msg.language;
     } else if (msg.type === "update") {
       debouncedRender(msg.text, msg.resetZoom);
+    } else if (msg.type === "export") {
+      void handleExportRequest(msg.id, msg.format);
     }
   }
 
-  function handleDownload(): void {
-    const svg = renderer.getExportSvg();
-    if (!svg) return;
+  /** The extension asks for the format, file name and place in its save dialog, then for the content. */
+  function handleExportClick(): void {
+    if (!renderer.getExportSvg()) return;
+    vscode.postMessage({ type: "exportDiagram" });
+  }
 
-    const svgString = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "diagram.svg";
-    link.click();
-
-    URL.revokeObjectURL(url);
+  /** Answers an export request with the SVG text or the base64 PNG; null when there is nothing to export. */
+  async function handleExportRequest(id: number, format: "svg" | "png"): Promise<void> {
+    let data: string | null = null;
+    try {
+      const svg = renderer.getExportSvg();
+      if (svg) data = format === "png" ? await rasterizeSvg(svg) : new XMLSerializer().serializeToString(svg);
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+    vscode.postMessage({ type: "exportData", id, data });
   }
 
   function handleFitView(): void {
@@ -145,7 +153,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     filterToggle.addEventListener("click", handleFilterToggle);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    downloadButton.addEventListener("click", handleDownload);
+    exportButton.addEventListener("click", handleExportClick);
     generateMarkdownButton.addEventListener("click", handleGenerateMarkdown);
     languageSelect.addEventListener("change", handleLanguageChange);
     zoomInButton.addEventListener("click", () => renderer.zoomBy(ZOOM_STEP));

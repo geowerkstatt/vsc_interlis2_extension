@@ -27,6 +27,11 @@ const LABEL_LINE_HEIGHT = 12;
 const END_LABEL_DISTANCE = 32;
 const FRAME_LABEL_HEIGHT = 18;
 const BOX_IMAGE_PREFIX = "data:image/svg+xml;utf8,";
+/** Pixels per SVG unit of a PNG, so text stays sharp on high-density screens and when zoomed. */
+const PNG_SCALE = 2;
+/** Largest PNG edge and area a canvas reliably draws; a bigger diagram gets fewer pixels per unit. */
+const PNG_MAX_EDGE = 16384;
+const PNG_MAX_AREA = 64 * 1024 * 1024;
 
 type ArrowShape = "triangle" | "diamond" | "vee";
 
@@ -304,4 +309,29 @@ export function buildExportSvg(cy: Core): SVGSVGElement | null {
   svg.appendChild(classes);
 
   return svg;
+}
+
+/**
+ * Draws the export SVG into a PNG, so both formats show the same picture (white background,
+ * margin, no hover highlight). Returns the PNG base64-encoded, without the data URL prefix.
+ */
+export async function rasterizeSvg(svg: SVGSVGElement): Promise<string> {
+  const width = Number(svg.getAttribute("width"));
+  const height = Number(svg.getAttribute("height"));
+  const scale = Math.min(
+    PNG_SCALE,
+    PNG_MAX_EDGE / width,
+    PNG_MAX_EDGE / height,
+    Math.sqrt(PNG_MAX_AREA / (width * height))
+  );
+  const image = new Image();
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("No 2D canvas context");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png").slice("data:image/png;base64,".length);
 }

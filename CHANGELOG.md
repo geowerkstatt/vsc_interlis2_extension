@@ -6,6 +6,7 @@
   * A message takes the place of an empty diagram: while it loads, and when nothing is left to show, with a link to the filters if they hide everything.
   * Boxes of unresolved references (`«external»`) are hidden together with the last arrow leading to them.
   * Scrollbars show which part of the diagram is in view and how far it is zoomed in; drag them or click beside them to pan without a mouse wheel.
+  * `Export…` replaces the `SVG` button: it exports the diagram as SVG or PNG, chosen by the file type in VS Code's save dialog, which suggests a file next to the INTERLIS file.
 
 ### 1.0.1 - 2026-10-13
 
