@@ -19,6 +19,8 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   const filterToggle = document.getElementById("toggle-filters") as HTMLButtonElement;
   const filterPopover = document.getElementById("filter-popover") as HTMLElement;
   const filterTree = document.getElementById("filter-tree") as HTMLDivElement;
+  const allFiltersButton = document.getElementById("all-filters") as HTMLButtonElement;
+  const noFiltersButton = document.getElementById("no-filters") as HTMLButtonElement;
   const resetFiltersButton = document.getElementById("reset-filters") as HTMLButtonElement;
   const downloadButton = document.getElementById("download-svg") as HTMLButtonElement;
   const generateMarkdownButton = document.getElementById("generate-markdown") as HTMLButtonElement;
@@ -155,6 +157,8 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   function init(): void {
     attachEvents();
     const filters = createFilterTree(filterTree, (next) => renderer.setFilters(next));
+    allFiltersButton.addEventListener("click", () => filters.setAll(true));
+    noFiltersButton.addEventListener("click", () => filters.setAll(false));
     resetFiltersButton.addEventListener("click", () => filters.reset());
     postWebviewLoaded();
   }

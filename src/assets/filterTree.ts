@@ -102,6 +102,8 @@ interface Bound {
 export interface FilterTree {
   /** Returns to the default filters and reports the change. */
   reset(): void;
+  /** Switches every entry on or off and reports the change. */
+  setAll(value: boolean): void;
 }
 
 /**
@@ -193,13 +195,24 @@ export function createFilterTree(container: HTMLElement, onChange: (filters: Dia
   });
   updateDisabled();
 
+  function apply(next: DiagramFilters): void {
+    filters = next;
+    for (const { entry, input } of bound) {
+      input.checked = entry.get(filters);
+    }
+    report();
+  }
+
   return {
     reset() {
-      filters = defaultFilters();
-      for (const { entry, input } of bound) {
-        input.checked = entry.get(filters);
+      apply(defaultFilters());
+    },
+    setAll(value) {
+      const next = defaultFilters();
+      for (const { entry } of bound) {
+        entry.set(next, value);
       }
-      report();
+      apply(next);
     },
   };
 }

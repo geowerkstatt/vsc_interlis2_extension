@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Diagram preview: `All` and `None` next to `Reset filters` switch every filter on or off.
 
 ### 1.0.1 - 2026-10-13
 
