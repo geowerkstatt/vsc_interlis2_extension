@@ -312,7 +312,17 @@ body {
 }
 
 .graph-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    text-align: center;
     color: var(--vscode-editor-foreground);
+}
+
+.graph-message[hidden] {
+    display: none;
 }
 
 /* cytoscape.js mounts its canvas layers into this element. */

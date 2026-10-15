@@ -35,6 +35,7 @@ declare const acquireVsCodeApi: () => VSCodeApi;
   // ---- Renderer ----
   const renderer = createCytoscapeRenderer(graphContainer, {
     onReveal: (location) => vscode.postMessage({ type: "reveal", uri: location.uri, line: location.line }),
+    onOpenFilters: () => setFiltersOpen(true),
   });
 
   // ----- Helpers -----

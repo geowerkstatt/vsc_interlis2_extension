@@ -1,7 +1,10 @@
 # Change Log
 ### vNext
 
-* Diagram preview: `All` and `None` next to `Reset filters` switch every filter on or off.
+* Diagram preview:
+  * `All` and `None` next to `Reset filters` switch every filter on or off.
+  * A message takes the place of an empty diagram: while it loads, and when nothing is left to show, with a link to the filters if they hide everything.
+  * Boxes of unresolved references (`«external»`) are hidden together with the last arrow leading to them.
 
 ### 1.0.1 - 2026-10-13
 
