@@ -4,7 +4,8 @@ import { Core } from "cytoscape";
  * Scrollbars along the right and bottom edge of the canvas, drawn like the editor's. The track
  * stands for everything there is to see: the visible diagram with the fit padding around it, and
  * the view itself where it is panned beyond. The thumb is the part in view, so it also tells how
- * far the diagram is zoomed in. Dragging a thumb pans, a click beside it pages towards the click.
+ * far the diagram is zoomed in. Dragging a thumb pans, a click beside it pages towards the click,
+ * and the arrow keys pan within the same range.
  * cytoscape has no scrollbars of its own, so they follow every frame it renders.
  */
 
@@ -31,7 +32,12 @@ interface Bar {
 
 const length = (span: Span) => span.end - span.start;
 
-export function attachScrollbars(cy: Core, container: HTMLElement, padding: number): void {
+export interface Scrollbars {
+  /** Pans by the given distance in pixels, as far as the scrollbars reach. */
+  panBy(dx: number, dy: number): void;
+}
+
+export function attachScrollbars(cy: Core, container: HTMLElement, padding: number): Scrollbars {
   const bars = (["x", "y"] as Axis[]).map(createBar);
   let frame = 0;
 
@@ -66,6 +72,17 @@ export function attachScrollbars(cy: Core, container: HTMLElement, padding: numb
   function scrollTo(axis: Axis, start: number): void {
     const pan = cy.pan();
     cy.pan({ ...pan, [axis]: -start * cy.zoom() });
+  }
+
+  /**
+   * Pans by `distance` along the axis, but not beyond the range: like the thumb, the view stops
+   * at the edge of the diagram, and where it is already panned beyond, it only moves back.
+   */
+  function scrollBy(axis: Axis, distance: number): void {
+    const view = viewOf(axis);
+    const range = rangeOf(axis, view);
+    if (!range) return;
+    scrollTo(axis, Math.min(Math.max(view.start + distance, range.start), range.end - length(view)));
   }
 
   function update(bar: Bar): void {
@@ -124,16 +141,19 @@ export function attachScrollbars(cy: Core, container: HTMLElement, padding: numb
     track.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || event.target !== track) return;
       event.preventDefault();
-      const view = viewOf(axis);
-      const range = rangeOf(axis, view);
-      if (!range) return;
       const thumbRect = thumb.getBoundingClientRect();
       const direction = pointerOf(event) < (axis === "x" ? thumbRect.left : thumbRect.top) ? -1 : 1;
-      const start = view.start + direction * PAGE * length(view);
-      scrollTo(axis, Math.min(Math.max(start, range.start), range.end - length(view)));
+      scrollBy(axis, direction * PAGE * length(viewOf(axis)));
     });
     return bar;
   }
 
   cy.on("render resize", scheduleUpdate);
+
+  return {
+    panBy(dx, dy) {
+      scrollBy("x", dx / cy.zoom());
+      scrollBy("y", dy / cy.zoom());
+    },
+  };
 }

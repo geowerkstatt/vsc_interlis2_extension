@@ -39,6 +39,8 @@ const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8;
 /** Zoom factor of one wheel notch, and of the zoom buttons. */
 export const ZOOM_STEP = 1.25;
+/** Distance in pixels that one press of an arrow key pans the view by. */
+export const PAN_STEP = 50;
 /** A wheel delta of this size or more (in pixels) is one notch of a mouse; smaller deltas come from a trackpad. */
 const WHEEL_NOTCH_PX = 100;
 
@@ -215,6 +217,8 @@ export interface CytoscapeRenderer {
   fitToView(): void;
   /** Multiplies the zoom level, keeping the centre of the view where it is. */
   zoomBy(factor: number): void;
+  /** Moves the view by the given distance in pixels, a positive x shows more of the right; stops at the edge of the diagram. */
+  panBy(dx: number, dy: number): void;
   /**
    * Applies the filters: hides boxes, frames and arrows, and redraws the boxes. Nothing is re-arranged
    * except that boxes shown for the first time are placed and overlapping boxes are pushed apart.
@@ -326,7 +330,7 @@ export function createCytoscapeRenderer(
     boxSelectionEnabled: false,
     autounselectify: true,
   });
-  attachScrollbars(cy, container, FIT_PADDING);
+  const scrollbars = attachScrollbars(cy, container, FIT_PADDING);
 
   mount.addEventListener(
     "wheel",
@@ -457,6 +461,11 @@ export function createCytoscapeRenderer(
 
   function zoomBy(factor: number): void {
     zoomTo(cy.zoom() * factor, { x: cy.width() / 2, y: cy.height() / 2 });
+  }
+
+  function panBy(dx: number, dy: number): void {
+    if (bendingEdge) return;
+    scrollbars.panBy(dx, dy);
   }
 
   function displayFor(kind: GraphNodeKind): BoxDisplay {
@@ -746,5 +755,6 @@ export function createCytoscapeRenderer(
     getExportSvg,
     fitToView: () => fitToView(true),
     zoomBy,
+    panBy,
   };
 }

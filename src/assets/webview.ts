@@ -1,5 +1,5 @@
 import { rasterizeSvg } from "./cytoscapeExport";
-import { createCytoscapeRenderer, ZOOM_STEP } from "./cytoscapeRenderer";
+import { createCytoscapeRenderer, PAN_STEP, ZOOM_STEP } from "./cytoscapeRenderer";
 import { createFilterTree } from "./filterTree";
 
 interface VSCodeApi {
@@ -120,7 +120,24 @@ declare const acquireVsCodeApi: () => VSCodeApi;
     setFiltersOpen(false);
   }
 
+  /** The view moves the way the key points, like scrolling the editor. */
+  const ARROW_PANS: Record<string, [number, number]> = {
+    ArrowLeft: [-PAN_STEP, 0],
+    ArrowRight: [PAN_STEP, 0],
+    ArrowUp: [0, -PAN_STEP],
+    ArrowDown: [0, PAN_STEP],
+  };
+
   function handleKeyDown(event: KeyboardEvent): void {
+    const pan = ARROW_PANS[event.key];
+    if (pan) {
+      // Form controls keep their arrow keys, and shortcuts with modifiers stay with VS Code.
+      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+      if ((event.target as Element | null)?.closest("input, select, textarea")) return;
+      event.preventDefault();
+      renderer.panBy(...pan);
+      return;
+    }
     if (event.key !== "Escape") return;
     if (!filterPopover.hidden) {
       setFiltersOpen(false);
