@@ -11,6 +11,10 @@ interface Debounced<T extends any[]> {
 
 const AUTO_LANGUAGE = "auto";
 
+type ExportFormat = "svg" | "png";
+/** Global state key of the format of the last exported diagram, the default of the next export dialog. */
+const EXPORT_FORMAT_KEY = "diagramExportFormat";
+
 let diagramPanel: vscode.WebviewPanel | undefined;
 let isAutoOpening = false;
 let isAutoClosing = false;
@@ -19,6 +23,9 @@ let currentLanguage = AUTO_LANGUAGE;
 let currentIliUri: string | undefined;
 /** Files of every model in the diagram shown, including the imported ones, in the form of `vscode.Uri.toString()`. */
 let shownFiles = new Set<string>();
+let nextExportId = 0;
+/** Export requests waiting for the webview to answer with the content, by request id. */
+const pendingExports = new Map<number, (data: string | null) => void>();
 
 function autoClosePanel() {
   if (diagramPanel) {
@@ -120,6 +127,74 @@ async function revealLine(uri: unknown, line: unknown) {
   }
 }
 
+/** Asks the webview for the diagram as SVG text or base64 PNG; null when it has nothing to export. */
+function requestExport(format: ExportFormat): Promise<string | null> {
+  const panel = diagramPanel;
+  if (!panel) {
+    return Promise.resolve(null);
+  }
+  const id = ++nextExportId;
+  return new Promise((resolve) => {
+    pendingExports.set(id, resolve);
+    panel.webview.postMessage({ type: "export", id, format });
+  });
+}
+
+/** The file the save dialog suggests: named after the INTERLIS file and next to it. */
+function defaultExportUri(format: ExportFormat): vscode.Uri | undefined {
+  if (!currentIliUri) {
+    return undefined;
+  }
+  const iliUri = vscode.Uri.parse(currentIliUri);
+  const fileName = iliUri.path.substring(iliUri.path.lastIndexOf("/") + 1).replace(/\.ili$/i, "");
+  const name = `${fileName || "diagram"}.${format}`;
+  if (iliUri.scheme === "untitled") {
+    const folder = vscode.workspace.workspaceFolders?.[0]?.uri;
+    return folder ? vscode.Uri.joinPath(folder, name) : undefined;
+  }
+  return vscode.Uri.joinPath(iliUri, "..", name);
+}
+
+/**
+ * Exports the diagram as SVG or PNG. The format follows the extension of the chosen file name; a
+ * name without one gets the format of the last export, which is also what the dialog offers first.
+ */
+async function exportDiagram(context: vscode.ExtensionContext) {
+  const lastFormat = context.globalState.get<ExportFormat>(EXPORT_FORMAT_KEY, "svg");
+  const svgFilter = { "SVG image": ["svg"] };
+  const pngFilter = { "PNG image": ["png"] };
+  const target = await vscode.window.showSaveDialog({
+    defaultUri: defaultExportUri(lastFormat),
+    filters: lastFormat === "png" ? { ...pngFilter, ...svgFilter } : { ...svgFilter, ...pngFilter },
+    title: "Export Diagram",
+    saveLabel: "Export",
+  });
+  if (!target) {
+    return;
+  }
+  const extension = target.path.substring(target.path.lastIndexOf(".") + 1).toLowerCase();
+  const format: ExportFormat = extension === "svg" || extension === "png" ? extension : lastFormat;
+  const uri = extension === format ? target : target.with({ path: `${target.path}.${format}` });
+
+  const data = await requestExport(format);
+  if (data === null) {
+    vscode.window.showErrorMessage("The diagram could not be exported: there is nothing to export.");
+    return;
+  }
+  try {
+    await vscode.workspace.fs.writeFile(uri, Buffer.from(data, format === "png" ? "base64" : "utf8"));
+  } catch (err) {
+    vscode.window.showErrorMessage(`The diagram could not be exported: ${err instanceof Error ? err.message : err}`);
+    return;
+  }
+  await context.globalState.update(EXPORT_FORMAT_KEY, format);
+  const fileName = uri.path.substring(uri.path.lastIndexOf("/") + 1);
+  const choice = await vscode.window.showInformationMessage(`Diagram exported to ${fileName}.`, "Open");
+  if (choice === "Open") {
+    await vscode.commands.executeCommand("vscode.open", uri);
+  }
+}
+
 /**
  * Shows the diagram of `uri` (the editor whose title-bar button was clicked), or of the active
  * INTERLIS editor when the command comes from elsewhere. This is the only way the diagram switches
@@ -189,6 +264,12 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
         refreshDiagram(false);
       } else if (message.type === "reveal") {
         void revealLine(message.uri, message.line);
+      } else if (message.type === "exportDiagram") {
+        void exportDiagram(context);
+      } else if (message.type === "exportData") {
+        const resolve = pendingExports.get(message.id);
+        pendingExports.delete(message.id);
+        resolve?.(typeof message.data === "string" ? message.data : null);
       } else if (message.type === "generateMarkdown") {
         if (!currentIliUri) {
           return;
@@ -210,6 +291,9 @@ function revealDiagramPanelInternal(context: vscode.ExtensionContext) {
       diagramPanel = undefined;
       currentIliUri = undefined;
       shownFiles = new Set();
+      // The webview is gone, so no export request is answered any more.
+      pendingExports.forEach((resolve) => resolve(null));
+      pendingExports.clear();
       if (!isAutoClosing) {
         isAutoOpening = false;
       }

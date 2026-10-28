@@ -24,6 +24,7 @@ import {
   TextMeasurer,
 } from "./cytoscapeGraph";
 import { GraphDocument, GraphNode, GraphNodeKind } from "./graphDocument";
+import { attachScrollbars } from "./scrollbars";
 
 cytoscape.use(fcose);
 cytoscape.use(layoutUtilities); // required by fCoSE's packComponents
@@ -38,10 +39,12 @@ const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8;
 /** Zoom factor of one wheel notch, and of the zoom buttons. */
 export const ZOOM_STEP = 1.25;
+/** Distance in pixels that one press of an arrow key pans the view by. */
+export const PAN_STEP = 50;
 /** A wheel delta of this size or more (in pixels) is one notch of a mouse; smaller deltas come from a trackpad. */
 const WHEEL_NOTCH_PX = 100;
 
-/** The box kinds the filter tree has a node for; external stubs are always shown. */
+/** The box kinds the filter tree has a node for; an external stub is shown with its arrows. */
 export type FilterKindKey = "class" | "structure" | "view" | "association" | "domain";
 
 export const FILTER_KIND_KEYS: FilterKindKey[] = ["class", "structure", "view", "association", "domain"];
@@ -138,7 +141,8 @@ function directlyReferenced(cy: Core): Set<string> {
  * the view, of a fresh layout and of the SVG export, while everything keeps its place: showing it
  * again restores the picture. Boxes go first (by kind, then by the imported-model rules), frames
  * follow their content, and an arrow is shown when both of its ends have their connections
- * switched on; cytoscape hides the arrows of hidden boxes by itself.
+ * switched on; cytoscape hides the arrows of hidden boxes by itself. An external stub stands for
+ * the far end of an arrow only, so it stays while an arrow from a shown box leads to it.
  */
 export function applyFilters(cy: Core, filters: DiagramFilters): void {
   const direct = filters.importedModels && !filters.indirect ? directlyReferenced(cy) : null;
@@ -154,6 +158,8 @@ export function applyFilters(cy: Core, filters: DiagramFilters): void {
     const hasContent = frame.descendants(".class").some((box) => box.style("display") !== "none");
     frame.style("display", hasContent ? "element" : "none");
   });
+  /** Boxes at the end of a shown arrow that starts at a shown box. */
+  const linked = new Set<string>();
   cy.edges().forEach((edge) => {
     let shown: boolean;
     if (edge.data("frame")) {
@@ -166,7 +172,16 @@ export function applyFilters(cy: Core, filters: DiagramFilters): void {
       }
     }
     edge.style("display", shown ? "element" : "none");
+    if (shown) {
+      if (edge.source().style("display") !== "none") linked.add(edge.target().id());
+      if (edge.target().style("display") !== "none") linked.add(edge.source().id());
+    }
   });
+  cy.nodes(".class")
+    .filter((node) => kindOf(node) === "external")
+    .forEach((stub) => {
+      stub.style("display", linked.has(stub.id()) ? "element" : "none");
+    });
 }
 
 /** Redraws every box of `doc` for the display the filters ask for, keeping its position. */
@@ -185,6 +200,8 @@ export function refreshBoxes(cy: Core, doc: GraphDocument, measure: TextMeasurer
 export interface CytoscapeRendererCallbacks {
   /** Invoked when the user clicks a box, frame or association line that has a known source line. */
   onReveal(location: SourceLocation): void;
+  /** Invoked from the hint shown when the filters leave nothing of the document to draw. */
+  onOpenFilters(): void;
 }
 
 export interface CytoscapeRenderer {
@@ -200,6 +217,8 @@ export interface CytoscapeRenderer {
   fitToView(): void;
   /** Multiplies the zoom level, keeping the centre of the view where it is. */
   zoomBy(factor: number): void;
+  /** Moves the view by the given distance in pixels, a positive x shows more of the right; stops at the edge of the diagram. */
+  panBy(dx: number, dy: number): void;
   /**
    * Applies the filters: hides boxes, frames and arrows, and redraws the boxes. Nothing is re-arranged
    * except that boxes shown for the first time are placed and overlapping boxes are pushed apart.
@@ -273,13 +292,15 @@ export function createCytoscapeRenderer(
 ): CytoscapeRenderer {
   const measure = createCanvasTextMeasurer();
 
+  // Until the first document arrives, the message stands in for the canvas.
   const message = document.createElement("div");
   message.className = "graph-message";
-  message.hidden = true;
+  message.textContent = "Loading diagram…";
   container.appendChild(message);
 
   const mount = document.createElement("div");
   mount.className = "cy-mount";
+  mount.hidden = true;
   container.appendChild(mount);
 
   let lastJson = "";
@@ -288,6 +309,8 @@ export function createCytoscapeRenderer(
   let layoutRun = 0;
   let bendingEdge: EdgeSingular | null = null;
   let filters = defaultFilters();
+  /** Whether the canvas holds the last document; false until the first one arrives and after an error. */
+  let rendered = false;
   /** Manual edge routing, kept by stable edge key so it survives re-renders while the file is edited. */
   const rememberedBends = new Map<string, EdgeBend>();
   /**
@@ -307,6 +330,7 @@ export function createCytoscapeRenderer(
     boxSelectionEnabled: false,
     autounselectify: true,
   });
+  const scrollbars = attachScrollbars(cy, container, FIT_PADDING);
 
   mount.addEventListener(
     "wheel",
@@ -381,8 +405,15 @@ export function createCytoscapeRenderer(
     settle(event.target as NodeSingular);
   });
 
-  function showMessage(text: string): void {
-    message.textContent = text;
+  function showMessage(text: string, filterHint = false): void {
+    message.replaceChildren(text);
+    if (filterHint) {
+      const button = document.createElement("button");
+      button.className = "link";
+      button.textContent = "Open filters";
+      button.addEventListener("click", () => callbacks.onOpenFilters());
+      message.appendChild(button);
+    }
     message.hidden = false;
     mount.hidden = true;
   }
@@ -390,6 +421,19 @@ export function createCytoscapeRenderer(
   function hideMessage(): void {
     message.hidden = true;
     mount.hidden = false;
+  }
+
+  /** Shows the canvas while the filters leave a box to draw, and otherwise says why it is blank. */
+  function showContentOrHint(): void {
+    if (cy.nodes(".class:visible").nonempty()) {
+      if (!mount.hidden) return;
+      hideMessage();
+      cy.resize(); // the mount was hidden (zero size) until now
+    } else if (cy.nodes(".class").empty()) {
+      showMessage("Nothing to show: the file defines no classes, structures, associations, views or domains.");
+    } else {
+      showMessage("Nothing to show with the current filters.", true);
+    }
   }
 
   function setHighlight(node: NodeSingular | null): void {
@@ -417,6 +461,11 @@ export function createCytoscapeRenderer(
 
   function zoomBy(factor: number): void {
     zoomTo(cy.zoom() * factor, { x: cy.width() / 2, y: cy.height() / 2 });
+  }
+
+  function panBy(dx: number, dy: number): void {
+    if (bendingEdge) return;
+    scrollbars.panBy(dx, dy);
   }
 
   function displayFor(kind: GraphNodeKind): BoxDisplay {
@@ -556,7 +605,8 @@ export function createCytoscapeRenderer(
       if (run !== layoutRun) return;
     }
     await applyShifts(separationShifts(cy));
-    if (run === layoutRun && fitPending) {
+    // With nothing shown, the fit waits for the first boxes the filters let through.
+    if (run === layoutRun && fitPending && boxes.nonempty()) {
       fitPending = false;
       fitToView(true);
     }
@@ -621,6 +671,7 @@ export function createCytoscapeRenderer(
 
   function render(text: string, resetZoom: boolean): void {
     if (!text) {
+      rendered = false;
       showMessage("Could not load diagram.");
       return;
     }
@@ -630,6 +681,7 @@ export function createCytoscapeRenderer(
       doc = JSON.parse(text) as GraphDocument;
     } catch (err: any) {
       console.error("Render error:", err);
+      rendered = false;
       showMessage(`Error rendering diagram: ${err.message}`);
       return;
     }
@@ -638,6 +690,7 @@ export function createCytoscapeRenderer(
     stopBending(); // the edge being dragged is about to be replaced
     lastJson = text;
     lastDoc = doc;
+    rendered = true;
     cy.resize(); // the mount may have been hidden (zero size) until now
 
     const previous = new Map<string, Position>();
@@ -661,6 +714,7 @@ export function createCytoscapeRenderer(
       if (bend) applyBend(edge, bend);
     });
     applyFilters(cy, filters);
+    showContentOrHint();
 
     fitPending = fitPending || resetZoom;
     void placeNewBoxes();
@@ -689,6 +743,7 @@ export function createCytoscapeRenderer(
     filters = next;
     if (lastDoc) refreshBoxes(cy, lastDoc, measure, filters);
     applyFilters(cy, filters);
+    if (rendered) showContentOrHint(); // a loading or error message stays
     void placeNewBoxes();
   }
 
@@ -700,5 +755,6 @@ export function createCytoscapeRenderer(
     getExportSvg,
     fitToView: () => fitToView(true),
     zoomBy,
+    panBy,
   };
 }
