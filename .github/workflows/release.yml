@@ -16,6 +16,7 @@ permissions:
   contents: write
   packages: read
   pull-requests: write
+  id-token: write
 
 jobs:
   release:
@@ -29,7 +30,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 22.x
 
       - name: Install .NET
         uses: actions/setup-dotnet@v6
@@ -75,9 +76,7 @@ jobs:
         run: npx vsce pack --no-git-tag-version ${{ env.VERSION }}
 
       - name: Publish extension to marketplace
-        run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --oidc --packagePath *.vsix
 
       - name: Update GitHub release assets
         run: gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
