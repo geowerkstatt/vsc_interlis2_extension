@@ -112,10 +112,40 @@ jobs:
       - name: Publish extension to marketplace
         run: npx vsce publish --oidc --packagePath release/*.vsix
 
+  publish-openvsx:
+    runs-on: ubuntu-latest
+    name: Publish to Open VSX
+    needs: build
+    environment: openvsx
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+
+      - name: Install packages
+        run: npm ci --ignore-scripts
+
+      - name: Download vsix
+        uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: release
+
+      - name: Publish extension to Open VSX
+        run: npx ovsx publish release/*.vsix --trusted-publishing
+
   finalize:
     runs-on: ubuntu-latest
     name: Update release and changelog
-    needs: [build, publish-vsmarketplace]
+    needs: [build, publish-vsmarketplace, publish-openvsx]
     permissions:
       contents: write
       pull-requests: write

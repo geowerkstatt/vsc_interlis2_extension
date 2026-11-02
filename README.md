@@ -3,6 +3,7 @@
 [![CI](https://github.com/GeoWerkstatt/vsc_interlis2_extension/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/GeoWerkstatt/vsc_interlis2_extension/actions/workflows/ci.yml)
 [![Release](https://github.com/GeoWerkstatt/vsc_interlis2_extension/actions/workflows/release.yml/badge.svg)](https://github.com/GeoWerkstatt/vsc_interlis2_extension/actions/workflows/release.yml)
 [![Visual Studio Marketplace Version](https://vsmarketplacebadges.dev/version-short/geowerkstatt.InterlisLanguageSupport.svg)](https://marketplace.visualstudio.com/items?itemName=geowerkstatt.InterlisLanguageSupport)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/geowerkstatt/InterlisLanguageSupport)](https://open-vsx.org/extension/geowerkstatt/InterlisLanguageSupport)
 [![License](https://img.shields.io/github/license/GeoWerkstatt/vsc_interlis2_extension)](https://github.com/GeoWerkstatt/vsc_interlis2_extension/blob/master/LICENSE.txt)
 
 
