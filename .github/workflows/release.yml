@@ -12,37 +12,37 @@ on:
 env:
   VERSION_TAG: ${{ github.event.inputs.TAG_NAME || github.event.release.tag_name }}
 
-permissions:
-  contents: write
-  packages: read
-  pull-requests: write
-
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
-    name: Publish vsix
+    name: Build vsix
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20.x
+          node-version: 22.x
 
       - name: Install .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0"
 
-      - name: Set environment variables
+      - name: Set version
+        id: version
         run: |
           VERSION_TMP=${VERSION_TAG#v} # Remove the 'v' prefix
           VERSION=${VERSION_TMP%-*} # Remove the '-' build number suffix
           echo VERSION=$VERSION >> $GITHUB_ENV
-          echo GIT_BRANCH_NAME=mark-version-$VERSION-as-released >> $GITHUB_ENV
-          echo GIT_COMMIT_MESSAGE=Mark version $VERSION as released >> $GITHUB_ENV
+          echo VERSION=$VERSION >> $GITHUB_OUTPUT
 
       - name: Add GitHub NuGet Registry
         run: dotnet nuget add source --username "${{ github.actor }}" --password "%GITHUB_TOKEN%" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/GeoWerkstatt/index.json"
@@ -74,18 +74,75 @@ jobs:
       - name: Pack extension
         run: npx vsce pack --no-git-tag-version ${{ env.VERSION }}
 
+      - name: Upload vsix and changelog
+        uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: |
+            *.vsix
+            CHANGELOG.md
+
+  publish-vsmarketplace:
+    runs-on: ubuntu-latest
+    name: Publish to VS Code Marketplace
+    needs: build
+    environment: vsmarketplace
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+
+      - name: Install packages
+        run: npm ci --ignore-scripts
+
+      - name: Download vsix
+        uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: release
+
       - name: Publish extension to marketplace
-        run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --oidc --packagePath release/*.vsix
+
+  finalize:
+    runs-on: ubuntu-latest
+    name: Update release and changelog
+    needs: [build, publish-vsmarketplace]
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      GIT_BRANCH_NAME: mark-version-${{ needs.build.outputs.version }}-as-released
+      GIT_COMMIT_MESSAGE: Mark version ${{ needs.build.outputs.version }} as released
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download vsix and changelog
+        uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: release
 
       - name: Update GitHub release assets
-        run: gh release upload ${{ env.VERSION_TAG }} *.vsix --clobber
+        run: gh release upload ${{ env.VERSION_TAG }} release/*.vsix --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Add vNext to changelog
-        run: sed -i "/^\#\#\# $VERSION/i \#\#\# vNext\n\n" CHANGELOG.md
+        run: |
+          cp release/CHANGELOG.md CHANGELOG.md
+          sed -i "/^\#\#\# $VERSION/i \#\#\# vNext\n\n" CHANGELOG.md
 
       - name: Patch package.json version
         run: npm version patch --git-tag-version false
