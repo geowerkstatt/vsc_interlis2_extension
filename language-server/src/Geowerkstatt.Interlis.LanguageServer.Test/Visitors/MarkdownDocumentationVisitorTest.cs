@@ -463,4 +463,33 @@ public class MarkdownDocumentationVisitorTest
 
         StringAssert.Contains(documentation, $"| attr1 | 0..1 | {range} |");
     }
+
+    [TestMethod]
+    [DataRow("0.0 .. 5.0 [INTERLIS.m]", "0.0..5.0 [m]")]
+    [DataRow("0.0 .. 999.9 [l_s_km2]", "0.0..999.9 [l_s_km2]")]
+    [DataRow("NUMERIC [INTERLIS.m]", "Numerisch [m]")]
+    public void TestNumericTypeShowsUnit(string type, string expected)
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader($"""
+            INTERLIS 2.4;
+
+            MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+                UNIT
+                    LiterProSekundeUndQuadratkilometer [l_s_km2] = (INTERLIS.m / INTERLIS.s);
+
+                TOPIC TestTopic =
+                    CLASS TestClass =
+                        attr1: {type};
+                    END TestClass;
+                END TestTopic;
+            END TestModel.
+            """));
+
+        var visitor = new MarkdownDocumentationVisitor();
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, $"| attr1 | 0..1 | {expected} |");
+    }
 }

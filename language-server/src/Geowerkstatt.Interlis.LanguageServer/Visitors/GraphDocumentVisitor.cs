@@ -461,7 +461,7 @@ internal class GraphDocumentVisitor : Interlis24AstBaseVisitor<object?>
             null => "?",
             ReferenceType referenceType => referenceType.Target.Value.GetTargetName() ?? "?",
             TextType textType => textType.Length is { } length ? $"Text[{length}]" : "Text",
-            NumericType numericType => FormatNumericType(numericType),
+            NumericType numericType => numericType.Format(locale.NumericLabel),
             BooleanType => "Boolean",
             BlackboxType blackboxType => blackboxType.Kind switch
             {
@@ -492,14 +492,6 @@ internal class GraphDocumentVisitor : Interlis24AstBaseVisitor<object?>
         var elements = path.Reference.Path.Select(segment => segment.Name);
         var text = string.Join("->", elements);
         return text.Length > 0 ? text : "?";
-    }
-
-    private string FormatNumericType(NumericType numericType)
-    {
-        var text = numericType.FormatRange() ?? locale.NumericLabel;
-
-        var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault()?.Name;
-        return string.IsNullOrEmpty(unitName) ? text : $"{text} [{unitName}]";
     }
 
     private static string FormatTargetNames(IEnumerable<RestrictedRef> targets)
