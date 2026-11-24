@@ -275,7 +275,7 @@ internal class MarkdownDocumentationVisitor : Interlis24AstBaseVisitor<object>
         var typeName = type switch
         {
             TextType textType => textType.Length == null ? "Text" : $"Text [{textType.Length}]",
-            NumericType numericType => numericType.Min != null && numericType.Max != null ? $"{numericType.Min}..{numericType.Max}" : locale.NumericLabel,
+            NumericType numericType => numericType.Format(locale.NumericLabel),
             BooleanType => "Boolean",
             BlackboxType blackboxType => blackboxType.Kind switch
             {

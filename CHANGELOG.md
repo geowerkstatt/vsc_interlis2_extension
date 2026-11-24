@@ -1,6 +1,7 @@
 # Change Log
 ### vNext
 
+* Markdown documentation and diagram preview show numeric ranges with the digits the model declares (`-3.00..0.00` instead of `-3..0`), and the markdown documentation shows their unit like the diagram preview (`0.0..5.0 [m]`).
 
 ### 1.0.2 - 2026-11-02
 
