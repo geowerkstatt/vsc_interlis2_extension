@@ -434,4 +434,33 @@ public class MarkdownDocumentationVisitorTest
 
         Assert.AreEqual(expected.ReplaceLineEndings(), documentation.ReplaceLineEndings());
     }
+
+    [TestMethod]
+    [DataRow("0..5")]
+    [DataRow("0.0..5.0")]
+    [DataRow("-3.00..0.00")]
+    [DataRow("-7.300..4.100")]
+    [DataRow("0.100E7..0.900E7")]
+    [DataRow("-0.25E-3..0.50E3")]
+    public void TestNumericRangeKeepsDeclaredDigits(string range)
+    {
+        var reader = new InterlisReader();
+        var interlisFile = reader.ReadFile(new StringReader($"""
+            INTERLIS 2.4;
+
+            MODEL TestModel (de) AT "http://models.geow.cloud" VERSION "1" =
+                TOPIC TestTopic =
+                    CLASS TestClass =
+                        attr1: {range};
+                    END TestClass;
+                END TestTopic;
+            END TestModel.
+            """));
+
+        var visitor = new MarkdownDocumentationVisitor();
+        visitor.VisitInterlisEnvironment(interlisFile);
+        var documentation = visitor.GetDocumentation();
+
+        StringAssert.Contains(documentation, $"| attr1 | 0..1 | {range} |");
+    }
 }

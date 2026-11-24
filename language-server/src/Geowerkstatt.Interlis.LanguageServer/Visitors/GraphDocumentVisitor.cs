@@ -496,9 +496,7 @@ internal class GraphDocumentVisitor : Interlis24AstBaseVisitor<object?>
 
     private string FormatNumericType(NumericType numericType)
     {
-        var text = numericType.Min != null && numericType.Max != null
-            ? $"{numericType.Min}..{numericType.Max}"
-            : locale.NumericLabel;
+        var text = numericType.FormatRange() ?? locale.NumericLabel;
 
         var unitName = numericType.Unit?.Target?.Name ?? numericType.Unit?.Path.LastOrDefault()?.Name;
         return string.IsNullOrEmpty(unitName) ? text : $"{text} [{unitName}]";

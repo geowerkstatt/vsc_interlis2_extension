@@ -700,6 +700,28 @@ END M.");
     }
 
     [TestMethod]
+    [DataRow("0..5")]
+    [DataRow("0.0..5.0")]
+    [DataRow("-3.00..0.00")]
+    [DataRow("-7.300..4.100")]
+    [DataRow("0.100E7..0.900E7")]
+    [DataRow("-0.25E-3..0.50E3")]
+    public void NumericAttribute_KeepsDeclaredDigits(string range)
+    {
+        var graph = BuildGraph($@"
+            INTERLIS 2.4;
+            MODEL M (en) AT ""x"" VERSION ""1"" =
+              TOPIC T =
+                CLASS C =
+                  value : {range};
+                END C;
+              END T;
+            END M.");
+
+        Assert.AreEqual(range, NodeById(graph, "M.T.C").Attributes[0].Type);
+    }
+
+    [TestMethod]
     public void Json_UsesCamelCaseAndOmitsNulls()
     {
         var json = Visit(Compile(@"
